@@ -15,9 +15,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "OrganizaT",
   description: "Tu vida, más organizada.",
-  icons: {
-    icon: '/logo.png',
-  },
 };
 
 export default function RootLayout({
