@@ -43,4 +43,23 @@ export const taskService = {
 
     return response.json();
   },
+
+  async getTaskById(token: string, id: string): Promise<Task> {
+    const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized');
+      }
+      throw new Error('Error fetching task details');
+    }
+
+    return response.json();
+  },
 };
