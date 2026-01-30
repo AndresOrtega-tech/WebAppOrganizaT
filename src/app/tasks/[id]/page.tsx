@@ -151,13 +151,22 @@ export default function TaskDetailPage() {
             </Link>
             <h1 className="ml-4 text-xl font-bold text-gray-900 truncate">Detalle de Tarea</h1>
           </div>
-          <button
-            onClick={() => setIsEditing(true)}
-            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
-            title="Editar tarea"
-          >
-            <Pencil className="w-5 h-5" />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleDelete}
+              className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
+              title="Eliminar tarea"
+            >
+              <Trash className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setIsEditing(true)}
+              className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+              title="Editar tarea"
+            >
+              <Pencil className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </nav>
 

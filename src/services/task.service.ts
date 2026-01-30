@@ -104,4 +104,21 @@ export const taskService = {
 
     return response.json();
   },
+
+  async deleteTask(token: string, id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized');
+      }
+      throw new Error('Error deleting task');
+    }
+  },
 };
