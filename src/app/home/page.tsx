@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation';
 import { User } from '@/services/auth.service';
 import { Task, taskService } from '@/services/task.service';
 import TaskCard from '@/components/TaskCard';
+import CreateTaskModal from '@/components/CreateTaskModal';
+import { Plus } from 'lucide-react';
 
 export default function HomePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -51,24 +54,8 @@ export default function HomePage() {
     router.push('/login');
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const now = new Date();
-    
-    // Check if it's today
-    const isToday = date.getDate() === now.getDate() &&
-                    date.getMonth() === now.getMonth() &&
-                    date.getFullYear() === now.getFullYear();
-    
-    const timeStr = date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
-    
-    if (isToday) {
-      return `Hoy, ${timeStr}`;
-    }
-    
-    // Format: "Ene 28, 14:00 PM"
-    return `${date.toLocaleDateString('es-MX', { month: 'short', day: 'numeric' })}, ${timeStr}`;
+  const handleTaskCreated = (newTask: Task) => {
+    setTasks((prevTasks) => [newTask, ...prevTasks]);
   };
 
   const pendingCount = tasks.filter(t => !t.is_completed).length;
@@ -133,6 +120,21 @@ export default function HomePage() {
                 </div>
             </div>
         </main>
+
+        {/* Floating Action Button */}
+        <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="fixed bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-2 z-40"
+        >
+            <Plus className="w-5 h-5" />
+            <span>Agregar Tarea</span>
+        </button>
+
+        <CreateTaskModal 
+            isOpen={isCreateModalOpen}
+            onClose={() => setIsCreateModalOpen(false)}
+            onTaskCreated={handleTaskCreated}
+        />
     </div>
   );
 }
