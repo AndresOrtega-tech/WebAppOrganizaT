@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Task, taskService } from '@/services/task.service';
-import { ArrowLeft, Calendar, Clock, Pencil, X, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Pencil, X, Save, Loader2, Trash } from 'lucide-react';
 import Link from 'next/link';
 import DateTimePicker from '@/components/DateTimePicker';
 import StatusBadge from '@/components/StatusBadge';
@@ -102,6 +102,28 @@ export default function TaskDetailPage() {
       alert('Error al actualizar la tarea');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!task) return;
+    
+    if (!window.confirm('¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      await taskService.deleteTask(token, task.id);
+      router.push('/home');
+    } catch (err) {
+      console.error('Error deleting task:', err);
+      alert('Error al eliminar la tarea');
     }
   };
 
