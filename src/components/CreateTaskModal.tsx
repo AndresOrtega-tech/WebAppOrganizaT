@@ -74,6 +74,7 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
           <h2 className="text-lg font-bold text-gray-900">Nueva Tarea</h2>
           <button 
+            type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-colors"
           >
@@ -158,6 +159,13 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
           </form>
         </div>
       </div>
+      
+      <DateTimePicker
+        isOpen={showDatePicker}
+        onClose={() => setShowDatePicker(false)}
+        onSave={(date) => setFormData({...formData, due_date: date})}
+        initialDate={formData.due_date}
+      />
     </div>
   );
 }

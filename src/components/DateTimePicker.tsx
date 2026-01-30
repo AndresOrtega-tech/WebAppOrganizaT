@@ -147,10 +147,10 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
             {monthNames[currentMonth.getMonth()]} de {currentMonth.getFullYear()}
           </h2>
           <div className="flex gap-1">
-            <button onClick={handlePrevMonth} className="p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors">
+            <button type="button" onClick={handlePrevMonth} className="p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors">
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <button onClick={handleNextMonth} className="p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors">
+            <button type="button" onClick={handleNextMonth} className="p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors">
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
@@ -210,6 +210,7 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
                     <div ref={timeListRef} className="absolute bottom-full left-0 right-0 mb-2 max-h-48 overflow-y-auto bg-white border border-gray-100 rounded-xl shadow-lg z-10 scrollbar-thin">
                         {generateTimeSlots().map((time) => (
                             <button
+                                type="button"
                                 key={time}
                                 onClick={() => handleTimeSelect(time)}
                                 className={`w-full px-4 py-2 text-sm text-left hover:bg-indigo-50 transition-colors ${time === selectedTime ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-700'}`}
@@ -225,12 +226,14 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
         {/* Footer Actions */}
         <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
           <button
+            type="button"
             onClick={onClose}
             className="flex-1 px-4 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
           >
             Cancelar
           </button>
           <button
+            type="button"
             onClick={handleSave}
             className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all"
           >
