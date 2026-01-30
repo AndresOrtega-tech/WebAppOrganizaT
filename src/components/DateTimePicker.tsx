@@ -172,6 +172,7 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
               
               return (
                 <button
+                  type="button"
                   key={idx}
                   onClick={() => handleDateClick(item.date)}
                   className={`

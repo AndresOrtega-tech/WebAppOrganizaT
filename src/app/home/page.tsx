@@ -6,6 +6,7 @@ import { User } from '@/services/auth.service';
 import { Task, taskService } from '@/services/task.service';
 import TaskCard from '@/components/TaskCard';
 import CreateTaskModal from '@/components/CreateTaskModal';
+import ConfirmationModal from '@/components/ConfirmationModal';
 import { Plus } from 'lucide-react';
 
 export default function HomePage() {
@@ -14,6 +15,8 @@ export default function HomePage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -56,6 +59,32 @@ export default function HomePage() {
 
   const handleTaskCreated = (newTask: Task) => {
     setTasks((prevTasks) => [newTask, ...prevTasks]);
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    setTaskToDelete(taskId);
+  };
+
+  const confirmDelete = async () => {
+    if (!taskToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      await taskService.deleteTask(token, taskToDelete);
+      setTasks((prevTasks) => prevTasks.filter((t) => t.id !== taskToDelete));
+      setTaskToDelete(null);
+    } catch (err) {
+      console.error('Error deleting task:', err);
+      alert('Error al eliminar la tarea');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const pendingCount = tasks.filter(t => !t.is_completed).length;
@@ -114,7 +143,11 @@ export default function HomePage() {
                         </div>
                     ) : (
                         tasks.map((task) => (
-                            <TaskCard key={task.id} task={task} />
+                            <TaskCard 
+                                key={task.id} 
+                                task={task} 
+                                onDelete={handleDeleteTask}
+                            />
                         ))
                     )}
                 </div>
@@ -134,6 +167,17 @@ export default function HomePage() {
             isOpen={isCreateModalOpen}
             onClose={() => setIsCreateModalOpen(false)}
             onTaskCreated={handleTaskCreated}
+        />
+
+        <ConfirmationModal
+            isOpen={!!taskToDelete}
+            onClose={() => setTaskToDelete(null)}
+            onConfirm={confirmDelete}
+            title="Eliminar Tarea"
+            message="¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer."
+            confirmText="Eliminar"
+            cancelText="Cancelar"
+            isLoading={isDeleting}
         />
     </div>
   );

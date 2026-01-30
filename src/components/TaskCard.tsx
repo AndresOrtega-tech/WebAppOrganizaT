@@ -1,12 +1,13 @@
-import { CheckCircle2, Circle } from 'lucide-react';
+import { CheckCircle2, Circle, Trash } from 'lucide-react';
 import Link from 'next/link';
 import { Task } from '@/services/task.service';
 
 interface TaskCardProps {
   task: Task;
+  onDelete?: (id: string) => void;
 }
 
-export default function TaskCard({ task }: TaskCardProps) {
+export default function TaskCard({ task, onDelete }: TaskCardProps) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -47,6 +48,19 @@ export default function TaskCard({ task }: TaskCardProps) {
             </p>
           )}
         </div>
+        
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onDelete(task.id);
+            }}
+            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+            title="Eliminar tarea"
+          >
+            <Trash className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </Link>
   );

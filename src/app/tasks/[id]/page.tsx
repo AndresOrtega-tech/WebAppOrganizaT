@@ -8,6 +8,7 @@ import Link from 'next/link';
 import DateTimePicker from '@/components/DateTimePicker';
 import StatusBadge from '@/components/StatusBadge';
 import TagList from '@/components/TagList';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 export default function TaskDetailPage() {
   const router = useRouter();
@@ -21,6 +22,8 @@ export default function TaskDetailPage() {
   // Edit State
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [editForm, setEditForm] = useState({
     title: '',
@@ -105,14 +108,11 @@ export default function TaskDetailPage() {
     }
   };
 
-  const handleDelete = async () => {
+  const confirmDelete = async () => {
     if (!task) return;
-    
-    if (!window.confirm('¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer.')) {
-      return;
-    }
 
     try {
+      setIsDeleting(true);
       const token = localStorage.getItem('access_token');
       if (!token) {
         router.push('/login');
@@ -124,6 +124,7 @@ export default function TaskDetailPage() {
     } catch (err) {
       console.error('Error deleting task:', err);
       alert('Error al eliminar la tarea');
+      setIsDeleting(false);
     }
   };
 
@@ -175,7 +176,7 @@ export default function TaskDetailPage() {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteModal(true)}
               className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
               title="Eliminar tarea"
             >
@@ -364,6 +365,17 @@ export default function TaskDetailPage() {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="Eliminar Tarea"
+        message="¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        isLoading={isDeleting}
+      />
     </div>
   );
 }
