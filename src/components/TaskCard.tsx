@@ -1,6 +1,7 @@
 import { CheckCircle2, Circle, Trash } from 'lucide-react';
 import Link from 'next/link';
 import { Task } from '@/services/task.service';
+import { isFeatureEnabled } from '@/config/features';
 
 interface TaskCardProps {
   task: Task;
@@ -28,9 +29,8 @@ export default function TaskCard({ task, onDelete }: TaskCardProps) {
     return `${date.toLocaleDateString('es-MX', { month: 'short', day: 'numeric' })}, ${timeStr}`;
   };
 
-  return (
-    <Link href={`/tasks/${task.id}`} className="block group">
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 group-hover:shadow-md transition-all duration-200">
+  const content = (
+    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 group-hover:shadow-md transition-all duration-200">
         <div className="flex-shrink-0">
           {task.is_completed ? (
             <CheckCircle2 className="w-6 h-6 text-green-500" />
@@ -49,7 +49,7 @@ export default function TaskCard({ task, onDelete }: TaskCardProps) {
           )}
         </div>
         
-        {onDelete && (
+        {onDelete && isFeatureEnabled('ENABLE_TASK_DELETION') && (
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -62,6 +62,19 @@ export default function TaskCard({ task, onDelete }: TaskCardProps) {
           </button>
         )}
       </div>
-    </Link>
+  );
+
+  if (isFeatureEnabled('ENABLE_TASK_DETAIL')) {
+    return (
+      <Link href={`/tasks/${task.id}`} className="block group">
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="block group">
+      {content}
+    </div>
   );
 }

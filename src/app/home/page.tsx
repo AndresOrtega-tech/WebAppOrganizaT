@@ -8,6 +8,7 @@ import TaskCard from '@/components/TaskCard';
 import CreateTaskModal from '@/components/CreateTaskModal';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import { Plus } from 'lucide-react';
+import { isFeatureEnabled } from '@/config/features';
 
 export default function HomePage() {
   const router = useRouter();
@@ -155,19 +156,23 @@ export default function HomePage() {
         </main>
 
         {/* Floating Action Button */}
-        <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="fixed bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-2 z-40"
-        >
-            <Plus className="w-5 h-5" />
-            <span>Agregar Tarea</span>
-        </button>
+            {isFeatureEnabled('ENABLE_TASK_CREATION') && (
+                <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="fixed bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-2 z-40"
+                >
+                    <Plus className="w-5 h-5" />
+                    <span>Agregar Tarea</span>
+                </button>
+            )}
 
-        <CreateTaskModal 
-            isOpen={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
-            onTaskCreated={handleTaskCreated}
-        />
+            {isFeatureEnabled('ENABLE_TASK_CREATION') && (
+                <CreateTaskModal 
+                    isOpen={isCreateModalOpen}
+                    onClose={() => setIsCreateModalOpen(false)}
+                    onTaskCreated={handleTaskCreated}
+                />
+            )}
 
         <ConfirmationModal
             isOpen={!!taskToDelete}
