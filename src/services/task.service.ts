@@ -62,4 +62,25 @@ export const taskService = {
 
     return response.json();
   },
+
+  async updateTask(token: string, id: string, taskData: Partial<Task>): Promise<Task> {
+    const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(taskData),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized');
+      }
+      throw new Error('Error updating task');
+    }
+
+    return response.json();
+  },
 };
