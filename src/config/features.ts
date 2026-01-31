@@ -3,8 +3,8 @@ export const FEATURE_FLAGS = {
   ENABLE_TASK_EDIT: true,    // Permite editar título y descripción
   ENABLE_TASK_CREATION: true, // Permite crear nuevas tareas
   ENABLE_TASK_DELETION: true, // Permite eliminar tareas
-  ENABLE_REGISTRATION: true, // Permite registrar nuevos usuarios
-  ENABLE_USER_PROFILE: false, // Permite ver y editar el perfil de usuario
+  ENABLE_REGISTRATION: false, // Permite registrar nuevos usuarios
+  ENABLE_USER_PROFILE: true, // Permite ver y editar el perfil de usuario
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;
