@@ -30,6 +30,9 @@ export const tagsService = {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized');
+      }
       throw new Error('Error al obtener las etiquetas');
     }
 
@@ -82,6 +85,9 @@ export const tagsService = {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized');
+      }
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || 'Error al eliminar la etiqueta');
     }

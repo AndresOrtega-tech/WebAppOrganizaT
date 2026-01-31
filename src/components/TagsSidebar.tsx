@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Tag, tagsService } from '@/services/tags.service';
 import { Tag as TagIcon, Loader2, Plus, Pencil } from 'lucide-react';
 import TagModal from './TagModal';
 import { isFeatureEnabled } from '@/config/features';
 
 export default function TagsSidebar() {
+  const router = useRouter();
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -50,6 +52,13 @@ export default function TagsSidebar() {
       setEditingTag(null);
     } catch (err) {
       console.error('Error saving tag:', err);
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refresh_token');
+        router.push('/login');
+        return;
+      }
       alert('Error al guardar la etiqueta');
     }
   };
@@ -79,6 +88,13 @@ export default function TagsSidebar() {
       setEditingTag(null);
     } catch (err) {
       console.error('Error deleting tag:', err);
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refresh_token');
+        router.push('/login');
+        return;
+      }
       alert('Error al eliminar la etiqueta');
     }
   };

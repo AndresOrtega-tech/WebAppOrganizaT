@@ -1,6 +1,5 @@
 ---
-alwaysApply: false
-description: Cambios en el sistema de Feature Flags.
+alwaysApply: true
 ---
 # Sistema de Feature Flags
 
@@ -9,11 +8,21 @@ Controlamos la disponibilidad de funcionalidades mediante "Feature Flags" defini
 ## Configuración (`src/config/features.ts`)
 ```typescript
 export const FEATURE_FLAGS = {
+  // Tasks
   ENABLE_TASK_CREATION: boolean, // Botón "+" en Home
   ENABLE_TASK_EDITING: boolean,  // Botón "Lápiz" en Detalle
   ENABLE_TASK_DELETION: boolean, // Botón "Basura" en Detalle/Card
   ENABLE_TASK_DETAIL: boolean,   // Click en Card -> Detalle
+  ENABLE_TASK_FILTERS: boolean,  // Barra de filtros en Home
+
+  // Tags
+  ENABLE_TAGS_VIEW: boolean,     // Sidebar de etiquetas
+  ENABLE_TAG_EDIT: boolean,      // Edición de etiquetas (doble click/menú)
+  ENABLE_TAG_DELETION: boolean,  // Eliminación de etiquetas
+
+  // Auth
   ENABLE_REGISTRATION: boolean,  // Acceso a registro de usuarios
+  ENABLE_USER_PROFILE: boolean,  // Acceso a perfil de usuario
 };
 ```
 

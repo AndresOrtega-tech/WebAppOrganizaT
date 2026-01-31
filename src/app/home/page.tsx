@@ -100,6 +100,10 @@ export default function HomePage() {
       setTaskToDelete(null);
     } catch (err) {
       console.error('Error deleting task:', err);
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        handleLogout();
+        return;
+      }
       alert('Error al eliminar la tarea');
     } finally {
       setIsDeleting(false);

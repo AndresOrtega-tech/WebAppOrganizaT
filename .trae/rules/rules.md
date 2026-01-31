@@ -1,6 +1,5 @@
 ---
-alwaysApply: false
-description: Cambios en las reglas del proyecto.
+alwaysApply: true
 ---
 # Reglas del Proyecto WebAppOrganizaT
 

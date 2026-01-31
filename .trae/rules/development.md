@@ -1,6 +1,5 @@
 ---
-alwaysApply: false
-description: Cambios en los estándares de desarrollo. cambios grandes en codigo, componentes, hooks, etc.
+alwaysApply: true
 ---
 # Estándares de Desarrollo
 
@@ -16,15 +15,21 @@ Evitar "God Components". Dividir lógica y vista.
 ### 2. Componentes UI (`src/components/`)
 - Componentes "tontos" (presentacionales) que reciben props.
 - Deben ser reutilizables y pequeños.
-- Agrupar por funcionalidad si son específicos (ej. `src/components/TaskDetail/`).
+- **Modales:** Preferir modales unificados para Crear/Editar (ej. `TagModal`) controlados por props (`initialData`).
+- **Listas:** Usar componentes específicos para items (ej. `TaskCard`) y contenedores con espaciado (`space-y-4`).
 
 ### 3. Páginas (`src/app/`)
 - Actúan como "Controladores".
-- Llaman al hook para obtener datos.
-- Renderizan los componentes UI pasando los datos.
+- Llaman a servicios/hooks para obtener datos.
 - Manejan el routing (`useRouter`) y Feature Flags globales.
+
+### 4. Servicios y API (`src/services/`)
+- **Server-side Filtering:** Preferir filtrar, ordenar y paginar en el backend.
+- Enviar parámetros de filtro como query params (ej. `?tag_ids=1&sort_by=date`).
+- Mantener interfaces de TypeScript (`Task`, `Tag`, `TaskFilters`) sincronizadas con la respuesta del backend.
 
 ## Convenciones
 - **Archivos:** `PascalCase` para componentes, `camelCase` para hooks/utils.
 - **Imports:** Usar alias `@/` para rutas absolutas.
 - **Iconos:** Usar `lucide-react`.
+- **Estilos:** Tailwind CSS con diseño "soft" (`rounded-3xl`, `bg-gray-50`).

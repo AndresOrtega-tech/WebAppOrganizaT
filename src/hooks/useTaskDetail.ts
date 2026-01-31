@@ -47,6 +47,9 @@ export const useTaskDetail = (taskId: string) => {
       console.error('Error loading task:', err);
       setError('No se pudo cargar la tarea.');
       if (err instanceof Error && err.message === 'Unauthorized') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refresh_token');
         router.push('/login');
       }
     } finally {
@@ -100,6 +103,13 @@ export const useTaskDetail = (taskId: string) => {
       setIsEditing(false);
     } catch (err) {
       console.error('Error updating task:', err);
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refresh_token');
+        router.push('/login');
+        return;
+      }
       alert('Error al actualizar la tarea');
     } finally {
       setIsSaving(false);
@@ -121,6 +131,13 @@ export const useTaskDetail = (taskId: string) => {
       router.push('/home');
     } catch (err) {
       console.error('Error deleting task:', err);
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refresh_token');
+        router.push('/login');
+        return;
+      }
       alert('Error al eliminar la tarea');
       setIsDeleting(false);
     }
@@ -183,6 +200,13 @@ export const useTaskDetail = (taskId: string) => {
       await taskService.removeTagFromTask(token, task.id, tagId);
     } catch (err) {
       console.error('Error removing tag:', err);
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refresh_token');
+        router.push('/login');
+        return;
+      }
       alert('Error al eliminar la etiqueta de la tarea');
       // Revert optimistic update
       const token = localStorage.getItem('access_token');
