@@ -14,6 +14,8 @@ export default function RegisterPage() {
     full_name: '',
     email: '',
     password: '',
+    confirmPassword: '',
+    avatar: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -29,8 +31,22 @@ export default function RegisterPage() {
     setIsLoading(true);
     setError('');
 
+    if (formData.password !== formData.confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      await authService.register(formData);
+      // Exclude confirmPassword from the API request
+      const { confirmPassword, ...registerData } = formData;
+      // Convert empty avatar to undefined
+      const apiData = {
+        ...registerData,
+        avatar: registerData.avatar || undefined
+      };
+      
+      await authService.register(apiData);
       router.push('/register/confirmation');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al registrar usuario');
@@ -104,6 +120,20 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-1.5">
+              <label htmlFor="avatar" className="block text-sm font-bold text-gray-700">
+                Avatar <span className="text-gray-400 font-normal">(Opcional)</span>
+              </label>
+              <input
+                id="avatar"
+                type="text"
+                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                placeholder="MiAvatar123"
+                value={formData.avatar}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="space-y-1.5">
               <label htmlFor="email" className="block text-sm font-bold text-gray-700">
                 Correo electrónico
               </label>
@@ -130,6 +160,22 @@ export default function RegisterPage() {
                 className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                 placeholder="••••••••"
                 value={formData.password}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="confirmPassword" className="block text-sm font-bold text-gray-700">
+                Confirmar Contraseña
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                required
+                minLength={6}
+                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                placeholder="••••••••"
+                value={formData.confirmPassword}
                 onChange={handleChange}
               />
             </div>

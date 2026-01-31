@@ -8,7 +8,7 @@ export interface LoginRequest {
 export interface User {
   email: string;
   full_name: string;
-  avatar_url: string;
+  avatar: string;
 }
 
 export interface LoginResponse {
@@ -23,7 +23,12 @@ export interface RegisterRequest {
   email: string;
   password: string;
   full_name: string;
-  avatar_url?: string;
+  avatar?: string;
+}
+
+export interface UpdateAvatarResponse {
+  message: string;
+  avatar: string;
 }
 
 export const authService = {
@@ -54,6 +59,24 @@ export const authService = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || 'Error en las credenciales o en el servidor');
+    }
+
+    return response.json();
+  },
+
+  async updateAvatar(token: string, avatar: string): Promise<UpdateAvatarResponse> {
+    const response = await fetch(`${API_BASE_URL}/users/avatar`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ avatar }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || 'Error al actualizar el avatar');
     }
 
     return response.json();
