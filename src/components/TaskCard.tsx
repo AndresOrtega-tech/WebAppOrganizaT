@@ -64,7 +64,7 @@ export default function TaskCard({ task, onDelete }: TaskCardProps) {
       </div>
   );
 
-  if (isFeatureEnabled('ENABLE_TASK_DETAIL')) {
+  if (isFeatureEnabled('ENABLE_TASK_DETAILS')) {
     return (
       <Link href={`/tasks/${task.id}`} className="block group">
         {content}
