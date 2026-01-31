@@ -28,7 +28,7 @@ export default function TaskHeader({ onDelete, onEdit }: TaskHeaderProps) {
               <Trash className="w-5 h-5" />
             </button>
           )}
-          {isFeatureEnabled('ENABLE_TASK_EDITING') && (
+          {isFeatureEnabled('ENABLE_TASK_EDIT') && (
             <button
               onClick={onEdit}
               className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"

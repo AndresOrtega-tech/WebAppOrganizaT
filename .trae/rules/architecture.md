@@ -17,6 +17,15 @@ Estructura general y guías de estilo del proyecto.
 - **Tarjetas:** Sombra suave (`shadow-sm`), hover effect (`hover:shadow-md`).
 - **Botones:** `rounded-full` o `rounded-xl`, con estados hover y active (`active:scale-95`).
 
+## Estructura de Rutas y Flujo
+- **Públicas:**
+  - `/` (Landing Page): Presentación y entrada.
+  - `/login`: Inicio de sesión.
+  - `/register`: Creación de cuenta (Feature Flag).
+- **Protegidas:**
+  - `/home`: Dashboard principal de tareas.
+  - `/tasks/[id]`: Detalle de tarea.
+
 ## Flujo de Datos
 1. **Frontend:** Next.js (App Router).
 2. **Estado:** React Hooks (`useState`, `useEffect`) y Custom Hooks.

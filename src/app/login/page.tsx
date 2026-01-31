@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { authService } from '@/services/auth.service';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { isFeatureEnabled } from '@/config/features';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,6 +40,17 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white px-6 font-sans">
       <div className="w-full max-w-sm flex flex-col items-center">
+        {/* Back Button */}
+        <div className="w-full flex justify-start mb-8">
+          <Link 
+            href="/" 
+            className="flex items-center text-gray-500 hover:text-indigo-600 transition-colors font-medium"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            Regresar
+          </Link>
+        </div>
+
         {/* Logo */}
         <div className="relative w-24 h-24 mb-4">
           <Image
@@ -136,14 +148,16 @@ export default function LoginPage() {
           </button>
 
           {/* Register Link */}
-          <div className="text-center mt-8">
-            <p className="text-gray-500 text-sm font-medium">
-              ¿No tienes una cuenta?{' '}
-              <Link href="/register" className="text-indigo-600 font-bold hover:text-indigo-700 transition-colors">
-                Regístrate
-              </Link>
-            </p>
-          </div>
+          {isFeatureEnabled('ENABLE_REGISTRATION') && (
+            <div className="text-center mt-8">
+              <p className="text-gray-500 text-sm font-medium">
+                ¿No tienes una cuenta?{' '}
+                <Link href="/register" className="text-indigo-600 font-bold hover:text-indigo-700 transition-colors">
+                  Regístrate
+                </Link>
+              </p>
+            </div>
+          )}
         </form>
       </div>
     </div>

@@ -7,8 +7,9 @@ import { Task, taskService } from '@/services/task.service';
 import TaskCard from '@/components/TaskCard';
 import CreateTaskModal from '@/components/CreateTaskModal';
 import ConfirmationModal from '@/components/ConfirmationModal';
-import { Plus } from 'lucide-react';
+import { Plus, User as UserIcon } from 'lucide-react';
 import { isFeatureEnabled } from '@/config/features';
+import Link from 'next/link';
 
 export default function HomePage() {
   const router = useRouter();
@@ -98,19 +99,30 @@ export default function HomePage() {
         {/* Navbar */}
         <nav className="bg-white px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
             <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">OrganizaT</h1>
-            <button 
-                onClick={handleLogout}
-                className="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-100 transition-colors"
-            >
-                Salir
-            </button>
+            <div className="flex items-center gap-2">
+                {isFeatureEnabled('ENABLE_USER_PROFILE') && (
+                    <Link
+                        href="/profile"
+                        className="bg-gray-100 text-gray-600 p-2 rounded-xl hover:bg-gray-200 transition-colors"
+                        title="Mi Perfil"
+                    >
+                        <UserIcon className="w-5 h-5" />
+                    </Link>
+                )}
+                <button 
+                    onClick={handleLogout}
+                    className="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-100 transition-colors"
+                >
+                    Salir
+                </button>
+            </div>
         </nav>
 
         <main className="px-6 py-8 max-w-md mx-auto">
             {/* Greeting */}
             <div className="mb-8">
                 <h2 className="text-2xl font-bold text-gray-900">
-                    Hola, {user.full_name.split(' ')[0]} 👋
+                    Hola, {user.avatar || user.full_name.split(' ')[0]} 👋
                 </h2>
                 <p className="text-gray-500 mt-2 text-sm font-medium">
                     Aquí tienes el resumen de tus tareas para hoy.
