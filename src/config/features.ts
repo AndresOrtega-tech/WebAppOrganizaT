@@ -3,6 +3,7 @@ export const FEATURE_FLAGS = {
   ENABLE_TASK_EDITING: true,
   ENABLE_TASK_DELETION: true,
   ENABLE_TASK_DETAIL: true,
+  ENABLE_REGISTRATION: true,
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;

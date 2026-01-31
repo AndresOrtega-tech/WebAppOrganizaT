@@ -19,7 +19,29 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  full_name: string;
+  avatar_url?: string;
+}
+
 export const authService = {
+  async register(data: RegisterRequest): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || 'Error al registrar usuario');
+    }
+  },
+
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
