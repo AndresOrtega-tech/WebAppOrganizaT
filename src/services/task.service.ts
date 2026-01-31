@@ -24,9 +24,36 @@ export interface Task {
   tags: Tag[];
 }
 
+export interface TaskFilters {
+  is_completed?: boolean;
+  tag_ids?: string[];
+  sort_by?: 'updated_at' | 'due_date';
+  order?: 'asc' | 'desc';
+}
+
 export const taskService = {
-  async getTasks(token: string): Promise<Task[]> {
-    const response = await fetch(`${API_BASE_URL}/tasks/`, {
+  async getTasks(token: string, filters?: TaskFilters): Promise<Task[]> {
+    const params = new URLSearchParams();
+    
+    if (filters) {
+      if (filters.is_completed !== undefined) {
+        params.append('is_completed', String(filters.is_completed));
+      }
+      if (filters.sort_by) {
+        params.append('sort_by', filters.sort_by);
+      }
+      if (filters.order) {
+        params.append('order', filters.order);
+      }
+      if (filters.tag_ids && filters.tag_ids.length > 0) {
+        filters.tag_ids.forEach(id => params.append('tag_ids', id));
+      }
+    }
+
+    const queryString = params.toString();
+    const url = `${API_BASE_URL}/tasks/${queryString ? `?${queryString}` : ''}`;
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -119,6 +146,42 @@ export const taskService = {
         throw new Error('Unauthorized');
       }
       throw new Error('Error deleting task');
+    }
+  },
+
+  async assignTagsToTask(token: string, taskId: string, tagIds: string[]): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/tasks/tags`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ task_id: taskId, tag_ids: tagIds }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized');
+      }
+      throw new Error('Error assigning tags to task');
+    }
+  },
+
+  async removeTagFromTask(token: string, taskId: string, tagId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/tags/${tagId}`, {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized');
+      }
+      throw new Error('Error removing tag from task');
     }
   },
 };

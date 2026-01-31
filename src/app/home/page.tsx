@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/services/auth.service';
-import { Task, taskService } from '@/services/task.service';
+import { Task, taskService, TaskFilters as TaskFiltersParams } from '@/services/task.service';
 import TaskCard from '@/components/TaskCard';
 import CreateTaskModal from '@/components/CreateTaskModal';
 import ConfirmationModal from '@/components/ConfirmationModal';
-import { Plus, User as UserIcon } from 'lucide-react';
+import TagsSidebar from '@/components/TagsSidebar';
+import TaskFilters from '@/components/TaskFilters';
+import { Plus, User as UserIcon, Loader2 } from 'lucide-react';
 import { isFeatureEnabled } from '@/config/features';
 import Link from 'next/link';
 
@@ -19,6 +21,7 @@ export default function HomePage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [filters, setFilters] = useState<TaskFiltersParams>({});
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -31,16 +34,17 @@ export default function HomePage() {
 
     try {
       setUser(JSON.parse(userData));
-      loadTasks(token);
+      loadTasks(token, filters);
     } catch (e) {
       console.error('Error parsing user data', e);
       router.push('/login');
     }
   }, [router]);
 
-  const loadTasks = async (token: string) => {
+  const loadTasks = async (token: string, currentFilters: TaskFiltersParams) => {
     try {
-      const data = await taskService.getTasks(token);
+      setLoading(true);
+      const data = await taskService.getTasks(token, currentFilters);
       setTasks(data);
     } catch (error) {
       console.error('Error loading tasks:', error);
@@ -52,15 +56,27 @@ export default function HomePage() {
     }
   };
 
+  const handleFiltersChange = useCallback((newFilters: TaskFiltersParams) => {
+    setFilters(newFilters);
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      loadTasks(token, newFilters);
+    }
+  }, []);
+
+  const handleTaskCreated = (newTask: Task) => {
+    // Reload tasks to respect current sort/filter order from backend
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      loadTasks(token, filters);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
     localStorage.removeItem('refresh_token');
     router.push('/login');
-  };
-
-  const handleTaskCreated = (newTask: Task) => {
-    setTasks((prevTasks) => [newTask, ...prevTasks]);
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -79,7 +95,8 @@ export default function HomePage() {
       }
 
       await taskService.deleteTask(token, taskToDelete);
-      setTasks((prevTasks) => prevTasks.filter((t) => t.id !== taskToDelete));
+      const updatedTasks = tasks.filter((t) => t.id !== taskToDelete);
+      setTasks(updatedTasks);
       setTaskToDelete(null);
     } catch (err) {
       console.error('Error deleting task:', err);
@@ -118,7 +135,7 @@ export default function HomePage() {
             </div>
         </nav>
 
-        <main className="px-6 py-8 max-w-md mx-auto">
+        <main className="px-6 py-8 max-w-5xl mx-auto">
             {/* Greeting */}
             <div className="mb-8">
                 <h2 className="text-2xl font-bold text-gray-900">
@@ -129,40 +146,71 @@ export default function HomePage() {
                 </p>
             </div>
 
-            {/* Stats */}
-            <div className="mb-8">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Estado de Tareas</h3>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-sm">
-                        <span className="text-4xl font-bold text-blue-600 mb-2">{pendingCount}</span>
-                        <span className="text-sm font-semibold text-blue-900/70">Pendientes</span>
-                    </div>
-                    <div className="bg-green-50 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-sm">
-                        <span className="text-4xl font-bold text-green-600 mb-2">{completedCount}</span>
-                        <span className="text-sm font-semibold text-green-900/70">Completadas</span>
-                    </div>
-                </div>
-            </div>
+            <div className="flex flex-col md:flex-row gap-8 items-start">
+                {/* Sidebar */}
+                {isFeatureEnabled('ENABLE_TAGS_VIEW') && (
+                    <aside className="w-full md:w-auto shrink-0 sticky top-24">
+                        <TagsSidebar />
+                    </aside>
+                )}
 
-            {/* Task List */}
-            <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Próximas Tareas</h3>
-                <div className="space-y-4">
-                    {loading ? (
-                         <div className="text-center py-10 text-gray-500 font-medium">Cargando tareas...</div>
-                    ) : tasks.length === 0 ? (
-                        <div className="text-center py-10 text-gray-500 bg-white rounded-3xl border border-gray-100 shadow-sm font-medium">
-                            No tienes tareas pendientes 🎉
+                {/* Main Content */}
+                <div className="flex-1 w-full max-w-md mx-auto md:max-w-none">
+                    {/* Stats */}
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Estado de Tareas</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-blue-50 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-sm">
+                                <span className="text-4xl font-bold text-blue-600 mb-2">{pendingCount}</span>
+                                <span className="text-sm font-semibold text-blue-900/70">Pendientes</span>
+                            </div>
+                            <div className="bg-green-50 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-sm">
+                                <span className="text-4xl font-bold text-green-600 mb-2">{completedCount}</span>
+                                <span className="text-sm font-semibold text-green-900/70">Completadas</span>
+                            </div>
                         </div>
-                    ) : (
-                        tasks.map((task) => (
-                            <TaskCard 
-                                key={task.id} 
-                                task={task} 
-                                onDelete={handleDeleteTask}
-                            />
-                        ))
-                    )}
+                    </div>
+
+                    {/* Task List */}
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Próximas Tareas</h3>
+                        
+                        {isFeatureEnabled('ENABLE_TASK_FILTERS') && (
+                            <div className="mb-6">
+                                <TaskFilters onFiltersChange={handleFiltersChange} />
+                            </div>
+                        )}
+
+                        <div className="space-y-4 relative min-h-[200px]">
+                            {loading && tasks.length > 0 && (
+                                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-3xl transition-all duration-300">
+                                    <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                                </div>
+                            )}
+
+                            {loading && tasks.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-20 text-gray-500 font-medium animate-pulse">
+                                    <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mb-3" />
+                                    <span>Cargando tareas...</span>
+                                </div>
+                            ) : tasks.length === 0 ? (
+                                <div className="text-center py-12 bg-white rounded-3xl shadow-sm border border-gray-100">
+                                    <p className="text-gray-400 font-medium">No se encontraron tareas</p>
+                                    <p className="text-gray-300 text-sm mt-1">Prueba con otros filtros</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {tasks.map((task) => (
+                                        <TaskCard
+                                            key={task.id}
+                                            task={task}
+                                            onDelete={() => handleDeleteTask(task.id)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>

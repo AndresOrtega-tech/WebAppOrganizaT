@@ -1,14 +1,15 @@
 import Link from 'next/link';
-import { ArrowLeft, Trash, Pencil } from 'lucide-react';
+import { ArrowLeft, Trash, Pencil, Tag } from 'lucide-react';
 import { isFeatureEnabled } from '@/config/features';
 
 interface TaskHeaderProps {
   onBack: () => void; // Aunque usemos Link, a veces es bueno tener un handler genérico
   onDelete: () => void;
   onEdit: () => void;
+  onManageTags?: () => void;
 }
 
-export default function TaskHeader({ onDelete, onEdit }: TaskHeaderProps) {
+export default function TaskHeader({ onDelete, onEdit, onManageTags }: TaskHeaderProps) {
   return (
     <nav className="bg-white px-6 py-4 shadow-sm sticky top-0 z-10">
       <div className="max-w-2xl mx-auto flex items-center justify-between">
@@ -19,6 +20,15 @@ export default function TaskHeader({ onDelete, onEdit }: TaskHeaderProps) {
           <h1 className="ml-4 text-xl font-bold text-gray-900 truncate">Detalle de Tarea</h1>
         </div>
         <div className="flex gap-2">
+          {isFeatureEnabled('ENABLE_TASK_TAGS') && onManageTags && (
+            <button
+              onClick={onManageTags}
+              className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+              title="Gestionar etiquetas"
+            >
+              <Tag className="w-5 h-5" />
+            </button>
+          )}
           {isFeatureEnabled('ENABLE_TASK_DELETION') && (
             <button
               onClick={onDelete}

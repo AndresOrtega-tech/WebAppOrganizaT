@@ -5,9 +5,10 @@ import TagList from '@/components/TagList';
 
 interface TaskInfoProps {
   task: Task;
+  onRemoveTag?: (tagId: string) => void;
 }
 
-export default function TaskInfo({ task }: TaskInfoProps) {
+export default function TaskInfo({ task, onRemoveTag }: TaskInfoProps) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Sin fecha';
     const date = new Date(dateString);
@@ -63,7 +64,7 @@ export default function TaskInfo({ task }: TaskInfoProps) {
           </div>
 
           {/* Tags */}
-          <TagList tags={task.tags} />
+          <TagList tags={task.tags} onRemoveTag={onRemoveTag} />
         </div>
       </div>
     </main>

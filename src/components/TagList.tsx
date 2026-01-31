@@ -1,11 +1,13 @@
-import { Tag as TagIcon } from 'lucide-react';
+import { Tag as TagIcon, X } from 'lucide-react';
 import { Tag } from '@/services/task.service';
+import { isFeatureEnabled } from '@/config/features';
 
 interface TagListProps {
   tags: Tag[];
+  onRemoveTag?: (tagId: string) => void;
 }
 
-export default function TagList({ tags }: TagListProps) {
+export default function TagList({ tags, onRemoveTag }: TagListProps) {
   if (!tags || tags.length === 0) return null;
 
   return (
@@ -18,7 +20,7 @@ export default function TagList({ tags }: TagListProps) {
         {tags.map((tag) => (
           <span 
             key={tag.id} 
-            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold"
+            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold gap-1 group transition-all"
             style={{ 
               backgroundColor: tag.color ? `${tag.color}20` : '#f3f4f6', 
               color: tag.color || '#374151',
@@ -26,6 +28,18 @@ export default function TagList({ tags }: TagListProps) {
             }}
           >
             {tag.name}
+            {onRemoveTag && isFeatureEnabled('ENABLE_TASK_TAGS') && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  onRemoveTag(tag.id);
+                }}
+                className="hover:bg-black/10 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Desvincular etiqueta"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
           </span>
         ))}
       </div>
