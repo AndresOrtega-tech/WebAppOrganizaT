@@ -60,6 +60,7 @@ export default function ProfilePage() {
       }
       
       setSuccess(response.message || 'Avatar actualizado correctamente');
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al actualizar el avatar');
     } finally {

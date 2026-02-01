@@ -22,6 +22,7 @@ export const useTaskDetail = (taskId: string) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
   const [editForm, setEditForm] = useState<EditFormState>({
     title: '',
     description: '',
@@ -46,6 +47,9 @@ export const useTaskDetail = (taskId: string) => {
       console.error('Error loading task:', err);
       setError('No se pudo cargar la tarea.');
       if (err instanceof Error && err.message === 'Unauthorized') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refresh_token');
         router.push('/login');
       }
     } finally {
@@ -99,6 +103,13 @@ export const useTaskDetail = (taskId: string) => {
       setIsEditing(false);
     } catch (err) {
       console.error('Error updating task:', err);
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refresh_token');
+        router.push('/login');
+        return;
+      }
       alert('Error al actualizar la tarea');
     } finally {
       setIsSaving(false);
@@ -120,8 +131,86 @@ export const useTaskDetail = (taskId: string) => {
       router.push('/home');
     } catch (err) {
       console.error('Error deleting task:', err);
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refresh_token');
+        router.push('/login');
+        return;
+      }
       alert('Error al eliminar la tarea');
       setIsDeleting(false);
+    }
+  };
+
+  const handleTagsUpdate = async (tagIds: string[]) => {
+    if (!task) return;
+
+    try {
+      setIsSaving(true);
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      // Calculate diffs
+      const currentTagIds = task.tags.map(t => t.id);
+      const tagsToAdd = tagIds.filter(id => !currentTagIds.includes(id));
+      const tagsToRemove = currentTagIds.filter(id => !tagIds.includes(id));
+
+      // 1. Add new tags (if any)
+      if (tagsToAdd.length > 0) {
+        await taskService.assignTagsToTask(token, task.id, tagsToAdd);
+      }
+
+      // 2. Remove unselected tags (if any)
+      if (tagsToRemove.length > 0) {
+        // Execute sequentially to avoid race conditions or backend overload
+        for (const tagId of tagsToRemove) {
+          await taskService.removeTagFromTask(token, task.id, tagId);
+        }
+      }
+      
+      // Reload task to get updated tags
+      await loadTask(token, task.id);
+      setIsTagsModalOpen(false);
+    } catch (err) {
+      console.error('Error updating tags:', err);
+      alert('Error al actualizar las etiquetas');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemoveTag = async (tagId: string) => {
+    if (!task) return;
+
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      // Optimistic update
+      const updatedTags = task.tags.filter(t => t.id !== tagId);
+      setTask({ ...task, tags: updatedTags });
+
+      await taskService.removeTagFromTask(token, task.id, tagId);
+    } catch (err) {
+      console.error('Error removing tag:', err);
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refresh_token');
+        router.push('/login');
+        return;
+      }
+      alert('Error al eliminar la etiqueta de la tarea');
+      // Revert optimistic update
+      const token = localStorage.getItem('access_token');
+      if (token) loadTask(token, task.id);
     }
   };
 
@@ -135,9 +224,13 @@ export const useTaskDetail = (taskId: string) => {
     isDeleting,
     showDeleteModal,
     setShowDeleteModal,
+    isTagsModalOpen,
+    setIsTagsModalOpen,
     editForm,
     setEditForm,
     handleUpdate,
-    confirmDelete
+    confirmDelete,
+    handleTagsUpdate,
+    handleRemoveTag
   };
 };

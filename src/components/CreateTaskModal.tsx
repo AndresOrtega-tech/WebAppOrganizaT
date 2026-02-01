@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, Calendar, Loader2 } from 'lucide-react';
 import { Task, taskService } from '@/services/task.service';
 import DateTimePicker from './DateTimePicker';
@@ -10,6 +11,7 @@ interface CreateTaskModalProps {
 }
 
 export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: CreateTaskModalProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [formData, setFormData] = useState({
@@ -49,6 +51,13 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
       });
     } catch (err) {
       console.error('Error creating task:', err);
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refresh_token');
+        router.push('/login');
+        return;
+      }
       alert('Error al crear la tarea');
     } finally {
       setLoading(false);
