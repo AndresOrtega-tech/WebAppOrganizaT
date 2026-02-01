@@ -1,8 +1,8 @@
 export const FEATURE_FLAGS = {
-  ENABLE_TASK_DETAILS: false, // Muestra el detalle completo de la tarea al hacer click
-  ENABLE_TASK_EDIT: false,    // Permite editar título y descripción
+  ENABLE_TASK_DETAILS: true, // Muestra el detalle completo de la tarea al hacer click
+  ENABLE_TASK_EDIT: true,    // Permite editar título y descripción
   ENABLE_TASK_CREATION: true, // Permite crear nuevas tareas
-  ENABLE_TASK_DELETION: false, // Permite eliminar tareas
+  ENABLE_TASK_DELETION: true, // Permite eliminar tareas
   ENABLE_REGISTRATION: false, // Permite registrar nuevos usuarios
   ENABLE_USER_PROFILE: true, // Permite ver y editar el perfil de usuario
   ENABLE_TAGS_VIEW: false,    // Permite ver el listado de etiquetas (tags)
