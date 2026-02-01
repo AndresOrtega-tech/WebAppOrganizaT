@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { User } from '@/services/auth.service';
@@ -13,7 +13,7 @@ import TagsSidebar from '@/components/TagsSidebar';
 import { Loader2, User as UserIcon, CheckSquare, Plus, StickyNote } from 'lucide-react';
 import { isFeatureEnabled } from '@/config/features';
 
-export default function NotesPage() {
+function NotesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
@@ -254,5 +254,17 @@ export default function NotesPage() {
           isLoading={isDeleting}
         />
     </div>
+  );
+}
+
+export default function NotesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    }>
+      <NotesContent />
+    </Suspense>
   );
 }

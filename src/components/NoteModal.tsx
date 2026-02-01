@@ -103,37 +103,6 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
     }
   };
 
-  const handleDelete = async () => {
-    if (!initialData) return;
-    
-    try {
-      setIsDeleting(true);
-      const token = localStorage.getItem('access_token');
-      
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
-      await notesService.deleteNote(token, initialData.id);
-
-      if (onNoteDeleted) {
-        onNoteDeleted();
-      }
-      onClose();
-    } catch (err) {
-      console.error('Error deleting note:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        router.push('/login');
-        return;
-      }
-      alert('Error al eliminar la nota');
-    } finally {
-      setIsDeleting(false);
-      setShowDeleteModal(false);
-    }
-  };
-
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div 
