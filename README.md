@@ -5,8 +5,9 @@ Una aplicación moderna para la gestión de tareas personales, construida con Ne
 ## 🚀 Características Principales
 
 - **Gestión de Tareas:** Crear, editar, eliminar y marcar tareas como completadas.
-- **Etiquetas (Tags):** Organiza tus tareas con etiquetas personalizables (colores, nombres).
-- **Filtros Avanzados:** Filtra tareas por estado (pendientes/completadas), etiquetas y ordenamiento.
+- **Notas Rápidas:** Captura ideas y apuntes, con soporte para archivado y organización.
+- **Etiquetas (Tags):** Organiza tareas y notas con etiquetas personalizables (colores, nombres).
+- **Filtros Avanzados:** Filtra por estado, etiquetas, fechas y ordenamiento.
 - **Interfaz Moderna:** UI limpia y responsive construida con Tailwind CSS.
 - **Feature Flags:** Sistema robusto para activar/desactivar funcionalidades experimentalmente.
 

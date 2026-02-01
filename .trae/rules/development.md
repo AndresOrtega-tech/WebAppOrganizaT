@@ -22,6 +22,7 @@ Evitar "God Components". Dividir lógica y vista.
 - Actúan como "Controladores".
 - Llaman a servicios/hooks para obtener datos.
 - Manejan el routing (`useRouter`) y Feature Flags globales.
+- **Suspense:** Envolver componentes que usen `useSearchParams` en `<Suspense>` para evitar errores de build en componentes cliente.
 
 ### 4. Servicios y API (`src/services/`)
 - **Server-side Filtering:** Preferir filtrar, ordenar y paginar en el backend.

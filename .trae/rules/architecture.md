@@ -25,8 +25,11 @@ Estructura general y guías de estilo del proyecto.
 - **Protegidas:**
   - `/home`: Dashboard principal de tareas.
   - `/tasks/[id]`: Detalle de tarea.
+  - `/notes`: Dashboard principal de notas.
+  - `/notes/[id]`: Detalle de nota.
+  - `/profile`: Perfil de usuario.
 
 ## Flujo de Datos
 1. **Frontend:** Next.js (App Router).
 2. **Estado:** React Hooks (`useState`, `useEffect`) y Custom Hooks.
-3. **API:** Servicios centralizados en `src/services/` (ej. `task.service.ts`).
+3. **API:** Servicios centralizados en `src/services/` (ej. `task.service.ts`, `notes.service.ts`).

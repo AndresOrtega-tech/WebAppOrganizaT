@@ -20,6 +20,14 @@ export const FEATURE_FLAGS = {
   ENABLE_TAG_EDIT: boolean,      // Edición de etiquetas (doble click/menú)
   ENABLE_TAG_DELETION: boolean,  // Eliminación de etiquetas
 
+  // Notes
+  ENABLE_NOTES_VIEW: boolean,    // Dashboard de notas
+  ENABLE_NOTE_CREATION: boolean, // Crear nuevas notas
+  ENABLE_NOTE_DETAIL: boolean,   // Ver detalle
+  ENABLE_NOTE_EDITING: boolean,  // Editar notas
+  ENABLE_NOTE_DELETION: boolean, // Eliminar notas
+  ENABLE_NOTE_FILTERS: boolean,  // Filtrado de notas
+
   // Auth
   ENABLE_REGISTRATION: boolean,  // Acceso a registro de usuarios
   ENABLE_USER_PROFILE: boolean,  // Acceso a perfil de usuario
