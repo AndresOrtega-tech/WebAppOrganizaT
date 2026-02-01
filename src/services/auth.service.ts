@@ -76,7 +76,7 @@ export const authService = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || 'Error al actualizar el avatar');
+      throw new Error(errorData.message || 'Error al actualizar el avatar');
     }
 
     return response.json();

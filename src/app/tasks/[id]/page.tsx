@@ -8,6 +8,7 @@ import { useTaskDetail } from '@/hooks/useTaskDetail';
 import TaskHeader from '@/components/TaskDetail/TaskHeader';
 import TaskInfo from '@/components/TaskDetail/TaskInfo';
 import TaskEditModal from '@/components/TaskDetail/TaskEditModal';
+import TaskTagsModal from '@/components/TaskDetail/TaskTagsModal';
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -23,10 +24,14 @@ export default function TaskDetailPage() {
     isDeleting,
     showDeleteModal,
     setShowDeleteModal,
+    isTagsModalOpen,
+    setIsTagsModalOpen,
     editForm,
     setEditForm,
     handleUpdate,
-    confirmDelete
+    confirmDelete,
+    handleTagsUpdate,
+    handleRemoveTag
   } = useTaskDetail(id);
 
   if (loading) {
@@ -57,9 +62,13 @@ export default function TaskDetailPage() {
         onBack={() => {}} // Link handles navigation
         onDelete={() => setShowDeleteModal(true)}
         onEdit={() => setIsEditing(true)}
+        onManageTags={() => setIsTagsModalOpen(true)}
       />
 
-      <TaskInfo task={task} />
+      <TaskInfo 
+        task={task} 
+        onRemoveTag={handleRemoveTag}
+      />
 
       <TaskEditModal 
         isOpen={isEditing}
@@ -67,6 +76,14 @@ export default function TaskDetailPage() {
         onSubmit={handleUpdate}
         editForm={editForm}
         setEditForm={setEditForm}
+        isSaving={isSaving}
+      />
+
+      <TaskTagsModal
+        isOpen={isTagsModalOpen}
+        onClose={() => setIsTagsModalOpen(false)}
+        onSubmit={handleTagsUpdate}
+        currentTagIds={task.tags.map(t => t.id)}
         isSaving={isSaving}
       />
 

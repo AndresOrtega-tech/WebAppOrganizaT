@@ -47,6 +47,23 @@ export default function TaskCard({ task, onDelete }: TaskCardProps) {
               {formatDate(task.due_date)}
             </p>
           )}
+          {task.tags && task.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {task.tags.map(tag => (
+                <span 
+                  key={tag.id}
+                  className="px-2 py-0.5 rounded-md text-[10px] font-bold border"
+                  style={{ 
+                    borderColor: tag.color + '40', // 25% opacity border
+                    color: tag.color,
+                    backgroundColor: tag.color + '10' // ~6% opacity bg (works if hex)
+                  }}
+                >
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         
         {onDelete && isFeatureEnabled('ENABLE_TASK_DELETION') && (

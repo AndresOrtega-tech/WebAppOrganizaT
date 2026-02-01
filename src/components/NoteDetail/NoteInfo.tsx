@@ -1,16 +1,14 @@
 import { Calendar, Clock } from 'lucide-react';
-import { Task } from '@/services/task.service';
-import StatusBadge from '@/components/StatusBadge';
+import { Note } from '@/services/notes.service';
 import TagList from '@/components/TagList';
 
-interface TaskInfoProps {
-  task: Task;
+interface NoteInfoProps {
+  note: Note;
   onRemoveTag?: (tagId: string) => void;
 }
 
-export default function TaskInfo({ task, onRemoveTag }: TaskInfoProps) {
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Sin fecha';
+export default function NoteInfo({ note, onRemoveTag }: NoteInfoProps) {
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-MX', { 
       weekday: 'long', 
@@ -26,45 +24,44 @@ export default function TaskInfo({ task, onRemoveTag }: TaskInfoProps) {
     <main className="max-w-2xl mx-auto px-6 py-8">
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         
-        {/* Status Banner */}
-        <StatusBadge isCompleted={task.is_completed} />
-
         <div className="p-6 space-y-8">
-          {/* Title & Description */}
+          {/* Title & Content */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">{task.title}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{note.title}</h2>
             <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
-              {task.description || 'Sin descripción'}
+              {note.content}
             </p>
           </div>
 
           {/* Meta Info Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {/* Due Date */}
+            {/* Created At */}
             <div className="flex items-start gap-3">
               <div className="p-2.5 bg-indigo-50 rounded-xl text-indigo-600">
                 <Calendar className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900">Fecha de vencimiento</p>
-                <p className="text-sm text-gray-500 mt-0.5">{formatDate(task.due_date)}</p>
+                <p className="text-sm font-bold text-gray-900">Creada el</p>
+                <p className="text-sm text-gray-500 mt-0.5">{formatDate(note.created_at)}</p>
               </div>
             </div>
 
-            {/* Created At */}
+            {/* Updated At */}
             <div className="flex items-start gap-3">
               <div className="p-2.5 bg-gray-100 rounded-xl text-gray-600">
                 <Clock className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900">Creada el</p>
-                <p className="text-sm text-gray-500 mt-0.5">{formatDate(task.created_at)}</p>
+                <p className="text-sm font-bold text-gray-900">Actualizada el</p>
+                <p className="text-sm text-gray-500 mt-0.5">{formatDate(note.updated_at)}</p>
               </div>
             </div>
           </div>
 
           {/* Tags */}
-          <TagList tags={task.tags} onRemoveTag={onRemoveTag} />
+          {note.tags && note.tags.length > 0 && (
+            <TagList tags={note.tags} onRemoveTag={onRemoveTag} />
+          )}
         </div>
       </div>
     </main>

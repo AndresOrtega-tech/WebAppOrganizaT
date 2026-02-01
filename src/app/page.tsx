@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, CheckCircle2, Shield, Zap } from 'lucide-react';
+import { ArrowRight, CheckCircle2, StickyNote, Tag, CheckSquare } from 'lucide-react';
 import { isFeatureEnabled } from '@/config/features';
 
 export default function LandingPage() {
@@ -41,8 +41,8 @@ export default function LandingPage() {
           </h1>
           
           <p className="text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
-            La herramienta definitiva para gestionar tus tareas diarias con elegancia y simplicidad. 
-            Diseñada para potenciar tu productividad sin complicaciones.
+            La plataforma integral para gestionar tus tareas y notas. 
+            Captura ideas, organiza prioridades y mantén el control de tu día a día con etiquetas personalizadas.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
@@ -68,31 +68,31 @@ export default function LandingPage() {
         <div className="grid md:grid-cols-3 gap-8 mt-32">
           <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 group">
             <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <Zap className="w-7 h-7 text-blue-600" />
+              <CheckSquare className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">Rápido y Fluido</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">Gestión de Tareas</h3>
             <p className="text-gray-500 leading-relaxed">
-              Interfaz optimizada para capturar tus ideas al instante. Sin tiempos de carga innecesarios, todo sucede en tiempo real.
+              Crea, edita y completa tareas fácilmente. Establece fechas de vencimiento y mantén tus objetivos claros y alcanzables.
             </p>
           </div>
 
           <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 group">
             <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <CheckCircle2 className="w-7 h-7 text-purple-600" />
+              <StickyNote className="w-7 h-7 text-purple-600" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">Gestión Inteligente</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">Notas Rápidas</h3>
             <p className="text-gray-500 leading-relaxed">
-              Categoriza, prioriza y completa tareas con un sistema visual intuitivo que se adapta a tu flujo de trabajo.
+              No pierdas ninguna idea. Escribe notas, archívalas cuando no las necesites y accede a ellas en cualquier momento.
             </p>
           </div>
 
           <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 group">
             <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <Shield className="w-7 h-7 text-green-600" />
+              <Tag className="w-7 h-7 text-green-600" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">Seguro y Privado</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">Etiquetas Personalizadas</h3>
             <p className="text-gray-500 leading-relaxed">
-              Tus datos son solo tuyos. Implementamos las mejores prácticas de seguridad para proteger tu información.
+              Organiza todo con colores. Asigna etiquetas a tareas y notas para filtrar y encontrar lo que buscas al instante.
             </p>
           </div>
         </div>
