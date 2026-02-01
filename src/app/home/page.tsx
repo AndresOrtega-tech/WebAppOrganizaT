@@ -9,7 +9,7 @@ import CreateTaskModal from '@/components/CreateTaskModal';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import TagsSidebar from '@/components/TagsSidebar';
 import TaskFilters from '@/components/TaskFilters';
-import { Plus, User as UserIcon, Loader2 } from 'lucide-react';
+import { Plus, User as UserIcon, Loader2, StickyNote } from 'lucide-react';
 import { isFeatureEnabled } from '@/config/features';
 import Link from 'next/link';
 
@@ -121,6 +121,16 @@ export default function HomePage() {
         <nav className="bg-white px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
             <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">OrganizaT</h1>
             <div className="flex items-center gap-2">
+                {isFeatureEnabled('ENABLE_NOTES_VIEW') && (
+                    <Link
+                        href="/notes"
+                        className="bg-yellow-50 text-yellow-600 px-3 py-2 rounded-xl text-sm font-bold hover:bg-yellow-100 transition-colors flex items-center gap-2"
+                        title="Mis Notas"
+                    >
+                        <StickyNote className="w-4 h-4" />
+                        <span className="hidden sm:inline">Notas</span>
+                    </Link>
+                )}
                 {isFeatureEnabled('ENABLE_USER_PROFILE') && (
                     <Link
                         href="/profile"

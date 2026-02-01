@@ -11,6 +11,12 @@ export const FEATURE_FLAGS = {
   ENABLE_TAG_DELETION: true, // Permite eliminar etiquetas
   ENABLE_TASK_TAGS: true,    // Permite asignar etiquetas a tareas
   ENABLE_TASK_FILTERS: true, // Permite flitar tareas por fecha, status y tags
+  ENABLE_NOTES_VIEW: true,   // Permite ver el listado de notas
+  ENABLE_NOTE_CREATION: true, // Permite crear nuevas notas
+  ENABLE_NOTE_DETAIL: true,   // Permite ver el detalle de una nota
+  ENABLE_NOTE_EDITING: true, // Permite editar una nota existent
+  ENABLE_NOTE_DELETION: true, // Permite eliminar una nota
+  ENABLE_NOTE_FILTERS: true, // Permite filtrar notas por tags y fecha
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;
