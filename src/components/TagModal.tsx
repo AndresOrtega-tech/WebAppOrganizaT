@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Check, Loader2, Trash2 } from 'lucide-react';
 
 interface TagFormData {
@@ -45,6 +46,11 @@ export default function TagModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -88,9 +94,9 @@ export default function TagModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl w-full max-w-sm shadow-xl p-6 animate-in fade-in zoom-in duration-200">
         <div className="flex justify-between items-center mb-6">
@@ -204,6 +210,7 @@ export default function TagModal({
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
