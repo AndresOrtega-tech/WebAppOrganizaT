@@ -22,6 +22,7 @@ export default function HomePage() {
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [filters, setFilters] = useState<TaskFiltersParams>({});
+  const [activeContextMenuTaskId, setActiveContextMenuTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -77,6 +78,19 @@ export default function HomePage() {
     localStorage.removeItem('user');
     localStorage.removeItem('refresh_token');
     router.push('/login');
+  };
+
+  const handleContextMenu = useCallback((e: React.MouseEvent, task: Task) => {
+    e.preventDefault();
+    if (!isFeatureEnabled('ENABLE_TASK_CONTEXT_MENU')) return;
+    setActiveContextMenuTaskId(task.id);
+  }, []);
+
+  const handleContextMenuUpdate = () => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      loadTasks(token, filters);
+    }
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -219,6 +233,10 @@ export default function HomePage() {
                                             key={task.id}
                                             task={task}
                                             onDelete={() => handleDeleteTask(task.id)}
+                                            onContextMenu={handleContextMenu}
+                                            isContextMenuOpen={activeContextMenuTaskId === task.id}
+                                            onMenuClose={() => setActiveContextMenuTaskId(null)}
+                                            onUpdate={handleContextMenuUpdate}
                                         />
                                     ))}
                                 </div>

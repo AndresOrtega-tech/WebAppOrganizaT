@@ -2,13 +2,25 @@ import { CheckCircle2, Circle, Trash } from 'lucide-react';
 import Link from 'next/link';
 import { Task } from '@/services/task.service';
 import { isFeatureEnabled } from '@/config/features';
+import TaskContextMenu from './TaskContextMenu';
 
 interface TaskCardProps {
   task: Task;
   onDelete?: (id: string) => void;
+  onContextMenu?: (e: React.MouseEvent, task: Task) => void;
+  isContextMenuOpen?: boolean;
+  onMenuClose?: () => void;
+  onUpdate?: () => void;
 }
 
-export default function TaskCard({ task, onDelete }: TaskCardProps) {
+export default function TaskCard({ 
+  task, 
+  onDelete, 
+  onContextMenu,
+  isContextMenuOpen,
+  onMenuClose,
+  onUpdate
+}: TaskCardProps) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -30,7 +42,10 @@ export default function TaskCard({ task, onDelete }: TaskCardProps) {
   };
 
   const content = (
-    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 group-hover:shadow-md transition-all duration-200">
+    <div 
+      className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 group-hover:shadow-md transition-all duration-200"
+      onContextMenu={(e) => onContextMenu && onContextMenu(e, task)}
+    >
         <div className="flex-shrink-0">
           {task.is_completed ? (
             <CheckCircle2 className="w-6 h-6 text-green-500" />
@@ -81,17 +96,26 @@ export default function TaskCard({ task, onDelete }: TaskCardProps) {
       </div>
   );
 
-  if (isFeatureEnabled('ENABLE_TASK_DETAILS')) {
-    return (
-      <Link href={`/tasks/${task.id}`} className="block group">
-        {content}
-      </Link>
-    );
-  }
-
-  return (
+  const card = isFeatureEnabled('ENABLE_TASK_DETAILS') ? (
+    <Link href={`/tasks/${task.id}`} className="block group">
+      {content}
+    </Link>
+  ) : (
     <div className="block group">
       {content}
+    </div>
+  );
+
+  return (
+    <div className={`relative ${isContextMenuOpen ? 'z-20' : ''}`}>
+      {card}
+      {isContextMenuOpen && onMenuClose && onUpdate && (
+        <TaskContextMenu 
+          task={task} 
+          onClose={onMenuClose} 
+          onUpdate={onUpdate} 
+        />
+      )}
     </div>
   );
 }
