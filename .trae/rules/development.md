@@ -34,3 +34,6 @@ Evitar "God Components". Dividir lógica y vista.
 - **Imports:** Usar alias `@/` para rutas absolutas.
 - **Iconos:** Usar `lucide-react`.
 - **Estilos:** Tailwind CSS con diseño "soft" (`rounded-3xl`, `bg-gray-50`).
+- **Modo Oscuro:** Usar prefijo `dark:` (ej. `bg-white dark:bg-gray-900`). Mantener contraste accesible.
+- **Markdown:** Usar `ReactMarkdown` con `remark-gfm` para renderizado seguro.
+  - Personalizar componentes (ej. `strong`, `ul`) para soportar estilos Tailwind y Dark Mode.
