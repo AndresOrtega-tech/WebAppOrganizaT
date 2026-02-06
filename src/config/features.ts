@@ -7,6 +7,7 @@ export const FEATURE_FLAGS = {
   ENABLE_TASK_FILTERS: true,      // Permite filtrar tareas por fecha, status y tags
   ENABLE_TASK_TAGS: true,         // Permite asignar etiquetas a tareas
   ENABLE_TASK_CONTEXT_MENU: true, // Permite abrir menú contextual en tareas
+  ENABLE_AI_REFORMULATION: true,  // Permite reformular descripción de tarea con IA
 
   // --- Etiquetas (Tags) ---
   ENABLE_TAGS_VIEW: true,    // Permite ver el listado de etiquetas (tags)
@@ -21,10 +22,14 @@ export const FEATURE_FLAGS = {
   ENABLE_NOTE_EDITING: true,  // Permite editar una nota existente
   ENABLE_NOTE_DELETION: true, // Permite eliminar una nota
   ENABLE_NOTE_FILTERS: true,  // Permite filtrar notas por tags y fecha
+  ENABLE_NOTE_AI_REFORMULATION: true, // Permite reformular contenido de nota con IA
 
   // --- Usuarios / Auth ---
   ENABLE_REGISTRATION: true, // Permite registrar nuevos usuarios
   ENABLE_USER_PROFILE: true, // Permite ver y editar el perfil de usuario
+
+  // --- UI / UX ---
+  ENABLE_DARK_MODE: true,     // Permite cambiar entre modo claro y oscuro
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;

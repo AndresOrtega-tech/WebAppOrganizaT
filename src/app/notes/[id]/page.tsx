@@ -156,20 +156,20 @@ export default function NoteDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-2" />
-        <div className="text-indigo-600 font-medium animate-pulse">Cargando nota...</div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600 dark:text-indigo-400 mb-2" />
+        <div className="text-indigo-600 dark:text-indigo-400 font-medium animate-pulse">Cargando nota...</div>
       </div>
     );
   }
 
   if (error || !note) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-6">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 px-6">
         <div className="text-red-500 font-medium mb-4">{error || 'Nota no encontrada'}</div>
         <Link 
           href="/notes" 
-          className="text-indigo-600 font-bold hover:text-indigo-700 flex items-center"
+          className="text-indigo-600 dark:text-indigo-400 font-bold hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center"
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Volver a Notas
         </Link>
@@ -178,7 +178,7 @@ export default function NoteDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans">
       <NoteHeader 
         onEdit={() => setIsEditModalOpen(true)} 
         onManageTags={() => setIsTagsModalOpen(true)}

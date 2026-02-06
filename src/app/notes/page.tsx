@@ -10,6 +10,7 @@ import NoteModal from '@/components/NoteModal';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import NoteFilters from '@/components/NoteFilters';
 import TagsSidebar from '@/components/TagsSidebar';
+import ThemeToggle from '@/components/ThemeToggle';
 import { Loader2, User as UserIcon, CheckSquare, Plus, StickyNote } from 'lucide-react';
 import { isFeatureEnabled } from '@/config/features';
 
@@ -147,14 +148,15 @@ function NotesContent() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans transition-colors duration-200">
         {/* Navbar */}
-        <nav className="bg-white px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
-            <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">OrganizaT</h1>
+        <nav className="bg-white dark:bg-gray-900 px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm dark:shadow-gray-800/50 dark:border-b dark:border-gray-800 transition-colors duration-200">
+            <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 tracking-tight">OrganizaT</h1>
             <div className="flex items-center gap-2">
+                <ThemeToggle />
                 <Link
                     href="/home"
-                    className="bg-indigo-50 text-indigo-600 px-3 py-2 rounded-xl text-sm font-bold hover:bg-indigo-100 transition-colors flex items-center gap-2"
+                    className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-2 rounded-xl text-sm font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center gap-2"
                     title="Mis Tareas"
                 >
                     <CheckSquare className="w-4 h-4" />
@@ -163,7 +165,7 @@ function NotesContent() {
                 {isFeatureEnabled('ENABLE_USER_PROFILE') && (
                     <Link
                         href="/profile"
-                        className="bg-gray-100 text-gray-600 p-2 rounded-xl hover:bg-gray-200 transition-colors"
+                        className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 p-2 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                         title="Mi Perfil"
                     >
                         <UserIcon className="w-5 h-5" />
@@ -171,7 +173,7 @@ function NotesContent() {
                 )}
                 <button 
                     onClick={handleLogout}
-                    className="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-100 transition-colors"
+                    className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
                 >
                     Salir
                 </button>
@@ -181,10 +183,10 @@ function NotesContent() {
         <main className="px-6 py-8 max-w-5xl mx-auto">
             {/* Greeting */}
             <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">
                     Mis Notas 📝
                 </h2>
-                <p className="text-gray-500 mt-2 text-sm font-medium">
+                <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm font-medium transition-colors">
                     Gestiona tus ideas y apuntes personales.
                 </p>
             </div>
@@ -204,12 +206,12 @@ function NotesContent() {
                     )}
 
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-gray-500 font-medium animate-pulse">
+                        <div className="flex flex-col items-center justify-center py-20 text-gray-500 dark:text-gray-400 font-medium animate-pulse">
                             <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mb-3" />
                             <span>Cargando notas...</span>
                         </div>
                     ) : notes.length === 0 ? (
-                        <div className="text-center py-12 bg-white rounded-3xl shadow-sm border border-gray-100">
+                        <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-3xl shadow-sm dark:shadow-gray-800/50 border border-gray-100 dark:border-gray-800 transition-colors">
                             <p className="text-gray-400 font-medium">No tienes notas creadas</p>
                         </div>
                     ) : (
