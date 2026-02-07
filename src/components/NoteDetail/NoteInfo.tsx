@@ -9,9 +9,11 @@ interface NoteInfoProps {
   note: Note;
   onRemoveTag?: (tagId: string) => void;
   onLinkTask: () => void;
+  onUnlinkTask: (taskId: string) => void;
+  isLinkingEnabled?: boolean;
 }
 
-export default function NoteInfo({ note, onRemoveTag, onLinkTask }: NoteInfoProps) {
+export default function NoteInfo({ note, onRemoveTag, onLinkTask, onUnlinkTask, isLinkingEnabled = true }: NoteInfoProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-MX', { 
@@ -79,13 +81,16 @@ export default function NoteInfo({ note, onRemoveTag, onLinkTask }: NoteInfoProp
           )}
 
           {/* Linked Tasks */}
-          <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
-            <LinkedItemsList 
-              items={note.tasks || []} 
-              type="task" 
-              onLinkNew={onLinkTask} 
-            />
-          </div>
+          {isLinkingEnabled && (
+            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+              <LinkedItemsList 
+                items={note.tasks || []} 
+                type="task" 
+                onLinkNew={onLinkTask}
+                onUnlink={onUnlinkTask}
+              />
+            </div>
+          )}
         </div>
       </div>
     </main>

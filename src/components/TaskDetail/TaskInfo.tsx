@@ -10,9 +10,11 @@ interface TaskInfoProps {
   task: Task;
   onRemoveTag?: (tagId: string) => void;
   onLinkNote: () => void;
+  onUnlinkNote: (noteId: string) => void;
+  isLinkingEnabled?: boolean;
 }
 
-export default function TaskInfo({ task, onRemoveTag, onLinkNote }: TaskInfoProps) {
+export default function TaskInfo({ task, onRemoveTag, onLinkNote, onUnlinkNote, isLinkingEnabled = true }: TaskInfoProps) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Sin fecha';
     const date = new Date(dateString);
@@ -124,13 +126,16 @@ export default function TaskInfo({ task, onRemoveTag, onLinkNote }: TaskInfoProp
           <TagList tags={task.tags} onRemoveTag={onRemoveTag} />
 
           {/* Linked Notes */}
-          <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
-            <LinkedItemsList 
-              items={task.notes || []} 
-              type="note" 
-              onLinkNew={onLinkNote} 
-            />
-          </div>
+          {isLinkingEnabled && (
+            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+              <LinkedItemsList 
+                items={task.notes || []} 
+                type="note" 
+                onLinkNew={onLinkNote}
+                onUnlink={onUnlinkNote}
+              />
+            </div>
+          )}
         </div>
       </div>
     </main>

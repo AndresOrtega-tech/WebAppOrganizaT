@@ -26,6 +26,8 @@ export const useTaskDetail = (taskId: string) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [showUnlinkModal, setShowUnlinkModal] = useState(false);
+  const [noteToUnlink, setNoteToUnlink] = useState<string | null>(null);
   const [availableNotes, setAvailableNotes] = useState<Note[]>([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
 
@@ -280,6 +282,28 @@ export const useTaskDetail = (taskId: string) => {
     }
   };
 
+  const handleUnlinkNote = (noteId: string) => {
+    setNoteToUnlink(noteId);
+    setShowUnlinkModal(true);
+  };
+
+  const confirmUnlinkNote = async () => {
+    if (!task || !noteToUnlink) return;
+
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      await taskService.unlinkNoteFromTask(token, task.id, noteToUnlink);
+      await loadTask(token, task.id); // Reload to update list
+      setShowUnlinkModal(false);
+      setNoteToUnlink(null);
+    } catch (err) {
+      console.error('Error unlinking note:', err);
+      alert('Error al desvincular la nota');
+    }
+  };
+
   return {
     task,
     loading,
@@ -298,6 +322,10 @@ export const useTaskDetail = (taskId: string) => {
     isLoadingNotes,
     openLinkModal,
     handleLinkNote,
+    handleUnlinkNote,
+    showUnlinkModal,
+    setShowUnlinkModal,
+    confirmUnlinkNote,
     editForm,
     setEditForm,
     handleUpdate,

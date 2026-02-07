@@ -234,4 +234,21 @@ export const taskService = {
       throw new Error(`Error linking note to task: ${response.status} ${errorText}`);
     }
   },
+
+  async unlinkNoteFromTask(token: string, taskId: string, noteId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/notes/${noteId}`, {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized');
+      }
+      throw new Error('Error unlinking note from task');
+    }
+  },
 };

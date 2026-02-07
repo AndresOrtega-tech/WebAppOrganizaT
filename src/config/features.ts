@@ -7,6 +7,7 @@ export const FEATURE_FLAGS = {
   ENABLE_TASK_FILTERS: true,      // Permite filtrar tareas por fecha, status y tags
   ENABLE_TASK_TAGS: true,         // Permite asignar etiquetas a tareas
   ENABLE_TASK_CONTEXT_MENU: true, // Permite abrir menú contextual en tareas
+  ENABLE_TASK_NOTE_LINKING: true, // Permite vincular notas a tareas y viceversa
   ENABLE_AI_REFORMULATION: true,  // Permite reformular descripción de tarea con IA
 
   // --- Etiquetas (Tags) ---

@@ -30,6 +30,8 @@ export default function NoteDetailPage() {
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [availableTasks, setAvailableTasks] = useState<Task[]>([]);
   const [isLoadingTasks, setIsLoadingTasks] = useState(false);
+  const [showUnlinkModal, setShowUnlinkModal] = useState(false);
+  const [taskToUnlink, setTaskToUnlink] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isFeatureEnabled('ENABLE_NOTE_DETAIL')) {
@@ -195,6 +197,28 @@ export default function NoteDetailPage() {
     }
   };
 
+  const handleUnlinkTask = (taskId: string) => {
+    setTaskToUnlink(taskId);
+    setShowUnlinkModal(true);
+  };
+
+  const confirmUnlinkTask = async () => {
+    if (!note || !taskToUnlink) return;
+
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      await taskService.unlinkNoteFromTask(token, taskToUnlink, note.id);
+      await loadNote(token, note.id);
+      setShowUnlinkModal(false);
+      setTaskToUnlink(null);
+    } catch (err) {
+      console.error('Error unlinking task:', err);
+      alert('Error al desvincular la tarea');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950">
@@ -218,6 +242,8 @@ export default function NoteDetailPage() {
     );
   }
 
+  const isLinkingEnabled = isFeatureEnabled('ENABLE_TASK_NOTE_LINKING');
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans">
       <NoteHeader 
@@ -230,6 +256,8 @@ export default function NoteDetailPage() {
         note={note} 
         onRemoveTag={handleRemoveTag}
         onLinkTask={openLinkModal}
+        onUnlinkTask={handleUnlinkTask}
+        isLinkingEnabled={isLinkingEnabled}
       />
 
       <NoteModal
@@ -254,6 +282,15 @@ export default function NoteDetailPage() {
         items={availableTasks}
         title="Vincular Tarea"
         isLoading={isLoadingTasks}
+      />
+
+      <ConfirmationModal
+        isOpen={showUnlinkModal}
+        onClose={() => setShowUnlinkModal(false)}
+        onConfirm={confirmUnlinkTask}
+        title="Desvincular Tarea"
+        message="¿Estás seguro de que quieres desvincular esta tarea? La tarea no se eliminará."
+        confirmText="Desvincular"
       />
 
       <ConfirmationModal

@@ -10,6 +10,7 @@ import TaskInfo from '@/components/TaskDetail/TaskInfo';
 import TaskEditModal from '@/components/TaskDetail/TaskEditModal';
 import TaskTagsModal from '@/components/TaskDetail/TaskTagsModal';
 import LinkItemModal from '@/components/LinkItemModal';
+import { isFeatureEnabled } from '@/config/features';
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -38,8 +39,14 @@ export default function TaskDetailPage() {
     availableNotes,
     isLoadingNotes,
     handleLinkNote,
+    handleUnlinkNote,
+    showUnlinkModal,
+    setShowUnlinkModal,
+    confirmUnlinkNote,
     openLinkModal
   } = useTaskDetail(id);
+
+  const isLinkingEnabled = isFeatureEnabled('ENABLE_TASK_NOTE_LINKING');
 
   if (loading) {
     return (
@@ -76,6 +83,8 @@ export default function TaskDetailPage() {
         task={task} 
         onRemoveTag={handleRemoveTag}
         onLinkNote={openLinkModal}
+        onUnlinkNote={handleUnlinkNote}
+        isLinkingEnabled={isLinkingEnabled}
       />
 
       <TaskEditModal 
@@ -102,6 +111,15 @@ export default function TaskDetailPage() {
         items={availableNotes}
         title="Vincular Nota"
         isLoading={isLoadingNotes}
+      />
+
+      <ConfirmationModal
+        isOpen={showUnlinkModal}
+        onClose={() => setShowUnlinkModal(false)}
+        onConfirm={confirmUnlinkNote}
+        title="Desvincular Nota"
+        message="¿Estás seguro de que quieres desvincular esta nota? La nota no se eliminará."
+        confirmText="Desvincular"
       />
 
       <ConfirmationModal
