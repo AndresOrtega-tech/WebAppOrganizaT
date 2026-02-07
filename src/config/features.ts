@@ -5,16 +5,16 @@ export const FEATURE_FLAGS = {
   ENABLE_TASK_EDIT: true,         // Permite editar título y descripción
   ENABLE_TASK_DELETION: true,     // Permite eliminar tareas
   ENABLE_TASK_FILTERS: true,      // Permite filtrar tareas por fecha, status y tags
-  ENABLE_TASK_TAGS: true,         // Permite asignar etiquetas a tareas
+  ENABLE_TASK_TAGS: false,         // Permite asignar etiquetas a tareas
   ENABLE_TASK_CONTEXT_MENU: true, // Permite abrir menú contextual en tareas
-  ENABLE_TASK_NOTE_LINKING: true, // Permite vincular notas a tareas y viceversa
-  ENABLE_AI_REFORMULATION: true,  // Permite reformular descripción de tarea con IA
+  ENABLE_TASK_NOTE_LINKING: false, // Permite vincular notas a tareas y viceversa
+  ENABLE_AI_REFORMULATION: false,  // Permite reformular descripción de tarea con IA
 
   // --- Etiquetas (Tags) ---
-  ENABLE_TAGS_VIEW: true,    // Permite ver el listado de etiquetas (tags)
-  ENABLE_TAG_CREATION: true, // Permite crear nuevas etiquetas
-  ENABLE_TAG_EDIT: true,     // Permite editar etiquetas existentes
-  ENABLE_TAG_DELETION: true, // Permite eliminar etiquetas
+  ENABLE_TAGS_VIEW: false,    // Permite ver el listado de etiquetas (tags)
+  ENABLE_TAG_CREATION: false, // Permite crear nuevas etiquetas
+  ENABLE_TAG_EDIT: false,     // Permite editar etiquetas existentes
+  ENABLE_TAG_DELETION: false, // Permite eliminar etiquetas
 
   // --- Notas (Notes) ---
   ENABLE_NOTES_VIEW: true,    // Permite ver el listado de notas
@@ -23,13 +23,13 @@ export const FEATURE_FLAGS = {
   ENABLE_NOTE_EDITING: true,  // Permite editar una nota existente
   ENABLE_NOTE_DELETION: true, // Permite eliminar una nota
   ENABLE_NOTE_FILTERS: true,  // Permite filtrar notas por tags y fecha
-  ENABLE_NOTE_AI_REFORMULATION: true, // Permite reformular contenido de nota con IA
-  ENABLE_EVENTS_VIEW: true,
-  ENABLE_EVENT_CREATION: true,
-  ENABLE_EVENT_DETAIL: true,
-  ENABLE_EVENT_EDITING: true,
-  ENABLE_EVENT_DELETION: true,
-  ENABLE_EVENT_LINKING: true,
+  ENABLE_NOTE_AI_REFORMULATION: false, // Permite reformular contenido de nota con IA
+  ENABLE_EVENTS_VIEW: false,
+  ENABLE_EVENT_CREATION: false,
+  ENABLE_EVENT_DETAIL: false,
+  ENABLE_EVENT_EDITING: false,
+  ENABLE_EVENT_DELETION: false,
+  ENABLE_EVENT_LINKING: false,
 
   // --- Usuarios / Auth ---
   ENABLE_REGISTRATION: true, // Permite registrar nuevos usuarios
