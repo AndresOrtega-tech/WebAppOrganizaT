@@ -36,7 +36,7 @@ export interface UpdateNoteRequest {
 const mapNoteResponse = (data: any): Note => {
   return {
     ...data,
-    tasks: data.tasks || (data.note_tasks?.map((nt: any) => nt.tasks) || []),
+    tasks: data.tasks || data.task_notes?.map((nt: any) => nt.tasks) || data.note_tasks?.map((nt: any) => nt.tasks) || [],
     tags: data.tags || (data.note_tags?.map((nt: any) => nt.tags) || []),
   };
 };
@@ -59,7 +59,8 @@ export const notesService = {
       throw new Error('Error al actualizar la nota');
     }
 
-    return response.json();
+    const data = await response.json();
+    return mapNoteResponse(data);
   },
 
   async deleteNote(token: string, noteId: string): Promise<void> {
@@ -101,7 +102,7 @@ export const notesService = {
 
   async getNoteById(token: string, noteId: string): Promise<Note> {
     const params = new URLSearchParams();
-    params.append('select', '*,note_tags(tags(*)),note_tasks(tasks(id,title))');
+    params.append('select', '*,note_tags(tags(*)),task_notes(tasks(id,title,description))');
     const queryString = params.toString();
 
     const response = await fetch(`${API_BASE_URL}/notes/${noteId}?${queryString}`, {
@@ -127,7 +128,7 @@ export const notesService = {
     const params = new URLSearchParams();
     
     // Add select to fetch relations
-    params.append('select', '*,note_tags(tags(*)),note_tasks(tasks(id,title))');
+    params.append('select', '*,note_tags(tags(*)),task_notes(tasks(id,title,description))');
 
     if (filters) {
       if (filters.is_archived !== undefined) {
