@@ -10,7 +10,7 @@ import ConfirmationModal from '@/components/ConfirmationModal';
 import TagsSidebar from '@/components/TagsSidebar';
 import TaskFilters from '@/components/TaskFilters';
 import ThemeToggle from '@/components/ThemeToggle';
-import { Plus, User as UserIcon, Loader2, StickyNote } from 'lucide-react';
+import { Plus, User as UserIcon, Loader2, StickyNote, CalendarDays } from 'lucide-react';
 import { isFeatureEnabled } from '@/config/features';
 import Link from 'next/link';
 
@@ -145,6 +145,16 @@ export default function HomePage() {
                     >
                         <StickyNote className="w-4 h-4" />
                         <span className="hidden sm:inline">Notas</span>
+                    </Link>
+                )}
+                {isFeatureEnabled('ENABLE_EVENTS_VIEW') && (
+                    <Link
+                        href="/events"
+                        className="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-3 py-2 rounded-xl text-sm font-bold hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors flex items-center gap-2"
+                        title="Mis Eventos"
+                    >
+                        <CalendarDays className="w-4 h-4" />
+                        <span className="hidden sm:inline">Eventos</span>
                     </Link>
                 )}
                 {isFeatureEnabled('ENABLE_USER_PROFILE') && (

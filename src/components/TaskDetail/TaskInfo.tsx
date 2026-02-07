@@ -2,6 +2,7 @@ import { Calendar, Clock, Bell, Flag } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Task } from '@/services/task.service';
+import { Event } from '@/services/events.service';
 import StatusBadge from '@/components/StatusBadge';
 import TagList from '@/components/TagList';
 import LinkedItemsList from '@/components/LinkedItemsList';
@@ -12,9 +13,13 @@ interface TaskInfoProps {
   onLinkNote: () => void;
   onUnlinkNote: (noteId: string) => void;
   isLinkingEnabled?: boolean;
+  linkedEvents?: Event[];
+  onLinkEvent?: () => void;
+  onUnlinkEvent?: (eventId: string) => void;
+  isEventLinkingEnabled?: boolean;
 }
 
-export default function TaskInfo({ task, onRemoveTag, onLinkNote, onUnlinkNote, isLinkingEnabled = true }: TaskInfoProps) {
+export default function TaskInfo({ task, onRemoveTag, onLinkNote, onUnlinkNote, isLinkingEnabled = true, linkedEvents = [], onLinkEvent, onUnlinkEvent, isEventLinkingEnabled = false }: TaskInfoProps) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Sin fecha';
     const date = new Date(dateString);
@@ -133,6 +138,21 @@ export default function TaskInfo({ task, onRemoveTag, onLinkNote, onUnlinkNote, 
                 type="note" 
                 onLinkNew={onLinkNote}
                 onUnlink={onUnlinkNote}
+                originType="task"
+                originId={task.id}
+              />
+            </div>
+          )}
+
+          {isEventLinkingEnabled && onLinkEvent && onUnlinkEvent && (
+            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+              <LinkedItemsList 
+                items={linkedEvents} 
+                type="event" 
+                onLinkNew={onLinkEvent}
+                onUnlink={onUnlinkEvent}
+                originType="task"
+                originId={task.id}
               />
             </div>
           )}

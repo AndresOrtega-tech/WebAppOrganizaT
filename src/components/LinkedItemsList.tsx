@@ -1,20 +1,25 @@
 import React from 'react';
 import Link from 'next/link';
-import { StickyNote, CheckSquare, X } from 'lucide-react';
+import { StickyNote, CheckSquare, X, CalendarDays } from 'lucide-react';
 import { Task } from '@/services/task.service';
 import { Note } from '@/services/notes.service';
+import { Event } from '@/services/events.service';
 
 interface LinkedItemsListProps {
-  items: (Task | Note)[];
-  type: 'task' | 'note'; // The type of items being displayed
+  items: (Task | Note | Event)[];
+  type: 'task' | 'note' | 'event';
   onLinkNew: () => void;
   onUnlink: (id: string) => void;
+  originType?: 'task' | 'note' | 'event';
+  originId?: string;
 }
 
-export default function LinkedItemsList({ items, type, onLinkNew, onUnlink }: LinkedItemsListProps) {
+export default function LinkedItemsList({ items, type, onLinkNew, onUnlink, originType, originId }: LinkedItemsListProps) {
   const isTask = type === 'task';
-  const title = isTask ? 'Tareas Vinculadas' : 'Notas Vinculadas';
-  const Icon = isTask ? CheckSquare : StickyNote;
+  const isEvent = type === 'event';
+  const title = isTask ? 'Tareas Vinculadas' : isEvent ? 'Eventos Vinculados' : 'Notas Vinculadas';
+  const Icon = isTask ? CheckSquare : isEvent ? CalendarDays : StickyNote;
+  const canAddOrigin = Boolean(originType && originId);
 
   return (
     <div className="flex flex-col gap-3">
@@ -34,23 +39,30 @@ export default function LinkedItemsList({ items, type, onLinkNew, onUnlink }: Li
       <div className="grid grid-cols-1 gap-2">
         {items.length === 0 ? (
           <div className="text-xs text-gray-500 dark:text-gray-400 italic">
-            No hay {isTask ? 'tareas' : 'notas'} vinculadas
+            No hay {isTask ? 'tareas' : isEvent ? 'eventos' : 'notas'} vinculadas
           </div>
         ) : (
-          items.map((item) => (
+          items.map((item) => {
+            const pathname = isTask ? `/tasks/${item.id}` : isEvent ? `/events/${item.id}` : `/notes/${item.id}`;
+            const href = canAddOrigin
+              ? { pathname, query: { from: originType, fromId: originId } }
+              : pathname;
+            return (
             <div key={item.id} className="relative group">
               <Link
-                href={isTask ? `/tasks/${item.id}` : `/notes/${item.id}`}
+                href={href}
                 className={`
                   block p-3 rounded-lg shadow-sm transition-transform hover:-translate-y-0.5 pr-10
                   ${isTask 
                     ? 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700' 
-                    : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800'
+                    : isEvent
+                      ? 'bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800'
+                      : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800'
                   }
                 `}
               >
                 <div className="flex items-start gap-2">
-                  <div className={`mt-0.5 ${isTask ? 'text-green-500' : 'text-yellow-500'}`}>
+                  <div className={`mt-0.5 ${isTask ? 'text-green-500' : isEvent ? 'text-purple-500' : 'text-yellow-500'}`}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -82,7 +94,8 @@ export default function LinkedItemsList({ items, type, onLinkNew, onUnlink }: Li
                 <X className="w-4 h-4" />
               </button>
             </div>
-          ))
+          );
+          })
         )}
       </div>
     </div>

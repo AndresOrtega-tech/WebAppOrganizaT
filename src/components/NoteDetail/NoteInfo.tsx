@@ -2,6 +2,7 @@ import { Calendar, Clock } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Note } from '@/services/notes.service';
+import { Event } from '@/services/events.service';
 import TagList from '@/components/TagList';
 import LinkedItemsList from '@/components/LinkedItemsList';
 
@@ -11,9 +12,13 @@ interface NoteInfoProps {
   onLinkTask: () => void;
   onUnlinkTask: (taskId: string) => void;
   isLinkingEnabled?: boolean;
+  linkedEvents?: Event[];
+  onLinkEvent?: () => void;
+  onUnlinkEvent?: (eventId: string) => void;
+  isEventLinkingEnabled?: boolean;
 }
 
-export default function NoteInfo({ note, onRemoveTag, onLinkTask, onUnlinkTask, isLinkingEnabled = true }: NoteInfoProps) {
+export default function NoteInfo({ note, onRemoveTag, onLinkTask, onUnlinkTask, isLinkingEnabled = true, linkedEvents = [], onLinkEvent, onUnlinkEvent, isEventLinkingEnabled = false }: NoteInfoProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-MX', { 
@@ -88,6 +93,21 @@ export default function NoteInfo({ note, onRemoveTag, onLinkTask, onUnlinkTask, 
                 type="task" 
                 onLinkNew={onLinkTask}
                 onUnlink={onUnlinkTask}
+                originType="note"
+                originId={note.id}
+              />
+            </div>
+          )}
+
+          {isEventLinkingEnabled && onLinkEvent && onUnlinkEvent && (
+            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+              <LinkedItemsList 
+                items={linkedEvents} 
+                type="event" 
+                onLinkNew={onLinkEvent}
+                onUnlink={onUnlinkEvent}
+                originType="note"
+                originId={note.id}
               />
             </div>
           )}

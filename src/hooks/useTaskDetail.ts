@@ -304,6 +304,12 @@ export const useTaskDetail = (taskId: string) => {
     }
   };
 
+  const reloadTask = async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token || !taskId) return;
+    await loadTask(token, taskId);
+  };
+
   return {
     task,
     loading,
@@ -326,6 +332,7 @@ export const useTaskDetail = (taskId: string) => {
     showUnlinkModal,
     setShowUnlinkModal,
     confirmUnlinkNote,
+    reloadTask,
     editForm,
     setEditForm,
     handleUpdate,

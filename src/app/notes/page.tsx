@@ -11,7 +11,7 @@ import ConfirmationModal from '@/components/ConfirmationModal';
 import NoteFilters from '@/components/NoteFilters';
 import TagsSidebar from '@/components/TagsSidebar';
 import ThemeToggle from '@/components/ThemeToggle';
-import { Loader2, User as UserIcon, CheckSquare, Plus, StickyNote } from 'lucide-react';
+import { Loader2, User as UserIcon, CheckSquare, Plus, StickyNote, CalendarDays } from 'lucide-react';
 import { isFeatureEnabled } from '@/config/features';
 
 function NotesContent() {
@@ -162,6 +162,16 @@ function NotesContent() {
                     <CheckSquare className="w-4 h-4" />
                     <span className="hidden sm:inline">Tareas</span>
                 </Link>
+                {isFeatureEnabled('ENABLE_EVENTS_VIEW') && (
+                    <Link
+                        href="/events"
+                        className="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-3 py-2 rounded-xl text-sm font-bold hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors flex items-center gap-2"
+                        title="Mis Eventos"
+                    >
+                        <CalendarDays className="w-4 h-4" />
+                        <span className="hidden sm:inline">Eventos</span>
+                    </Link>
+                )}
                 {isFeatureEnabled('ENABLE_USER_PROFILE') && (
                     <Link
                         href="/profile"

@@ -24,6 +24,12 @@ export const FEATURE_FLAGS = {
   ENABLE_NOTE_DELETION: true, // Permite eliminar una nota
   ENABLE_NOTE_FILTERS: true,  // Permite filtrar notas por tags y fecha
   ENABLE_NOTE_AI_REFORMULATION: true, // Permite reformular contenido de nota con IA
+  ENABLE_EVENTS_VIEW: true,
+  ENABLE_EVENT_CREATION: true,
+  ENABLE_EVENT_DETAIL: true,
+  ENABLE_EVENT_EDITING: true,
+  ENABLE_EVENT_DELETION: true,
+  ENABLE_EVENT_LINKING: true,
 
   // --- Usuarios / Auth ---
   ENABLE_REGISTRATION: true, // Permite registrar nuevos usuarios
