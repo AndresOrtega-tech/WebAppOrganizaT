@@ -1,5 +1,6 @@
 import { API_BASE_URL } from './auth.service';
 import { Tag } from './tags.service';
+import type { Task } from './task.service';
 
 export interface Note {
   id: string;
@@ -11,6 +12,7 @@ export interface Note {
   created_at: string;
   updated_at: string;
   tags: Tag[];
+  tasks: Task[];
 }
 
 export interface NoteFilters {

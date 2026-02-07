@@ -11,6 +11,8 @@ import NoteHeader from '@/components/NoteDetail/NoteHeader';
 import NoteInfo from '@/components/NoteDetail/NoteInfo';
 import NoteTagsModal from '@/components/NoteDetail/NoteTagsModal';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import LinkItemModal from '@/components/LinkItemModal';
+import { taskService, Task } from '@/services/task.service';
 
 export default function NoteDetailPage() {
   const router = useRouter();
@@ -25,6 +27,9 @@ export default function NoteDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [availableTasks, setAvailableTasks] = useState<Task[]>([]);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
 
   useEffect(() => {
     if (!isFeatureEnabled('ENABLE_NOTE_DETAIL')) {
@@ -154,6 +159,42 @@ export default function NoteDetailPage() {
     }
   };
 
+  const openLinkModal = async () => {
+    setIsLinkModalOpen(true);
+    setIsLoadingTasks(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      const tasks = await taskService.getTasks(token);
+      // Filter out already linked tasks
+      const linkedTaskIds = note?.tasks?.map(t => t.id) || [];
+      const available = tasks.filter(t => !linkedTaskIds.includes(t.id));
+      setAvailableTasks(available);
+    } catch (err) {
+      console.error('Error loading tasks:', err);
+      alert('Error al cargar tareas disponibles');
+    } finally {
+      setIsLoadingTasks(false);
+    }
+  };
+
+  const handleLinkTask = async (taskId: string) => {
+    if (!note) return;
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      // Use taskService to link note to task (endpoint works both ways effectively)
+      await taskService.linkNoteToTask(token, taskId, note.id);
+      await loadNote(token, note.id); // Reload to show new link
+      setIsLinkModalOpen(false);
+    } catch (err) {
+      console.error('Error linking task:', err);
+      alert('Error al vincular la tarea');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950">
@@ -188,6 +229,7 @@ export default function NoteDetailPage() {
       <NoteInfo 
         note={note} 
         onRemoveTag={handleRemoveTag}
+        onLinkTask={openLinkModal}
       />
 
       <NoteModal
@@ -203,6 +245,15 @@ export default function NoteDetailPage() {
         onSubmit={handleTagsUpdate}
         currentTagIds={note.tags.map(t => t.id)}
         isSaving={isSaving}
+      />
+
+      <LinkItemModal
+        isOpen={isLinkModalOpen}
+        onClose={() => setIsLinkModalOpen(false)}
+        onLink={handleLinkTask}
+        items={availableTasks}
+        title="Vincular Tarea"
+        isLoading={isLoadingTasks}
       />
 
       <ConfirmationModal

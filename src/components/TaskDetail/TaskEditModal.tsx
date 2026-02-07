@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Calendar, Save, Loader2 } from 'lucide-react';
 import DateTimePicker from '@/components/DateTimePicker';
 import { EditFormState } from '@/hooks/useTaskDetail';
+import { TaskPriority } from '@/services/task.service';
 import { useAiReformulation } from '@/hooks/useAiReformulation';
 import AiReformulateButton from '@/components/AiReformulateButton';
 
@@ -75,6 +76,29 @@ export default function TaskEditModal({
               />
             </div>
 
+            {/* Priority */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                Prioridad
+              </label>
+              <div className="flex gap-2">
+                {(['baja', 'media', 'alta'] as TaskPriority[]).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setEditForm({ ...editForm, priority: p })}
+                    className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+                      editForm.priority === p
+                        ? 'bg-indigo-600 text-white shadow-md'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Description */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
@@ -138,15 +162,53 @@ export default function TaskEditModal({
                 <span className="font-medium text-gray-700 dark:text-gray-300">Marcar como completada</span>
               </label>
 
-              <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors">
-                <input
-                  type="checkbox"
-                  checked={editForm.has_reminder}
-                  onChange={(e) => setEditForm({...editForm, has_reminder: e.target.checked})}
-                  className="w-5 h-5 text-indigo-600 dark:text-indigo-400 rounded focus:ring-indigo-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
-                />
-                <span className="font-medium text-gray-700 dark:text-gray-300">Activar recordatorio</span>
-              </label>
+              <div className="space-y-1.5 pt-2">
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                  Recordatorios
+                </label>
+                <div className="flex flex-col gap-2">
+                  {[
+                    { value: 10, unit: 'minutes', label: '10 min antes' },
+                    { value: 1, unit: 'hours', label: '1 hora antes' },
+                    { value: 1, unit: 'days', label: '1 día antes' }
+                  ].map((option) => {
+                    const isSelected = editForm.reminders?.some(
+                      r => r.value === option.value && r.unit === option.unit
+                    );
+                    
+                    return (
+                      <button
+                        key={`${option.value}-${option.unit}`}
+                        type="button"
+                        onClick={() => {
+                          let newReminders = [...(editForm.reminders || [])];
+                          if (isSelected) {
+                            newReminders = newReminders.filter(
+                              r => !(r.value === option.value && r.unit === option.unit)
+                            );
+                          } else {
+                            newReminders.push({ value: option.value, unit: option.unit });
+                          }
+                          setEditForm({ 
+                            ...editForm, 
+                            reminders: newReminders.length > 0 ? newReminders : null 
+                          });
+                        }}
+                        className={`flex items-center justify-between px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                          isSelected
+                            ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300'
+                            : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <span>{option.label}</span>
+                        {isSelected && (
+                          <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </form>
         </div>

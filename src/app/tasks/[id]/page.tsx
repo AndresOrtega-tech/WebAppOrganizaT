@@ -9,6 +9,7 @@ import TaskHeader from '@/components/TaskDetail/TaskHeader';
 import TaskInfo from '@/components/TaskDetail/TaskInfo';
 import TaskEditModal from '@/components/TaskDetail/TaskEditModal';
 import TaskTagsModal from '@/components/TaskDetail/TaskTagsModal';
+import LinkItemModal from '@/components/LinkItemModal';
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -31,7 +32,13 @@ export default function TaskDetailPage() {
     handleUpdate,
     confirmDelete,
     handleTagsUpdate,
-    handleRemoveTag
+    handleRemoveTag,
+    isLinkModalOpen,
+    setIsLinkModalOpen,
+    availableNotes,
+    isLoadingNotes,
+    handleLinkNote,
+    openLinkModal
   } = useTaskDetail(id);
 
   if (loading) {
@@ -68,6 +75,7 @@ export default function TaskDetailPage() {
       <TaskInfo 
         task={task} 
         onRemoveTag={handleRemoveTag}
+        onLinkNote={openLinkModal}
       />
 
       <TaskEditModal 
@@ -85,6 +93,15 @@ export default function TaskDetailPage() {
         onSubmit={handleTagsUpdate}
         currentTagIds={task.tags.map(t => t.id)}
         isSaving={isSaving}
+      />
+
+      <LinkItemModal
+        isOpen={isLinkModalOpen}
+        onClose={() => setIsLinkModalOpen(false)}
+        onLink={handleLinkNote}
+        items={availableNotes}
+        title="Vincular Nota"
+        isLoading={isLoadingNotes}
       />
 
       <ConfirmationModal

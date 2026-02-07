@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Calendar, Loader2 } from 'lucide-react';
-import { Task, taskService } from '@/services/task.service';
+import { Task, taskService, CreateTaskDTO, TaskPriority } from '@/services/task.service';
 import DateTimePicker from './DateTimePicker';
 import { useAiReformulation } from '@/hooks/useAiReformulation';
 import AiReformulateButton from './AiReformulateButton';
@@ -16,16 +16,17 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateTaskDTO>({
     title: '',
     description: '',
-    due_date: '',
+    due_date: null,
     is_completed: false,
-    has_reminder: false
+    priority: 'media',
+    reminders: null
   });
 
   const { isReformulating, handleReformulate } = useAiReformulation(
-    formData.description,
+    formData.description || '',
     (newText) => setFormData(prev => ({ ...prev, description: newText }))
   );
 
@@ -41,10 +42,7 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
         throw new Error('No auth token');
       }
 
-      const newTask = await taskService.createTask(token, {
-        ...formData,
-        due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null
-      });
+      const newTask = await taskService.createTask(token, formData);
 
       onTaskCreated(newTask);
       onClose();
@@ -52,9 +50,10 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
       setFormData({
         title: '',
         description: '',
-        due_date: '',
+        due_date: null,
         is_completed: false,
-        has_reminder: false
+        priority: 'media',
+        reminders: null
       });
     } catch (err) {
       console.error('Error creating task:', err);
@@ -117,6 +116,29 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
               />
             </div>
 
+            {/* Priority */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                Prioridad
+              </label>
+              <div className="flex gap-2">
+                {(['baja', 'media', 'alta'] as TaskPriority[]).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, priority: p })}
+                    className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+                      formData.priority === p
+                        ? 'bg-indigo-600 text-white shadow-md'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Description */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
@@ -124,13 +146,13 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
                   Descripción
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs font-medium ${formData.description.length > 500 ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
-                    {formData.description.length}/500
+                  <span className={`text-xs font-medium ${(formData.description?.length || 0) > 500 ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                    {formData.description?.length || 0}/500
                   </span>
                   <AiReformulateButton
                     onClick={handleReformulate}
                     isLoading={isReformulating}
-                    hasText={formData.description.length > 0}
+                    hasText={(formData.description?.length || 0) > 0}
                   />
                 </div>
               </div>
@@ -138,26 +160,76 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
                 id="create-description"
                 rows={3}
                 maxLength={500}
-                value={formData.description}
+                value={formData.description || ''}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 placeholder="Detalles adicionales..."
               />
             </div>
 
-            {/* Due Date */}
-            <div className="space-y-1.5">
-              <label htmlFor="create-due-date" className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-                Fecha de vencimiento
-              </label>
-              <div 
-                onClick={() => setShowDatePicker(true)}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-all flex items-center justify-between"
-              >
-                <span className={!formData.due_date ? 'text-gray-400 dark:text-gray-500' : ''}>
-                  {formatDate(formData.due_date)}
-                </span>
-                <Calendar className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+            {/* Due Date & Reminders */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                  Fecha de vencimiento
+                </label>
+                <div 
+                  onClick={() => setShowDatePicker(true)}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-all flex items-center justify-between"
+                >
+                  <span className={!formData.due_date ? 'text-gray-400 dark:text-gray-500' : ''}>
+                    {formData.due_date ? formatDate(formData.due_date) : 'Sin fecha'}
+                  </span>
+                  <Calendar className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                  Recordatorios
+                </label>
+                <div className="flex flex-col gap-2">
+                  {[
+                    { value: 10, unit: 'minutes', label: '10 min antes' },
+                    { value: 1, unit: 'hours', label: '1 hora antes' },
+                    { value: 1, unit: 'days', label: '1 día antes' }
+                  ].map((option) => {
+                    const isSelected = formData.reminders?.some(
+                      r => r.value === option.value && r.unit === option.unit
+                    );
+                    
+                    return (
+                      <button
+                        key={`${option.value}-${option.unit}`}
+                        type="button"
+                        onClick={() => {
+                          let newReminders = [...(formData.reminders || [])];
+                          if (isSelected) {
+                            newReminders = newReminders.filter(
+                              r => !(r.value === option.value && r.unit === option.unit)
+                            );
+                          } else {
+                            newReminders.push({ value: option.value, unit: option.unit });
+                          }
+                          setFormData({ 
+                            ...formData, 
+                            reminders: newReminders.length > 0 ? newReminders : null 
+                          });
+                        }}
+                        className={`flex items-center justify-between px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                          isSelected
+                            ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300'
+                            : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <span>{option.label}</span>
+                        {isSelected && (
+                          <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 

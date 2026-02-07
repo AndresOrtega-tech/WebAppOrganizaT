@@ -3,13 +3,15 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Note } from '@/services/notes.service';
 import TagList from '@/components/TagList';
+import LinkedItemsList from '@/components/LinkedItemsList';
 
 interface NoteInfoProps {
   note: Note;
   onRemoveTag?: (tagId: string) => void;
+  onLinkTask: () => void;
 }
 
-export default function NoteInfo({ note, onRemoveTag }: NoteInfoProps) {
+export default function NoteInfo({ note, onRemoveTag, onLinkTask }: NoteInfoProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-MX', { 
@@ -75,6 +77,15 @@ export default function NoteInfo({ note, onRemoveTag }: NoteInfoProps) {
           {note.tags && note.tags.length > 0 && (
             <TagList tags={note.tags} onRemoveTag={onRemoveTag} />
           )}
+
+          {/* Linked Tasks */}
+          <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+            <LinkedItemsList 
+              items={note.tasks || []} 
+              type="task" 
+              onLinkNew={onLinkTask} 
+            />
+          </div>
         </div>
       </div>
     </main>

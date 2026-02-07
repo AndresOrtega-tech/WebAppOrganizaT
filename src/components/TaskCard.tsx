@@ -56,9 +56,18 @@ export default function TaskCard({
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className={`text-base font-bold text-gray-900 dark:text-white truncate ${task.is_completed ? 'line-through text-gray-400 dark:text-gray-600' : ''}`}>
-            {task.title}
-          </h4>
+          <div className="flex items-start justify-between gap-2">
+            <h4 className={`text-base font-bold text-gray-900 dark:text-white truncate ${task.is_completed ? 'line-through text-gray-400 dark:text-gray-600' : ''}`}>
+              {task.title}
+            </h4>
+            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border shrink-0 ${
+              task.priority === 'alta' ? 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400 border-red-100 dark:border-red-800' :
+              task.priority === 'media' ? 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-100 dark:border-yellow-800' :
+              'text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400 border-green-100 dark:border-green-800'
+            }`}>
+              {task.priority}
+            </span>
+          </div>
           {task.due_date && (
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-semibold">
               {formatDate(task.due_date)}
