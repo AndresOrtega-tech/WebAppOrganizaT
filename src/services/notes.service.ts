@@ -33,6 +33,14 @@ export interface UpdateNoteRequest {
   is_archived?: boolean;
 }
 
+const mapNoteResponse = (data: any): Note => {
+  return {
+    ...data,
+    tasks: data.tasks || (data.note_tasks?.map((nt: any) => nt.tasks) || []),
+    tags: data.tags || (data.note_tags?.map((nt: any) => nt.tags) || []),
+  };
+};
+
 export const notesService = {
   async updateNote(token: string, noteId: string, note: UpdateNoteRequest): Promise<Note> {
     const response = await fetch(`${API_BASE_URL}/notes/${noteId}`, {
@@ -87,11 +95,16 @@ export const notesService = {
       throw new Error('Error creating note');
     }
 
-    return response.json();
+    const data = await response.json();
+    return mapNoteResponse(data);
   },
 
   async getNoteById(token: string, noteId: string): Promise<Note> {
-    const response = await fetch(`${API_BASE_URL}/notes/${noteId}`, {
+    const params = new URLSearchParams();
+    params.append('select', '*,note_tags(tags(*)),note_tasks(tasks(id,title))');
+    const queryString = params.toString();
+
+    const response = await fetch(`${API_BASE_URL}/notes/${noteId}?${queryString}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -106,12 +119,16 @@ export const notesService = {
       throw new Error('Error al obtener la nota');
     }
 
-    return response.json();
+    const data = await response.json();
+    return mapNoteResponse(data);
   },
 
   async getNotes(token: string, filters?: NoteFilters): Promise<Note[]> {
     const params = new URLSearchParams();
     
+    // Add select to fetch relations
+    params.append('select', '*,note_tags(tags(*)),note_tasks(tasks(id,title))');
+
     if (filters) {
       if (filters.is_archived !== undefined) {
         params.append('is_archived', String(filters.is_archived));
@@ -145,7 +162,8 @@ export const notesService = {
       throw new Error('Error loading notes');
     }
 
-    return response.json();
+    const data = await response.json();
+    return data.map(mapNoteResponse);
   },
 
   async assignTagsToNote(token: string, noteId: string, tagIds: string[]): Promise<void> {

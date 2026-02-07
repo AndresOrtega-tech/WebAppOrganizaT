@@ -58,9 +58,21 @@ export interface TaskFilters {
   order?: 'asc' | 'desc';
 }
 
+const mapTaskResponse = (data: any): Task => {
+  return {
+    ...data,
+    notes: data.notes || (data.task_notes?.map((tn: any) => tn.notes) || []),
+    tags: data.tags || (data.task_tags?.map((tt: any) => tt.tags) || []),
+    reminders_data: data.reminders_data || data.reminders || [],
+  };
+};
+
 export const taskService = {
   async getTasks(token: string, filters?: TaskFilters): Promise<Task[]> {
     const params = new URLSearchParams();
+    
+    // Add select to fetch relations
+    params.append('select', '*,task_tags(tags(*)),task_notes(notes(id,title,content)),reminders_data(*)');
     
     if (filters) {
       if (filters.is_completed !== undefined) {
@@ -95,11 +107,16 @@ export const taskService = {
       throw new Error('Error fetching tasks');
     }
 
-    return response.json();
+    const data = await response.json();
+    return data.map(mapTaskResponse);
   },
 
   async getTaskById(token: string, id: string): Promise<Task> {
-    const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+    const params = new URLSearchParams();
+    params.append('select', '*,task_tags(tags(*)),task_notes(notes(id,title,content)),reminders_data(*)');
+    const queryString = params.toString();
+
+    const response = await fetch(`${API_BASE_URL}/tasks/${id}?${queryString}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -114,7 +131,8 @@ export const taskService = {
       throw new Error('Error fetching task details');
     }
 
-    return response.json();
+    const data = await response.json();
+    return mapTaskResponse(data);
   },
 
   async createTask(token: string, taskData: CreateTaskDTO): Promise<Task> {
@@ -156,7 +174,8 @@ export const taskService = {
       throw new Error('Error updating task');
     }
 
-    return response.json();
+    const data = await response.json();
+    return mapTaskResponse(data);
   },
 
   async deleteTask(token: string, id: string): Promise<void> {
