@@ -101,10 +101,10 @@ export default function TagsSidebar() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-3xl p-6 shadow-sm h-fit w-full md:w-64">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-transparent dark:border-gray-800 h-fit w-full md:w-64 transition-colors">
         <div className="flex items-center gap-2 mb-4">
-          <TagIcon className="w-5 h-5 text-indigo-600" />
-          <h3 className="font-bold text-gray-900">Etiquetas</h3>
+          <TagIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <h3 className="font-bold text-gray-900 dark:text-white">Etiquetas</h3>
         </div>
         <div className="flex justify-center py-4">
           <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
@@ -118,16 +118,16 @@ export default function TagsSidebar() {
   }
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-sm h-fit w-full md:w-64">
+    <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-transparent dark:border-gray-800 h-fit w-full md:w-64 transition-colors">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <TagIcon className="w-5 h-5 text-indigo-600" />
-          <h3 className="font-bold text-gray-900">Etiquetas</h3>
+          <TagIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <h3 className="font-bold text-gray-900 dark:text-white">Etiquetas</h3>
         </div>
         {isFeatureEnabled('ENABLE_TAG_CREATION') && (
           <button
             onClick={openCreateModal}
-            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+            className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
             title="Crear etiqueta"
           >
             <Plus className="w-5 h-5" />
@@ -137,11 +137,11 @@ export default function TagsSidebar() {
       
       {tags.length === 0 ? (
         <div className="text-center py-4">
-          <p className="text-gray-400 text-sm mb-2">No hay etiquetas</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mb-2">No hay etiquetas</p>
           {isFeatureEnabled('ENABLE_TAG_CREATION') && (
             <button
               onClick={openCreateModal}
-              className="text-xs text-indigo-600 font-semibold hover:underline"
+              className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
             >
               Crear una
             </button>
@@ -154,18 +154,18 @@ export default function TagsSidebar() {
               key={tag.id} 
               onClick={() => handleTagClick(tag)}
               className={`flex items-center gap-3 group p-2 rounded-xl transition-colors ${
-                isFeatureEnabled('ENABLE_TAG_EDIT') ? 'cursor-pointer hover:bg-gray-50' : ''
+                isFeatureEnabled('ENABLE_TAG_EDIT') ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : ''
               }`}
             >
               <div 
                 className="w-3 h-3 rounded-full shadow-sm" 
                 style={{ backgroundColor: tag.color || '#808080' }}
               />
-              <span className="text-gray-600 font-medium text-sm group-hover:text-gray-900 transition-colors">
+              <span className="text-gray-600 dark:text-gray-300 font-medium text-sm group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                 {tag.name}
               </span>
               {isFeatureEnabled('ENABLE_TAG_EDIT') && (
-                <Pencil className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 ml-auto" />
+                <Pencil className="w-3 h-3 text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 ml-auto" />
               )}
             </li>
           ))}

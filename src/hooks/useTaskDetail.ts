@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Task, taskService } from '@/services/task.service';
+import { Task, taskService, TaskPriority, Reminder } from '@/services/task.service';
+import { Note, notesService } from '@/services/notes.service';
 
 export interface EditFormState {
   title: string;
   description: string;
   due_date: string;
   is_completed: boolean;
-  has_reminder: boolean;
+  priority: TaskPriority;
+  reminders: Reminder[] | null;
 }
 
 export const useTaskDetail = (taskId: string) => {
@@ -23,12 +25,19 @@ export const useTaskDetail = (taskId: string) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [showUnlinkModal, setShowUnlinkModal] = useState(false);
+  const [noteToUnlink, setNoteToUnlink] = useState<string | null>(null);
+  const [availableNotes, setAvailableNotes] = useState<Note[]>([]);
+  const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+
   const [editForm, setEditForm] = useState<EditFormState>({
     title: '',
     description: '',
     due_date: '',
     is_completed: false,
-    has_reminder: false
+    priority: 'media',
+    reminders: null
   });
 
   const getLocalDateTimeForInput = (isoString: string) => {
@@ -72,12 +81,36 @@ export const useTaskDetail = (taskId: string) => {
 
   useEffect(() => {
     if (task) {
+      // Map absolute reminders_data back to relative reminders for the form
+      let mappedReminders: Reminder[] | null = null;
+      if (task.reminders_data && task.reminders_data.length > 0 && task.due_date) {
+        const dueDate = new Date(task.due_date).getTime();
+        mappedReminders = [];
+        
+        task.reminders_data.forEach(r => {
+          const remindAt = new Date(r.remind_at).getTime();
+          const diff = dueDate - remindAt;
+          const tolerance = 60000; // 1 minute tolerance
+
+          if (Math.abs(diff - 600000) < tolerance) { // 10 mins
+            mappedReminders!.push({ value: 10, unit: 'minutes' });
+          } else if (Math.abs(diff - 3600000) < tolerance) { // 1 hour
+            mappedReminders!.push({ value: 1, unit: 'hours' });
+          } else if (Math.abs(diff - 86400000) < tolerance) { // 1 day
+            mappedReminders!.push({ value: 1, unit: 'days' });
+          }
+        });
+        
+        if (mappedReminders.length === 0) mappedReminders = null;
+      }
+
       setEditForm({
         title: task.title,
         description: task.description || '',
         due_date: task.due_date ? getLocalDateTimeForInput(task.due_date) : '',
         is_completed: task.is_completed,
-        has_reminder: task.has_reminder
+        priority: task.priority || 'media',
+        reminders: mappedReminders
       });
     }
   }, [task]);
@@ -214,6 +247,69 @@ export const useTaskDetail = (taskId: string) => {
     }
   };
 
+  const openLinkModal = async () => {
+    setIsLinkModalOpen(true);
+    setIsLoadingNotes(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      const notes = await notesService.getNotes(token);
+      // Filter out already linked notes
+      const linkedNoteIds = task?.notes?.map(n => n.id) || [];
+      const available = notes.filter(n => !linkedNoteIds.includes(n.id));
+      setAvailableNotes(available);
+    } catch (err) {
+      console.error('Error loading notes:', err);
+      alert('Error al cargar notas disponibles');
+    } finally {
+      setIsLoadingNotes(false);
+    }
+  };
+
+  const handleLinkNote = async (noteId: string) => {
+    if (!task) return;
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      await taskService.linkNoteToTask(token, task.id, noteId);
+      await loadTask(token, task.id); // Reload to show new link
+      setIsLinkModalOpen(false);
+    } catch (err) {
+      console.error('Error linking note:', err);
+      alert('Error al vincular la nota');
+    }
+  };
+
+  const handleUnlinkNote = (noteId: string) => {
+    setNoteToUnlink(noteId);
+    setShowUnlinkModal(true);
+  };
+
+  const confirmUnlinkNote = async () => {
+    if (!task || !noteToUnlink) return;
+
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      await taskService.unlinkNoteFromTask(token, task.id, noteToUnlink);
+      await loadTask(token, task.id); // Reload to update list
+      setShowUnlinkModal(false);
+      setNoteToUnlink(null);
+    } catch (err) {
+      console.error('Error unlinking note:', err);
+      alert('Error al desvincular la nota');
+    }
+  };
+
+  const reloadTask = async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token || !taskId) return;
+    await loadTask(token, taskId);
+  };
+
   return {
     task,
     loading,
@@ -226,6 +322,17 @@ export const useTaskDetail = (taskId: string) => {
     setShowDeleteModal,
     isTagsModalOpen,
     setIsTagsModalOpen,
+    isLinkModalOpen,
+    setIsLinkModalOpen,
+    availableNotes,
+    isLoadingNotes,
+    openLinkModal,
+    handleLinkNote,
+    handleUnlinkNote,
+    showUnlinkModal,
+    setShowUnlinkModal,
+    confirmUnlinkNote,
+    reloadTask,
     editForm,
     setEditForm,
     handleUpdate,

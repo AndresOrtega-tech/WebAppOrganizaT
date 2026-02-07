@@ -139,18 +139,18 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-transparent dark:border-gray-800 transition-colors">
         
         {/* Header with Month/Year */}
         <div className="px-6 pt-6 pb-2 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-900 capitalize">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
             {monthNames[currentMonth.getMonth()]} de {currentMonth.getFullYear()}
           </h2>
           <div className="flex gap-1">
-            <button type="button" onClick={handlePrevMonth} className="p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors">
+            <button type="button" onClick={handlePrevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400 transition-colors">
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <button type="button" onClick={handleNextMonth} className="p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors">
+            <button type="button" onClick={handleNextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400 transition-colors">
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
@@ -160,7 +160,7 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
         <div className="px-6 pb-6">
           <div className="grid grid-cols-7 mb-2">
             {weekDays.map(day => (
-              <div key={day} className="h-10 flex items-center justify-center text-xs font-bold text-gray-400">
+              <div key={day} className="h-10 flex items-center justify-center text-xs font-bold text-gray-400 dark:text-gray-500">
                 {day}
               </div>
             ))}
@@ -177,10 +177,10 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
                   onClick={() => handleDateClick(item.date)}
                   className={`
                     h-10 w-10 mx-auto flex items-center justify-center rounded-full text-sm font-medium transition-all
-                    ${isSelected ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 font-bold' : ''}
-                    ${!isSelected && isToday ? 'text-indigo-600 font-bold bg-indigo-50' : ''}
-                    ${!isSelected && !isToday && item.currentMonth ? 'text-gray-900 hover:bg-gray-100' : ''}
-                    ${!isSelected && !item.currentMonth ? 'text-gray-300' : ''}
+                    ${isSelected ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none font-bold' : ''}
+                    ${!isSelected && isToday ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-900/30' : ''}
+                    ${!isSelected && !isToday && item.currentMonth ? 'text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' : ''}
+                    ${!isSelected && !item.currentMonth ? 'text-gray-300 dark:text-gray-600' : ''}
                   `}
                 >
                   {item.day}
@@ -191,10 +191,10 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
         </div>
 
         {/* Time Selector */}
-        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
+        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
             <div className="flex items-center gap-3 mb-2">
-                <Clock className="w-4 h-4 text-gray-500" />
-                <span className="text-sm font-bold text-gray-700">Hora</span>
+                <Clock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Hora</span>
             </div>
             
             <div className="relative">
@@ -203,18 +203,18 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
                     value={timeInput}
                     onChange={handleTimeInputChange}
                     onClick={() => setShowTimeList(!showTimeList)}
-                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-center"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-center"
                     placeholder="HH:mm"
                 />
                 
                 {showTimeList && (
-                    <div ref={timeListRef} className="absolute bottom-full left-0 right-0 mb-2 max-h-48 overflow-y-auto bg-white border border-gray-100 rounded-xl shadow-lg z-10 scrollbar-thin">
+                    <div ref={timeListRef} className="absolute bottom-full left-0 right-0 mb-2 max-h-48 overflow-y-auto bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-lg z-10 scrollbar-thin">
                         {generateTimeSlots().map((time) => (
                             <button
                                 type="button"
                                 key={time}
                                 onClick={() => handleTimeSelect(time)}
-                                className={`w-full px-4 py-2 text-sm text-left hover:bg-indigo-50 transition-colors ${time === selectedTime ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-700'}`}
+                                className={`w-full px-4 py-2 text-sm text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors ${time === selectedTime ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}
                             >
                                 {time}
                             </button>
@@ -225,18 +225,18 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
+        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+            className="flex-1 px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
           >
             Cancelar
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-all"
+            className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded-xl shadow-sm transition-all"
           >
             Listo
           </button>

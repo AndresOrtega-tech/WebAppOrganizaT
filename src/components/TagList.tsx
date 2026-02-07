@@ -13,8 +13,8 @@ export default function TagList({ tags, onRemoveTag }: TagListProps) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
-        <TagIcon className="w-4 h-4 text-gray-400" />
-        <span className="text-sm font-bold text-gray-700">Etiquetas</span>
+        <TagIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+        <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Etiquetas</span>
       </div>
       <div className="flex flex-wrap gap-2">
         {tags.map((tag) => (
@@ -34,7 +34,7 @@ export default function TagList({ tags, onRemoveTag }: TagListProps) {
                   e.preventDefault();
                   onRemoveTag(tag.id);
                 }}
-                className="hover:bg-black/10 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="hover:bg-black/10 dark:hover:bg-white/10 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Desvincular etiqueta"
               >
                 <X className="w-3 h-3" />

@@ -1,5 +1,7 @@
 import { CheckCircle2, Circle, Trash } from 'lucide-react';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Task } from '@/services/task.service';
 import { isFeatureEnabled } from '@/config/features';
 import TaskContextMenu from './TaskContextMenu';
@@ -43,24 +45,52 @@ export default function TaskCard({
 
   const content = (
     <div 
-      className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 group-hover:shadow-md transition-all duration-200"
+      className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm dark:shadow-gray-800/50 border border-gray-100 dark:border-gray-800 flex items-center gap-4 group-hover:shadow-md dark:group-hover:shadow-gray-700 transition-all duration-200"
       onContextMenu={(e) => onContextMenu && onContextMenu(e, task)}
     >
         <div className="flex-shrink-0">
           {task.is_completed ? (
             <CheckCircle2 className="w-6 h-6 text-green-500" />
           ) : (
-            <Circle className="w-6 h-6 text-indigo-600" />
+            <Circle className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className={`text-base font-bold text-gray-900 truncate ${task.is_completed ? 'line-through text-gray-400' : ''}`}>
-            {task.title}
-          </h4>
+          <div className="flex items-start justify-between gap-2">
+            <h4 className={`text-base font-bold text-gray-900 dark:text-white truncate ${task.is_completed ? 'line-through text-gray-400 dark:text-gray-600' : ''}`}>
+              {task.title}
+            </h4>
+            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border shrink-0 ${
+              task.priority === 'alta' ? 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400 border-red-100 dark:border-red-800' :
+              task.priority === 'media' ? 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-100 dark:border-yellow-800' :
+              'text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400 border-green-100 dark:border-green-800'
+            }`}>
+              {task.priority}
+            </span>
+          </div>
           {task.due_date && (
-            <p className="text-xs text-gray-500 mt-1 font-semibold">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-semibold">
               {formatDate(task.due_date)}
             </p>
+          )}
+          {task.description && (
+            <div className="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-2 prose prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  p: ({node, ...props}) => <p className="mb-0" {...props} />,
+                  ul: ({node, ...props}) => <ul className="list-disc list-inside ml-1" {...props} />,
+                  ol: ({node, ...props}) => <ol className="list-decimal list-inside ml-1" {...props} />,
+                  li: ({node, ...props}) => <li className="marker:text-gray-400" {...props} />,
+                  h1: ({node, ...props}) => <strong className="font-bold" {...props} />,
+                  h2: ({node, ...props}) => <strong className="font-bold" {...props} />,
+                  h3: ({node, ...props}) => <strong className="font-bold" {...props} />,
+                  strong: ({node, ...props}) => <strong className="font-bold text-gray-900 dark:text-white" {...props} />,
+                }}
+              >
+                {task.description}
+              </ReactMarkdown>
+            </div>
           )}
           {task.tags && task.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
@@ -87,7 +117,7 @@ export default function TaskCard({
               e.preventDefault();
               onDelete(task.id);
             }}
-            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+            className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-colors opacity-0 group-hover:opacity-100"
             title="Eliminar tarea"
           >
             <Trash className="w-4 h-4" />

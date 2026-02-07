@@ -14,6 +14,7 @@ export const FEATURE_FLAGS = {
   ENABLE_TASK_DELETION: boolean, // Botón "Basura" en Detalle/Card
   ENABLE_TASK_DETAIL: boolean,   // Click en Card -> Detalle
   ENABLE_TASK_FILTERS: boolean,  // Barra de filtros en Home
+  ENABLE_AI_REFORMULATION: boolean, // Reformular descripción con IA
 
   // Tags
   ENABLE_TAGS_VIEW: boolean,     // Sidebar de etiquetas
@@ -27,6 +28,7 @@ export const FEATURE_FLAGS = {
   ENABLE_NOTE_EDITING: boolean,  // Editar notas
   ENABLE_NOTE_DELETION: boolean, // Eliminar notas
   ENABLE_NOTE_FILTERS: boolean,  // Filtrado de notas
+  ENABLE_NOTE_AI_REFORMULATION: boolean, // Reformular contenido con IA
 
   // Auth
   ENABLE_REGISTRATION: boolean,  // Acceso a registro de usuarios

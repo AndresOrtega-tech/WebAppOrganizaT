@@ -106,11 +106,11 @@ export default function TaskContextMenu({ task: initialTask, onClose, onUpdate }
   return (
     <div 
       ref={menuRef}
-      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[51] bg-white rounded-xl shadow-xl border border-gray-100 w-64 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[51] bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 w-64 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="p-2 border-b border-gray-100 bg-gray-50">
-          <p className="text-xs font-semibold text-gray-500 truncate px-2">
+      <div className="p-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 truncate px-2">
             {task.title}
           </p>
         </div>
@@ -118,7 +118,7 @@ export default function TaskContextMenu({ task: initialTask, onClose, onUpdate }
         <div className="p-1">
           <button
             onClick={handleToggleStatus}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
             {task.is_completed ? (
               <>
@@ -139,17 +139,17 @@ export default function TaskContextMenu({ task: initialTask, onClose, onUpdate }
                 setShowTagsSubmenu(!showTagsSubmenu);
                 loadTags();
               }}
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors ${showTagsSubmenu ? 'bg-gray-50' : ''}`}
+              className={`w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors ${showTagsSubmenu ? 'bg-gray-50 dark:bg-gray-800' : ''}`}
             >
               <div className="flex items-center gap-2">
-                <TagIcon className="w-4 h-4 text-indigo-500" />
+                <TagIcon className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                 <span>Etiquetas</span>
               </div>
               <span className="text-xs text-gray-400">▼</span>
             </button>
 
             {showTagsSubmenu && (
-              <div className="bg-gray-50 rounded-lg mt-1 p-1 max-h-48 overflow-y-auto border border-gray-100">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg mt-1 p-1 max-h-48 overflow-y-auto border border-gray-100 dark:border-gray-700">
                 {loadingTags ? (
                   <div className="flex justify-center py-2">
                     <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
@@ -166,10 +166,10 @@ export default function TaskContextMenu({ task: initialTask, onClose, onUpdate }
                           e.stopPropagation(); // Don't close submenu
                           handleToggleTag(tag, isAssigned);
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-white rounded-md transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-700 rounded-md transition-colors"
                       >
                         <div 
-                          className={`w-3 h-3 rounded-full border ${isAssigned ? 'border-transparent' : 'border-gray-300'}`}
+                          className={`w-3 h-3 rounded-full border ${isAssigned ? 'border-transparent' : 'border-gray-300 dark:border-gray-600'}`}
                           style={{ backgroundColor: isAssigned ? tag.color : 'transparent' }}
                         >
                           {isAssigned && <CheckCircle className="w-3 h-3 text-white mix-blend-difference" />}
