@@ -81,4 +81,47 @@ export const authService = {
 
     return response.json();
   },
+
+  async changePassword(token: string, password: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/users/password`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ password }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || 'Error al cambiar la contraseña');
+    }
+
+    const raw = await response.text();
+    if (!raw) {
+      return { message: 'Contraseña actualizada exitosamente' };
+    }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return { message: 'Contraseña actualizada exitosamente' };
+    }
+  },
+
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || 'Error al solicitar recuperación de contraseña');
+    }
+
+    return response.json();
+  },
 };

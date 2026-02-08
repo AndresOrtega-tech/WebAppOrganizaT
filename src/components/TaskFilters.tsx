@@ -73,16 +73,16 @@ export default function TaskFilters({ onFiltersChange, className = '' }: TaskFil
   ].filter(Boolean).length;
 
   return (
-    <div className={`bg-white rounded-3xl p-4 shadow-sm border border-gray-100 ${className}`}>
+    <div className={`bg-white dark:bg-gray-900 rounded-3xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 ${className}`}>
       <div className="flex items-center justify-between mb-4">
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-indigo-600 transition-colors"
+          className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
         >
           <Filter className="w-4 h-4" />
           Filtros y Orden
           {activeFiltersCount > 0 && (
-            <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs">
+            <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full text-xs">
               {activeFiltersCount}
             </span>
           )}
@@ -91,7 +91,7 @@ export default function TaskFilters({ onFiltersChange, className = '' }: TaskFil
         {activeFiltersCount > 0 && (
           <button 
             onClick={clearFilters}
-            className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
+            className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium flex items-center gap-1"
           >
             <X className="w-3 h-3" />
             Limpiar
@@ -103,7 +103,7 @@ export default function TaskFilters({ onFiltersChange, className = '' }: TaskFil
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
           {/* Status Filter */}
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
               Estado
             </label>
             <div className="flex gap-2">
@@ -111,8 +111,8 @@ export default function TaskFilters({ onFiltersChange, className = '' }: TaskFil
                 onClick={() => handleStatusChange('all')}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   filters.is_completed === undefined
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                    ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
+                    : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 Todas
@@ -121,8 +121,8 @@ export default function TaskFilters({ onFiltersChange, className = '' }: TaskFil
                 onClick={() => handleStatusChange('pending')}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   filters.is_completed === false
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                    : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 Pendientes
@@ -131,8 +131,8 @@ export default function TaskFilters({ onFiltersChange, className = '' }: TaskFil
                 onClick={() => handleStatusChange('completed')}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   filters.is_completed === true
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                    ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                    : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 Completadas
@@ -142,12 +142,12 @@ export default function TaskFilters({ onFiltersChange, className = '' }: TaskFil
 
           {/* Tags Filter */}
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
               Etiquetas
             </label>
             <div className="flex flex-wrap gap-2">
               {tags.length === 0 ? (
-                <span className="text-sm text-gray-400 italic">No hay etiquetas disponibles</span>
+                <span className="text-sm text-gray-400 dark:text-gray-500 italic">No hay etiquetas disponibles</span>
               ) : (
                 tags.map(tag => {
                   const isSelected = filters.tag_ids?.includes(tag.id);
@@ -157,7 +157,7 @@ export default function TaskFilters({ onFiltersChange, className = '' }: TaskFil
                       onClick={() => toggleTag(tag.id)}
                       className={`px-2 py-1 rounded-md text-xs font-bold border transition-all ${
                         isSelected 
-                          ? 'ring-2 ring-offset-1 ring-indigo-500' 
+                          ? 'ring-2 ring-offset-1 ring-indigo-500 dark:ring-indigo-400' 
                           : 'opacity-70 hover:opacity-100'
                       }`}
                       style={{
@@ -176,25 +176,25 @@ export default function TaskFilters({ onFiltersChange, className = '' }: TaskFil
 
           {/* Sort Options */}
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
               Ordenar por
             </label>
             <div className="grid grid-cols-2 gap-3">
               <div className="relative">
                 <button
                   onClick={() => setIsSortOpen(!isSortOpen)}
-                  className="w-full flex items-center justify-between bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-medium px-3 py-2 rounded-xl border border-transparent focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                  className="w-full flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium px-3 py-2 rounded-xl border border-transparent focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
                 >
                   <span className="truncate">
                     {filters.sort_by === 'updated_at' ? 'Última actualización' :
                      filters.sort_by === 'due_date' ? 'Fecha de vencimiento' :
                      'Por defecto'}
                   </span>
-                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {isSortOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 py-1 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                     <button
                       onClick={() => {
                         const newFilters = { ...filters };
