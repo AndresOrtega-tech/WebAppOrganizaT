@@ -97,7 +97,15 @@ export const authService = {
       throw new Error(errorData.detail || 'Error al cambiar la contraseña');
     }
 
-    return response.json();
+    const raw = await response.text();
+    if (!raw) {
+      return { message: 'Contraseña actualizada exitosamente' };
+    }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return { message: 'Contraseña actualizada exitosamente' };
+    }
   },
 
   async requestPasswordReset(email: string): Promise<{ message: string }> {
