@@ -11,10 +11,10 @@ export const FEATURE_FLAGS = {
   ENABLE_AI_REFORMULATION: false,  // Permite reformular descripción de tarea con IA
 
   // --- Etiquetas (Tags) ---
-  ENABLE_TAGS_VIEW: false,    // Permite ver el listado de etiquetas (tags)
-  ENABLE_TAG_CREATION: false, // Permite crear nuevas etiquetas
-  ENABLE_TAG_EDIT: false,     // Permite editar etiquetas existentes
-  ENABLE_TAG_DELETION: false, // Permite eliminar etiquetas
+  ENABLE_TAGS_VIEW: true,    // Permite ver el listado de etiquetas (tags)
+  ENABLE_TAG_CREATION: true, // Permite crear nuevas etiquetas
+  ENABLE_TAG_EDIT: true,     // Permite editar etiquetas existentes
+  ENABLE_TAG_DELETION: true, // Permite eliminar etiquetas
 
   // --- Notas (Notes) ---
   ENABLE_NOTES_VIEW: true,    // Permite ver el listado de notas
