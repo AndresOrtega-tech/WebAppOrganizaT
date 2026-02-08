@@ -5,7 +5,7 @@ export const FEATURE_FLAGS = {
   ENABLE_TASK_EDIT: true,         // Permite editar título y descripción
   ENABLE_TASK_DELETION: true,     // Permite eliminar tareas
   ENABLE_TASK_FILTERS: true,      // Permite filtrar tareas por fecha, status y tags
-  ENABLE_TASK_TAGS: false,        // Permite asignar etiquetas a tareas
+  ENABLE_TASK_TAGS: true,        // Permite asignar etiquetas a tareas
   ENABLE_TASK_CONTEXT_MENU: true, // Permite abrir menú contextual en tareas
   ENABLE_TASK_NOTE_LINKING: false, // Permite vincular notas a tareas y viceversa
   ENABLE_AI_REFORMULATION: false,  // Permite reformular descripción de tarea con IA

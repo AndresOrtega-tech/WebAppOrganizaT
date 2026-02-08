@@ -109,7 +109,7 @@ export const authService = {
   },
 
   async requestPasswordReset(email: string): Promise<{ message: string }> {
-    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+    const response = await fetch(`${API_BASE_URL}/users/password/reset`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -119,9 +119,17 @@ export const authService = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || 'Error al solicitar recuperación de contraseña');
+      throw new Error(errorData.detail || errorData.message || 'Error al solicitar recuperación de contraseña');
     }
 
-    return response.json();
+    const raw = await response.text();
+    if (!raw) {
+      return { message: 'Se ha enviado un correo con instrucciones para restablecer tu contraseña.' };
+    }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return { message: 'Se ha enviado un correo con instrucciones para restablecer tu contraseña.' };
+    }
   },
 };
