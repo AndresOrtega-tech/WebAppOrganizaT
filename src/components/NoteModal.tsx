@@ -47,6 +47,11 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (formData.content.length > 800) {
+      alert('El contenido excede los 800 caracteres. Por favor, reformúlalo con IA.');
+      return;
+    }
+
     try {
       setLoading(true);
       const token = localStorage.getItem('access_token');
@@ -175,7 +180,6 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
               value={formData.content}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
               rows={6}
-              maxLength={800}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 resize-none font-medium"
               placeholder="Escribe aquí los detalles..."
             />
@@ -214,7 +218,7 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || formData.content.length > 800}
               className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-200 dark:shadow-none active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}

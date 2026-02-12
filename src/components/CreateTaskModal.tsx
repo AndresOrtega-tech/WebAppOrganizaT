@@ -35,6 +35,11 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if ((formData.description?.length || 0) > 500) {
+      alert('La descripción excede los 500 caracteres. Por favor, reformúlala con IA.');
+      return;
+    }
+
     try {
       setLoading(true);
       const token = localStorage.getItem('access_token');
@@ -159,7 +164,6 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
               <textarea
                 id="create-description"
                 rows={3}
-                maxLength={500}
                 value={formData.description || ''}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
@@ -244,7 +248,7 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
             <div className="pt-4">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || (formData.description?.length || 0) > 500}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {loading ? (

@@ -30,6 +30,15 @@ export default function TaskEditModal({
     (newText) => setEditForm(prev => ({ ...prev, description: newText }))
   );
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editForm.description.length > 500) {
+      alert('La descripción excede los 500 caracteres. Por favor, reformúlala con IA.');
+      return;
+    }
+    await onSubmit(e);
+  };
+
   if (!isOpen) return null;
 
   const formatDate = (dateString: string | null) => {
@@ -59,7 +68,7 @@ export default function TaskEditModal({
         </div>
         
         <div className="p-6 overflow-y-auto">
-          <form id="edit-form" onSubmit={onSubmit} className="space-y-5">
+          <form id="edit-form" onSubmit={handleSubmit} className="space-y-5">
             {/* Title */}
             <div className="space-y-1.5">
               <label htmlFor="title" className="block text-sm font-bold text-gray-700 dark:text-gray-300">
@@ -119,7 +128,6 @@ export default function TaskEditModal({
               <textarea
                 id="description"
                 rows={4}
-                maxLength={500}
                 value={editForm.description}
                 onChange={(e) => setEditForm({...editForm, description: e.target.value})}
                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all resize-none placeholder-gray-400 dark:placeholder-gray-500"
@@ -225,7 +233,7 @@ export default function TaskEditModal({
           <button
             type="submit"
             form="edit-form"
-            disabled={isSaving}
+            disabled={isSaving || editForm.description.length > 500}
             className="px-4 py-2 bg-indigo-600 dark:bg-indigo-700 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 disabled:opacity-70 flex items-center gap-2 transition-all"
           >
             {isSaving ? (

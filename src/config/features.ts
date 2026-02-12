@@ -24,12 +24,15 @@ export const FEATURE_FLAGS = {
   ENABLE_NOTE_DELETION: true, // Permite eliminar una nota
   ENABLE_NOTE_FILTERS: true,  // Permite filtrar notas por tags y fecha
   ENABLE_NOTE_AI_REFORMULATION: true, // Permite reformular contenido de nota con IA
-  ENABLE_EVENTS_VIEW: true,
-  ENABLE_EVENT_CREATION: true,
-  ENABLE_EVENT_DETAIL: true,
-  ENABLE_EVENT_EDITING: true,
-  ENABLE_EVENT_DELETION: true,
-  ENABLE_EVENT_LINKING: true,
+  
+  // --- Eventos (Events) ---
+  ENABLE_EVENTS_VIEW: true, // Permite ver el listado de eventos
+  ENABLE_EVENT_CREATION: true, // Permite crear nuevos eventos
+  ENABLE_EVENT_DETAIL: true, // Permite ver el detalle de un evento
+  ENABLE_EVENT_EDITING: true, // Permite editar un evento existente
+  ENABLE_EVENT_DELETION: true, // Permite eliminar un evento
+  ENABLE_EVENT_LINKING: true, // Permite vincular eventos a tareas y notas, y viceversa
+  ENABLE_EVENT_AI_REFORMULATION: true, // Permite reformular descripción de evento con IA
 
   // --- Usuarios / Auth ---
   ENABLE_REGISTRATION: true, // Permite registrar nuevos usuarios
