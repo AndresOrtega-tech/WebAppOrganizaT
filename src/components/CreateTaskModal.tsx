@@ -15,6 +15,7 @@ interface CreateTaskModalProps {
 export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: CreateTaskModalProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [formData, setFormData] = useState<CreateTaskDTO>({
     title: '',
@@ -34,9 +35,10 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if ((formData.description?.length || 0) > 500) {
-      alert('La descripción excede los 500 caracteres. Por favor, reformúlala con IA.');
+      setError('La descripción excede los 500 caracteres. Por favor, reformúlala con IA.');
       return;
     }
 
@@ -69,7 +71,7 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
         router.push('/login');
         return;
       }
-      alert('Error al crear la tarea');
+      setError('Error al crear la tarea');
     } finally {
       setLoading(false);
     }
@@ -101,6 +103,15 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {error && (
+          <div className="px-6 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800">
+            <p className="text-sm text-red-600 dark:text-red-400 font-medium flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+              {error}
+            </p>
+          </div>
+        )}
         
         <div className="p-6 overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-5">

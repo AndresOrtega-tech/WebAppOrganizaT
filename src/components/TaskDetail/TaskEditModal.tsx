@@ -24,6 +24,7 @@ export default function TaskEditModal({
   isSaving 
 }: TaskEditModalProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { isReformulating, handleReformulate } = useAiReformulation(
     editForm.description,
@@ -32,11 +33,18 @@ export default function TaskEditModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
     if (editForm.description.length > 500) {
-      alert('La descripción excede los 500 caracteres. Por favor, reformúlala con IA.');
+      setError('La descripción excede los 500 caracteres. Por favor, reformúlala con IA.');
       return;
     }
-    await onSubmit(e);
+    try {
+      await onSubmit(e);
+    } catch (err) {
+      console.error(err);
+      setError('Error al guardar los cambios');
+    }
   };
 
   if (!isOpen) return null;
@@ -67,6 +75,15 @@ export default function TaskEditModal({
           </button>
         </div>
         
+        {error && (
+          <div className="px-6 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800">
+            <p className="text-sm text-red-600 dark:text-red-400 font-medium flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+              {error}
+            </p>
+          </div>
+        )}
+
         <div className="p-6 overflow-y-auto">
           <form id="edit-form" onSubmit={handleSubmit} className="space-y-5">
             {/* Title */}

@@ -16,6 +16,7 @@ interface NoteModalProps {
 export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }: NoteModalProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     content: ''
@@ -46,9 +47,10 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (formData.content.length > 800) {
-      alert('El contenido excede los 800 caracteres. Por favor, reformúlalo con IA.');
+      setError('El contenido excede los 800 caracteres. Por favor, reformúlalo con IA.');
       return;
     }
 
@@ -79,7 +81,7 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
         router.push('/login');
         return;
       }
-      alert(`Error al ${isEditMode ? 'actualizar' : 'crear'} la nota`);
+      setError(`Error al ${isEditMode ? 'actualizar' : 'crear'} la nota`);
     } finally {
       setLoading(false);
     }
@@ -111,7 +113,7 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
         router.push('/login');
         return;
       }
-      alert('Error al actualizar el estado de la nota');
+      setError('Error al actualizar el estado de la nota');
     } finally {
       setLoading(false);
     }
@@ -140,6 +142,15 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {error && (
+          <div className="px-6 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800">
+            <p className="text-sm text-red-600 dark:text-red-400 font-medium flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+              {error}
+            </p>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">

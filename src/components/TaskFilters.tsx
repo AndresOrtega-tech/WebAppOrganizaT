@@ -233,8 +233,8 @@ export default function TaskFilters({ onFiltersChange, className = '', initialFi
             isOpen={isDatePickerOpen}
             onClose={() => setIsDatePickerOpen(false)}
             onSave={(date) => {
-              // Extract just the date part YYYY-MM-DD
-              const dateStr = date.split('T')[0];
+              // Extract just the date part YYYY-MM-DD using local time
+              const dateStr = new Date(date).toLocaleDateString('sv');
               setFilters({ ...filters, due_date: dateStr });
               setIsDatePickerOpen(false);
             }}

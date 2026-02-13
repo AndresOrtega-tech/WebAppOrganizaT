@@ -170,9 +170,9 @@ export default function EventsPage() {
                 >
                   Mostrar todo
                 </button>
-                {(filters.start_date !== new Date().toISOString().split('T')[0] || filters.end_date) && (
+                {(filters.start_date !== new Date().toLocaleDateString('sv') || filters.end_date) && (
                   <button
-                    onClick={() => setFilters({ start_date: new Date().toISOString().split('T')[0] })}
+                    onClick={() => setFilters({ start_date: new Date().toLocaleDateString('sv') })}
                     className="px-4 py-2 mb-[1px] text-sm font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-xl transition-all"
                   >
                     Hoy
@@ -187,7 +187,9 @@ export default function EventsPage() {
           isOpen={activePicker === 'start'}
           onClose={() => setActivePicker(null)}
           onSave={(date) => {
-            setFilters(prev => ({ ...prev, start_date: date.split('T')[0] }));
+            // Use local date to avoid UTC shifts
+            const dateStr = new Date(date).toLocaleDateString('sv');
+            setFilters(prev => ({ ...prev, start_date: dateStr }));
             setActivePicker(null);
           }}
           initialDate={filters.start_date}
@@ -198,7 +200,9 @@ export default function EventsPage() {
           isOpen={activePicker === 'end'}
           onClose={() => setActivePicker(null)}
           onSave={(date) => {
-            setFilters(prev => ({ ...prev, end_date: date.split('T')[0] }));
+            // Use local date to avoid UTC shifts
+            const dateStr = new Date(date).toLocaleDateString('sv');
+            setFilters(prev => ({ ...prev, end_date: dateStr }));
             setActivePicker(null);
           }}
           initialDate={filters.end_date}

@@ -115,35 +115,31 @@ export const taskService = {
 
     // Client-side filtering for dates
     if (filters) {
+      const todayStr = new Date().toLocaleDateString('sv');
+
       tasks = tasks.filter((task: Task) => {
         // Always show tasks without due date
         if (!task.due_date) return true;
 
-        const taskDate = new Date(task.due_date);
-        taskDate.setHours(0, 0, 0, 0);
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const taskDateStr = task.due_date;
 
         // If a specific date is selected
         if (filters.due_date) {
-          // Adjust selection to local date for comparison
-          const selectedDate = new Date(filters.due_date + 'T00:00:00'); // Ensure local time parsing
-          selectedDate.setHours(0, 0, 0, 0);
-
           if (filters.show_overdue) {
             // Show everything up to selected date (Backlog + Day)
-            return taskDate <= selectedDate;
+            // String comparison works for ISO dates (YYYY-MM-DD)
+            return taskDateStr <= filters.due_date;
           } else {
             // Show ONLY selected date
-            return taskDate.getTime() === selectedDate.getTime();
+            return taskDateStr === filters.due_date;
           }
         } 
         
         // No specific date selected
         if (!filters.show_overdue) {
           // Don't show overdue (past tasks)
-          return taskDate >= today;
+          // Overdue means due_date < today, so we want due_date >= today
+          return taskDateStr >= todayStr;
         }
 
         // Default: Show all (Overdue + Future)
