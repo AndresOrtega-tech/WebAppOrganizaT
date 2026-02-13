@@ -43,7 +43,7 @@ export default function TaskCard({
     return `${date.toLocaleDateString('es-MX', { month: 'short', day: 'numeric' })}, ${timeStr}`;
   };
 
-  const isOverdue = !task.is_completed && task.due_date && new Date(task.due_date) < new Date();
+  const isOverdue = !task.is_completed && task.due_date && task.due_date < new Date().toLocaleDateString('sv');
 
   const content = (
     <div 

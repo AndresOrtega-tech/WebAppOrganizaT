@@ -21,7 +21,7 @@ export default function EventsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filters, setFilters] = useState<EventFilters>({
-    start_date: new Date().toISOString().split('T')[0]
+    start_date: new Date().toLocaleDateString('sv')
   });
   const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null);
 
