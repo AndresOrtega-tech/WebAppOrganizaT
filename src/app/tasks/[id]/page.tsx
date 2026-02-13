@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import ConfirmationModal from '@/components/ConfirmationModal';
@@ -71,6 +71,15 @@ export default function TaskDetailPage() {
         ? `/tasks/${fromId}`
         : '/home';
 
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isFeatureEnabled('ENABLE_TASK_DETAIL')) {
+      router.push('/home');
+      return;
+    }
+  }, [router]);
+
   useEffect(() => {
     if (!task || !isEventLinkingEnabled) return;
     loadEvents();
@@ -79,9 +88,7 @@ export default function TaskDetailPage() {
   const loadEvents = async () => {
     try {
       setEventsError(null);
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-      const data = await eventsService.getEvents(token);
+      const data = await eventsService.getEvents();
       setEvents(data);
     } catch (err) {
       console.error('Error loading events:', err);
@@ -95,10 +102,7 @@ export default function TaskDetailPage() {
     setIsLinkEventModalOpen(true);
     setIsLoadingEvents(true);
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      const data = await eventsService.getEvents(token);
+      const data = await eventsService.getEvents();
       const linkedIds = new Set(linkedEvents.map(e => e.id));
       setAvailableEvents(data.filter(e => !linkedIds.has(e.id)));
     } catch (err) {
@@ -112,10 +116,7 @@ export default function TaskDetailPage() {
   const handleLinkEvent = async (eventId: string) => {
     if (!task) return;
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      await eventsService.linkTaskToEvent(token, eventId, task.id);
+      await eventsService.linkTaskToEvent(eventId, task.id);
       const selectedEvent = availableEvents.find(e => e.id === eventId) || events.find(e => e.id === eventId);
       const eventNotes = selectedEvent?.notes || [];
       const taskNotes = task.notes || [];
@@ -123,14 +124,14 @@ export default function TaskDetailPage() {
 
       for (const note of taskNotes) {
         if (!eventNoteIds.has(note.id)) {
-          await eventsService.linkNoteToEvent(token, eventId, note.id);
+          await eventsService.linkNoteToEvent(eventId, note.id);
         }
       }
 
       const taskNoteIds = new Set(taskNotes.map(n => n.id));
       for (const note of eventNotes) {
         if (!taskNoteIds.has(note.id)) {
-          await taskService.linkNoteToTask(token, task.id, note.id);
+          await taskService.linkNoteToTask(task.id, note.id);
         }
       }
 
@@ -151,10 +152,7 @@ export default function TaskDetailPage() {
   const confirmUnlinkEvent = async () => {
     if (!eventToUnlink || !task) return;
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      await eventsService.unlinkTaskFromEvent(token, eventToUnlink, task.id);
+      await eventsService.unlinkTaskFromEvent(eventToUnlink, task.id);
       await loadEvents();
       await reloadTask();
       setShowUnlinkEventModal(false);

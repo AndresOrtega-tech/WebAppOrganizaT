@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, X, Clock, Calendar as CalendarIcon } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 
 interface DateTimePickerProps {
   initialDate?: string | null;
@@ -11,43 +11,39 @@ interface DateTimePickerProps {
   includeTime?: boolean;
 }
 
-export default function DateTimePicker({ initialDate, isOpen, onClose, onSave, includeTime = true }: DateTimePickerProps) {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
-  const [selectedTime, setSelectedTime] = useState<string>('09:00');
-  const [timeInput, setTimeInput] = useState<string>('09:00');
-  const [showTimeList, setShowTimeList] = useState(false);
-  
-  const timeListRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      // Handle timezone issues: YYYY-MM-DD defaults to UTC, which might be previous day in local time.
-      // Append time to ensure local parsing if it's a date-only string.
-      let date: Date;
-      if (initialDate) {
-        if (initialDate.includes('T')) {
-          date = new Date(initialDate);
-        } else {
-          // It's a date string like '2023-10-27'. Append T00:00:00 to force local time parsing in some browsers,
-          // or better yet, parse components manually to avoid any ambiguity.
-          const [year, month, day] = initialDate.split('-').map(Number);
-          date = new Date(year, month - 1, day);
-        }
-      } else {
-        date = new Date();
-      }
-      
-      setSelectedDate(date);
-      setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
-      
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      const timeStr = `${hours}:${minutes}`;
-      setSelectedTime(timeStr);
-      setTimeInput(timeStr);
+const parseInitialDate = (initialDate?: string | null) => {
+  if (initialDate) {
+    if (initialDate.includes('T')) {
+      return new Date(initialDate);
     }
-  }, [isOpen, initialDate]);
+    const [year, month, day] = initialDate.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date();
+};
+
+const buildInitialState = (initialDate?: string | null) => {
+  const date = parseInitialDate(initialDate);
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const timeStr = `${hours}:${minutes}`;
+  return {
+    selectedDate: date,
+    currentMonth: new Date(date.getFullYear(), date.getMonth(), 1),
+    selectedTime: timeStr,
+    timeInput: timeStr
+  };
+};
+
+function DateTimePickerContent({ initialDate, onClose, onSave, includeTime = true }: DateTimePickerProps) {
+  const initialState = buildInitialState(initialDate);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => initialState.selectedDate);
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => initialState.currentMonth);
+  const [selectedTime, setSelectedTime] = useState<string>(() => initialState.selectedTime);
+  const [timeInput, setTimeInput] = useState<string>(() => initialState.timeInput);
+  const [showTimeList, setShowTimeList] = useState(false);
+
+  const timeListRef = useRef<HTMLDivElement>(null);
 
   // Calendar Logic
   const daysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -144,8 +140,6 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave, i
     onSave(selectedDate.toISOString());
     onClose();
   };
-
-  if (!isOpen) return null;
 
   const weekDays = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
   const monthNames = [
@@ -261,5 +255,15 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave, i
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DateTimePicker(props: DateTimePickerProps) {
+  if (!props.isOpen) return null;
+  return (
+    <DateTimePickerContent
+      key={props.initialDate ?? 'new'}
+      {...props}
+    />
   );
 }

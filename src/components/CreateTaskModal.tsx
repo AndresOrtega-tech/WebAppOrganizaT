@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { X, Calendar, Loader2 } from 'lucide-react';
 import { Task, taskService, CreateTaskDTO, TaskPriority } from '@/services/task.service';
 import DateTimePicker from './DateTimePicker';
@@ -13,7 +12,6 @@ interface CreateTaskModalProps {
 }
 
 export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: CreateTaskModalProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -44,12 +42,8 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        throw new Error('No auth token');
-      }
 
-      const newTask = await taskService.createTask(token, formData);
+      const newTask = await taskService.createTask(formData);
 
       onTaskCreated(newTask);
       onClose();
@@ -64,13 +58,6 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
       });
     } catch (err) {
       console.error('Error creating task:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
       setError('Error al crear la tarea');
     } finally {
       setLoading(false);

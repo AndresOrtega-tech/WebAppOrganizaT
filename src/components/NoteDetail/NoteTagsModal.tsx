@@ -29,12 +29,9 @@ export default function NoteTagsModal({
   }, [isOpen, currentTagIds]);
 
   const loadTags = async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-
     try {
       setIsLoadingTags(true);
-      const data = await tagsService.getTags(token);
+      const data = await tagsService.getTags();
       setTags(data);
     } catch (error) {
       console.error('Error loading tags:', error);

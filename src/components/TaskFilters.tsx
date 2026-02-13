@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Tag, tagsService } from '@/services/tags.service';
 import { TaskFilters as FilterParams } from '@/services/task.service';
-import { Filter, X, ArrowUpDown, Calendar, CheckCircle2, ChevronDown, Calendar as CalendarIcon, Clock, AlertTriangle } from 'lucide-react';
+import { Filter, X, ChevronDown, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
 import DateTimePicker from './DateTimePicker';
 
 interface TaskFiltersProps {
@@ -17,23 +17,25 @@ export default function TaskFilters({ onFiltersChange, className = '', initialFi
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-  useEffect(() => {
-    loadTags();
-  }, []);
+  const loadTags = async () => {
+    try {
+      const data = await tagsService.getTags();
+      setTags(data);
+    } catch (error) {
+      console.error('Error loading tags for filters:', error);
+    }
+  };
 
   useEffect(() => {
     // Debounce filter changes if needed, or apply immediately
     onFiltersChange(filters);
   }, [filters, onFiltersChange]);
 
-  const loadTags = async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-    try {
-      const data = await tagsService.getTags(token);
-      setTags(data);
-    } catch (error) {
-      console.error('Error loading tags for filters:', error);
+  const handleToggleOpen = () => {
+    const nextOpen = !isOpen;
+    setIsOpen(nextOpen);
+    if (nextOpen && tags.length === 0) {
+      loadTags();
     }
   };
 
@@ -80,7 +82,7 @@ export default function TaskFilters({ onFiltersChange, className = '', initialFi
     <div className={`bg-white dark:bg-gray-900 rounded-3xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 ${className}`}>
       <div className="flex items-center justify-between mb-4">
         <button 
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleToggleOpen}
           className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
         >
           <Filter className="w-4 h-4" />

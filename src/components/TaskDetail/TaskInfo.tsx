@@ -57,12 +57,12 @@ export default function TaskInfo({ task, onRemoveTag, onLinkNote, onUnlinkNote, 
               <ReactMarkdown 
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  a: ({node, ...props}) => <a className="text-indigo-600 dark:text-indigo-400 hover:underline" {...props} />,
-                  ul: ({node, ...props}) => <ul className="list-disc list-inside" {...props} />,
-                  ol: ({node, ...props}) => <ol className="list-decimal list-inside" {...props} />,
-                  li: ({node, ...props}) => <li className="mb-1" {...props} />,
-                  p: ({node, ...props}) => <p className="mb-2" {...props} />,
-                  strong: ({node, ...props}) => <strong className="font-bold text-gray-900 dark:text-white" {...props} />,
+                  a: ({node: _node, ...props}) => <a className="text-indigo-600 dark:text-indigo-400 hover:underline" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  ul: ({node: _node, ...props}) => <ul className="list-disc list-inside" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  ol: ({node: _node, ...props}) => <ol className="list-decimal list-inside" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  li: ({node: _node, ...props}) => <li className="mb-1" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  p: ({node: _node, ...props}) => <p className="mb-2" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  strong: ({node: _node, ...props}) => <strong className="font-bold text-gray-900 dark:text-white" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
                 }}
               >
                 {task.description || 'Sin descripción'}

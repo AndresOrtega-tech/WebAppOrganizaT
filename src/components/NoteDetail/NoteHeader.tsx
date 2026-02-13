@@ -43,7 +43,7 @@ export default function NoteHeader({ backHref, onDelete, onEdit, onManageTags }:
             </button>
           )}
 
-          {isFeatureEnabled('ENABLE_NOTE_EDITING') && (
+          {isFeatureEnabled('ENABLE_NOTE_EDIT') && (
             <button
               onClick={onEdit}
               className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors"

@@ -3,15 +3,16 @@
  import { useEffect, useState } from 'react';
  import { useRouter } from 'next/navigation';
  import Link from 'next/link';
- import { CalendarDays, CheckSquare, StickyNote, User as UserIcon, Plus, Loader2 } from 'lucide-react';
+import { CalendarDays, CheckSquare, StickyNote, User as UserIcon, Plus, Loader2 } from 'lucide-react';
  import ThemeToggle from '@/components/ThemeToggle';
  import EventModal from '@/components/EventModal';
  import { isFeatureEnabled } from '@/config/features';
- import { User } from '@/services/auth.service';
- import { Event, EventFilters, eventsService } from '@/services/events.service';
+ import { apiClient } from '@/services/api.client';
+import { Event, EventFilters, eventsService } from '@/services/events.service';
 import EventCard from '@/components/EventCard';
 import DateTimePicker from '@/components/DateTimePicker';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import { User } from '@/services/auth.service';
 
 export default function EventsPage() {
   const router = useRouter();
@@ -26,43 +27,31 @@ export default function EventsPage() {
   const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null);
 
    useEffect(() => {
-     if (!isFeatureEnabled('ENABLE_EVENTS_VIEW')) {
-       router.push('/home');
-       return;
-     }
+    if (!isFeatureEnabled('ENABLE_EVENTS_VIEW')) {
+      router.push('/home');
+      return;
+    }
 
-     const token = localStorage.getItem('access_token');
-     const userData = localStorage.getItem('user');
+    const userData = localStorage.getItem('user');
 
-     if (!token || !userData) {
-       router.push('/login');
-       return;
-     }
-
-    try {
-      setUser(JSON.parse(userData));
-      loadEvents(token, filters);
-    } catch (e) {
-      console.error('Error parsing user data', e);
-      router.push('/login');
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+        loadEvents(filters);
+      } catch (e) {
+        console.error('Error parsing user data', e);
+      }
     }
   }, [router, filters]);
 
-  const loadEvents = async (token: string, currentFilters?: EventFilters) => {
+  const loadEvents = async (currentFilters?: EventFilters) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await eventsService.getEvents(token, currentFilters);
+      const data = await eventsService.getEvents(currentFilters);
       setEvents(data);
     } catch (err) {
       console.error('Error loading events:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
       setError('Error al cargar eventos');
     } finally {
       setLoading(false);
@@ -70,20 +59,14 @@ export default function EventsPage() {
   };
 
    const handleLogout = () => {
-     localStorage.removeItem('access_token');
-     localStorage.removeItem('user');
-     localStorage.removeItem('refresh_token');
-     router.push('/login');
+     apiClient.logout();
    };
 
    if (!user) return null;
 
   const handleEventSaved = () => {
     setIsCreateModalOpen(false);
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      loadEvents(token, filters);
-    }
+    loadEvents(filters);
   };
 
    return (

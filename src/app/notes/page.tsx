@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { User } from '@/services/auth.service';
 import { Note, notesService, NoteFilters as NoteFiltersParams } from '@/services/notes.service';
@@ -11,12 +11,13 @@ import ConfirmationModal from '@/components/ConfirmationModal';
 import NoteFilters from '@/components/NoteFilters';
 import TagsSidebar from '@/components/TagsSidebar';
 import ThemeToggle from '@/components/ThemeToggle';
-import { Loader2, User as UserIcon, CheckSquare, Plus, StickyNote, CalendarDays } from 'lucide-react';
+import { Loader2, User as UserIcon, CheckSquare, Plus, CalendarDays } from 'lucide-react';
 import { isFeatureEnabled } from '@/config/features';
+
+import { apiClient } from '@/services/api.client';
 
 function NotesContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,91 +29,57 @@ function NotesContent() {
   });
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const loadNotes = useCallback(async (currentFilters: NoteFiltersParams) => {
+    try {
+      setLoading(true);
+      const data = await notesService.getNotes(currentFilters);
+      setNotes(data);
+    } catch (error) {
+      console.error('Error loading notes:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isFeatureEnabled('ENABLE_NOTES_VIEW')) {
       router.push('/home');
       return;
     }
 
-    const token = localStorage.getItem('access_token');
     const userData = localStorage.getItem('user');
 
-    if (!token || !userData) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      setUser(JSON.parse(userData));
-      
-      // Initial load with potential URL params if we wanted to support deep linking
-      // For now, we rely on NoteFilters to drive the state via onFiltersChange
-      // But we need to load notes initially if filters are empty
-      if (!isFeatureEnabled('ENABLE_NOTE_FILTERS')) {
-        loadNotes(token, filters);
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (e) {
+        console.error('Error parsing user data', e);
       }
-    } catch (e) {
-      console.error('Error parsing user data', e);
-      router.push('/login');
     }
-  }, [router]);
-
-  const loadNotes = async (token: string, currentFilters: NoteFiltersParams) => {
-    try {
-      setLoading(true);
-      const data = await notesService.getNotes(token, currentFilters);
-      setNotes(data);
-    } catch (error) {
-      console.error('Error loading notes:', error);
-      if (error instanceof Error && error.message === 'Unauthorized') {
-         localStorage.removeItem('access_token');
-         localStorage.removeItem('user');
-         localStorage.removeItem('refresh_token');
-         router.push('/login');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+    
+    // Initial load logic
+    loadNotes(filters);
+  }, [router, filters, loadNotes]);
 
   const handleFiltersChange = useCallback((newFilters: NoteFiltersParams) => {
     setFilters(newFilters);
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      loadNotes(token, newFilters);
-    }
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refresh_token');
-    router.push('/login');
+    apiClient.logout();
   };
 
-  const handleNoteCreated = (newNote: Note) => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      loadNotes(token, filters);
-    }
+  const handleNoteCreated = () => {
+    loadNotes(filters);
   };
 
   const handleArchiveNote = async (note: Note) => {
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
       // Optimistic update or just reload
-      await notesService.updateNote(token, note.id, { is_archived: !note.is_archived });
-      loadNotes(token, filters);
+      await notesService.updateNote(note.id, { is_archived: !note.is_archived });
+      loadNotes(filters);
     } catch (error) {
       console.error('Error archiving note:', error);
-      if (error instanceof Error && error.message === 'Unauthorized') {
-        router.push('/login');
-        return;
-      }
       alert('Error al actualizar el estado de la nota');
     }
   };
@@ -125,20 +92,11 @@ function NotesContent() {
     if (!deleteModal.noteId) return;
     try {
       setIsDeleting(true);
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-         router.push('/login');
-         return;
-      }
-      await notesService.deleteNote(token, deleteModal.noteId);
+      await notesService.deleteNote(deleteModal.noteId);
       setDeleteModal({ isOpen: false, noteId: null });
-      loadNotes(token, filters);
+      loadNotes(filters);
     } catch (error) {
       console.error('Error deleting note:', error);
-      if (error instanceof Error && error.message === 'Unauthorized') {
-        router.push('/login');
-        return;
-      }
       alert('Error al eliminar la nota');
     } finally {
       setIsDeleting(false);

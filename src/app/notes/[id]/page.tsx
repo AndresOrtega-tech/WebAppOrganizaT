@@ -48,13 +48,7 @@ export default function NoteDetailPage() {
       return;
     }
 
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
-    loadNote(token, id);
+    loadNote(id);
   }, [id, router]);
 
   useEffect(() => {
@@ -62,20 +56,13 @@ export default function NoteDetailPage() {
     loadEvents();
   }, [note]);
 
-  const loadNote = async (token: string, noteId: string) => {
+  const loadNote = async (noteId: string) => {
     try {
       setLoading(true);
-      const data = await notesService.getNoteById(token, noteId);
+      const data = await notesService.getNoteById(noteId);
       setNote(data);
     } catch (err) {
       console.error('Error loading note:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
       setError('Error al cargar la nota');
     } finally {
       setLoading(false);
@@ -85,9 +72,7 @@ export default function NoteDetailPage() {
   const loadEvents = async () => {
     try {
       setEventsError(null);
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-      const data = await eventsService.getEvents(token);
+      const data = await eventsService.getEvents();
       setEvents(data);
     } catch (err) {
       console.error('Error loading events:', err);
@@ -104,11 +89,6 @@ export default function NoteDetailPage() {
 
     try {
       setIsSaving(true);
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
 
       // Calculate diffs
       const currentTagIds = note.tags.map(t => t.id);
@@ -117,19 +97,19 @@ export default function NoteDetailPage() {
 
       // 1. Add new tags (if any)
       if (tagsToAdd.length > 0) {
-        await notesService.assignTagsToNote(token, note.id, tagsToAdd);
+        await notesService.assignTagsToNote(note.id, tagsToAdd);
       }
 
       // 2. Remove unselected tags (if any)
       if (tagsToRemove.length > 0) {
         // Execute sequentially to avoid race conditions or backend overload
         for (const tagId of tagsToRemove) {
-          await notesService.removeTagFromNote(token, note.id, tagId);
+          await notesService.removeTagFromNote(note.id, tagId);
         }
       }
       
       // Reload note to get updated tags
-      await loadNote(token, note.id);
+      await loadNote(note.id);
       setIsTagsModalOpen(false);
     } catch (err) {
       console.error('Error updating tags:', err);
@@ -144,20 +124,11 @@ export default function NoteDetailPage() {
     
     try {
       setIsDeleting(true);
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
 
-      await notesService.deleteNote(token, note.id);
+      await notesService.deleteNote(note.id);
       router.push('/notes');
     } catch (err) {
       console.error('Error deleting note:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        router.push('/login');
-        return;
-      }
       alert('Error al eliminar la nota');
     } finally {
       setIsDeleting(false);
@@ -169,22 +140,15 @@ export default function NoteDetailPage() {
     if (!note) return;
 
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
       // Optimistic update
       const updatedTags = note.tags.filter(t => t.id !== tagId);
       setNote({ ...note, tags: updatedTags });
 
-      await notesService.removeTagFromNote(token, note.id, tagId);
+      await notesService.removeTagFromNote(note.id, tagId);
     } catch (err) {
       console.error('Error removing tag:', err);
       // Revert on error
-      const token = localStorage.getItem('access_token');
-      if (token) loadNote(token, note.id);
+      loadNote(note.id);
     }
   };
 
@@ -192,10 +156,7 @@ export default function NoteDetailPage() {
     setIsLinkModalOpen(true);
     setIsLoadingTasks(true);
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      const tasks = await taskService.getTasks(token);
+      const tasks = await taskService.getTasks();
       // Filter out already linked tasks
       const linkedTaskIds = note?.tasks?.map(t => t.id) || [];
       const available = tasks.filter(t => !linkedTaskIds.includes(t.id));
@@ -211,12 +172,9 @@ export default function NoteDetailPage() {
   const handleLinkTask = async (taskId: string) => {
     if (!note) return;
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
       // Use taskService to link note to task (endpoint works both ways effectively)
-      await taskService.linkNoteToTask(token, taskId, note.id);
-      await loadNote(token, note.id); // Reload to show new link
+      await taskService.linkNoteToTask(taskId, note.id);
+      await loadNote(note.id); // Reload to show new link
       setIsLinkModalOpen(false);
     } catch (err) {
       console.error('Error linking task:', err);
@@ -233,11 +191,8 @@ export default function NoteDetailPage() {
     if (!note || !taskToUnlink) return;
 
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      await taskService.unlinkNoteFromTask(token, taskToUnlink, note.id);
-      await loadNote(token, note.id);
+      await taskService.unlinkNoteFromTask(taskToUnlink, note.id);
+      await loadNote(note.id);
       setShowUnlinkModal(false);
       setTaskToUnlink(null);
     } catch (err) {
@@ -252,10 +207,7 @@ export default function NoteDetailPage() {
     setIsLinkEventModalOpen(true);
     setIsLoadingEvents(true);
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      const data = await eventsService.getEvents(token);
+      const data = await eventsService.getEvents();
       const linkedIds = new Set(linkedEvents.map(e => e.id));
       setAvailableEvents(data.filter(e => !linkedIds.has(e.id)));
     } catch (err) {
@@ -269,10 +221,7 @@ export default function NoteDetailPage() {
   const handleLinkEvent = async (eventId: string) => {
     if (!note) return;
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      await eventsService.linkNoteToEvent(token, eventId, note.id);
+      await eventsService.linkNoteToEvent(eventId, note.id);
       const selectedEvent = availableEvents.find(e => e.id === eventId) || events.find(e => e.id === eventId);
       const eventTasks = selectedEvent?.tasks || [];
       const noteTasks = note.tasks || [];
@@ -280,19 +229,19 @@ export default function NoteDetailPage() {
 
       for (const task of noteTasks) {
         if (!eventTaskIds.has(task.id)) {
-          await eventsService.linkTaskToEvent(token, eventId, task.id);
+          await eventsService.linkTaskToEvent(eventId, task.id);
         }
       }
 
       const noteTaskIds = new Set(noteTasks.map(t => t.id));
       for (const task of eventTasks) {
         if (!noteTaskIds.has(task.id)) {
-          await taskService.linkNoteToTask(token, task.id, note.id);
+          await taskService.linkNoteToTask(task.id, note.id);
         }
       }
 
       await loadEvents();
-      await loadNote(token, note.id);
+      await loadNote(note.id);
       setIsLinkEventModalOpen(false);
     } catch (err) {
       console.error('Error linking event:', err);
@@ -308,12 +257,9 @@ export default function NoteDetailPage() {
   const confirmUnlinkEvent = async () => {
     if (!note || !eventToUnlink) return;
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      await eventsService.unlinkNoteFromEvent(token, eventToUnlink, note.id);
+      await eventsService.unlinkNoteFromEvent(eventToUnlink, note.id);
       await loadEvents();
-      await loadNote(token, note.id);
+      await loadNote(note.id);
       setShowUnlinkEventModal(false);
       setEventToUnlink(null);
     } catch (err) {

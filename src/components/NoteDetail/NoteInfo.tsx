@@ -43,11 +43,11 @@ export default function NoteInfo({ note, onRemoveTag, onLinkTask, onUnlinkTask, 
               <ReactMarkdown 
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  ul: ({node, ...props}) => <ul className="list-disc list-outside ml-6 mb-4 space-y-1" {...props} />,
-                  ol: ({node, ...props}) => <ol className="list-decimal list-outside ml-6 mb-4 space-y-1" {...props} />,
-                  li: ({node, ...props}) => <li className="pl-1" {...props} />,
-                  strong: ({node, ...props}) => <strong className="font-bold text-gray-900 dark:text-white" {...props} />,
-                  p: ({node, ...props}) => <p className="mb-4 leading-relaxed" {...props} />,
+                  ul: ({node: _node, ...props}) => <ul className="list-disc list-outside ml-6 mb-4 space-y-1" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  ol: ({node: _node, ...props}) => <ol className="list-decimal list-outside ml-6 mb-4 space-y-1" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  li: ({node: _node, ...props}) => <li className="pl-1" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  strong: ({node: _node, ...props}) => <strong className="font-bold text-gray-900 dark:text-white" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  p: ({node: _node, ...props}) => <p className="mb-4 leading-relaxed" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
                 }}
               >
                 {note.content}

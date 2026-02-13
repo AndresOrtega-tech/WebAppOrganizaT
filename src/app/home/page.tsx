@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { User } from '@/services/auth.service';
 import { Task, taskService, TaskFilters as TaskFiltersParams } from '@/services/task.service';
+import { apiClient } from '@/services/api.client';
 import TaskCard from '@/components/TaskCard';
 import CreateTaskModal from '@/components/CreateTaskModal';
 import ConfirmationModal from '@/components/ConfirmationModal';
@@ -15,7 +15,6 @@ import { isFeatureEnabled } from '@/config/features';
 import Link from 'next/link';
 
 export default function HomePage() {
-  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,60 +32,43 @@ export default function HomePage() {
   const [filters, setFilters] = useState<TaskFiltersParams>(DEFAULT_FILTERS);
   const [activeContextMenuTaskId, setActiveContextMenuTaskId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    const userData = localStorage.getItem('user');
-
-    if (!token || !userData) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      setUser(JSON.parse(userData));
-      loadTasks(token, filters);
-    } catch (e) {
-      console.error('Error parsing user data', e);
-      router.push('/login');
-    }
-  }, [router]);
-
-  const loadTasks = async (token: string, currentFilters: TaskFiltersParams) => {
+  const loadTasks = useCallback(async (currentFilters: TaskFiltersParams) => {
     try {
       setLoading(true);
-      const data = await taskService.getTasks(token, currentFilters);
+      const data = await taskService.getTasks(currentFilters);
       setTasks(data);
     } catch (error) {
       console.error('Error loading tasks:', error);
-      if (error instanceof Error && error.message === 'Unauthorized') {
-         handleLogout();
-      }
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (e) {
+        console.error('Error parsing user data', e);
+      }
+    }
+    
+    loadTasks(filters);
+  }, [filters, loadTasks]);
 
   const handleFiltersChange = useCallback((newFilters: TaskFiltersParams) => {
     setFilters(newFilters);
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      loadTasks(token, newFilters);
-    }
   }, []);
 
-  const handleTaskCreated = (newTask: Task) => {
+  const handleTaskCreated = () => {
     // Reload tasks to respect current sort/filter order from backend
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      loadTasks(token, filters);
-    }
+    loadTasks(filters);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refresh_token');
-    router.push('/login');
+    apiClient.logout();
   };
 
   const handleContextMenu = useCallback((e: React.MouseEvent, task: Task) => {
@@ -96,10 +78,7 @@ export default function HomePage() {
   }, []);
 
   const handleContextMenuUpdate = () => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      loadTasks(token, filters);
-    }
+    loadTasks(filters);
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -111,22 +90,12 @@ export default function HomePage() {
 
     try {
       setIsDeleting(true);
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
-      await taskService.deleteTask(token, taskToDelete);
+      await taskService.deleteTask(taskToDelete);
       const updatedTasks = tasks.filter((t) => t.id !== taskToDelete);
       setTasks(updatedTasks);
       setTaskToDelete(null);
     } catch (err) {
       console.error('Error deleting task:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        handleLogout();
-        return;
-      }
       alert('Error al eliminar la tarea');
     } finally {
       setIsDeleting(false);

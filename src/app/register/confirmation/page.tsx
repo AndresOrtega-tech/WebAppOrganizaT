@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckCircle2, Mail } from 'lucide-react';
+import { Mail } from 'lucide-react';
 
 export default function RegistrationConfirmationPage() {
   return (

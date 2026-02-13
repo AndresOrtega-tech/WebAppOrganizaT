@@ -60,46 +60,30 @@
   const [noteToUnlink, setNoteToUnlink] = useState<string | null>(null);
 
    useEffect(() => {
-     if (!isFeatureEnabled('ENABLE_EVENT_DETAIL')) {
-       router.push('/events');
-       return;
-     }
+    if (!isFeatureEnabled('ENABLE_EVENT_DETAIL')) {
+      router.push('/events');
+      return;
+    }
 
-     const token = localStorage.getItem('access_token');
-     if (!token) {
-       router.push('/login');
-       return;
-     }
+    loadEvent(id);
+  }, [id, router]);
 
-     loadEvent(token, id);
-   }, [id, router]);
-
-   const loadEvent = async (token: string, eventId: string) => {
-     try {
-       setLoading(true);
-       const data = await eventsService.getEventById(token, eventId);
-       setEvent(data);
-     } catch (err) {
-       console.error('Error loading event:', err);
-       if (err instanceof Error && err.message === 'Unauthorized') {
-         localStorage.removeItem('access_token');
-         localStorage.removeItem('user');
-         localStorage.removeItem('refresh_token');
-         router.push('/login');
-         return;
-       }
-       setError('Error al cargar el evento');
-     } finally {
-       setLoading(false);
-     }
-   };
+  const loadEvent = async (eventId: string) => {
+    try {
+      setLoading(true);
+      const data = await eventsService.getEventById(eventId);
+      setEvent(data);
+    } catch (err) {
+      console.error('Error loading event:', err);
+      setError('Error al cargar el evento');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEventSaved = () => {
     setIsEditModalOpen(false);
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      loadEvent(token, id);
-    }
+    loadEvent(id);
   };
 
   const confirmDelete = async () => {
@@ -107,23 +91,10 @@
 
     try {
       setIsDeleting(true);
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
-      await eventsService.deleteEvent(token, event.id);
+      await eventsService.deleteEvent(event.id);
       router.push('/events');
     } catch (err) {
       console.error('Error deleting event:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
       setError('Error al eliminar el evento');
     } finally {
       setIsDeleting(false);
@@ -135,10 +106,7 @@
     setIsLinkTaskModalOpen(true);
     setIsLoadingTasks(true);
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      const tasks = await taskService.getTasks(token);
+      const tasks = await taskService.getTasks();
       const linkedTaskIds = event?.tasks?.map(t => t.id) || [];
       const available = tasks.filter(t => !linkedTaskIds.includes(t.id));
       setAvailableTasks(available);
@@ -154,10 +122,7 @@
     setIsLinkNoteModalOpen(true);
     setIsLoadingNotes(true);
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      const notes = await notesService.getNotes(token);
+      const notes = await notesService.getNotes();
       const linkedNoteIds = event?.notes?.map(n => n.id) || [];
       const available = notes.filter(n => !linkedNoteIds.includes(n.id));
       setAvailableNotes(available);
@@ -172,10 +137,7 @@
   const handleLinkTask = async (taskId: string) => {
     if (!event) return;
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      await eventsService.linkTaskToEvent(token, event.id, taskId);
+      await eventsService.linkTaskToEvent(event.id, taskId);
       const selectedTask = availableTasks.find(t => t.id === taskId);
       const eventNotes = event.notes || [];
       const eventNoteIds = new Set(eventNotes.map(n => n.id));
@@ -183,18 +145,18 @@
 
       for (const note of taskNotes) {
         if (!eventNoteIds.has(note.id)) {
-          await eventsService.linkNoteToEvent(token, event.id, note.id);
+          await eventsService.linkNoteToEvent(event.id, note.id);
         }
       }
 
       const taskNoteIds = new Set(taskNotes.map(n => n.id));
       for (const note of eventNotes) {
         if (!taskNoteIds.has(note.id)) {
-          await taskService.linkNoteToTask(token, taskId, note.id);
+          await taskService.linkNoteToTask(taskId, note.id);
         }
       }
 
-      await loadEvent(token, event.id);
+      await loadEvent(event.id);
       setIsLinkTaskModalOpen(false);
     } catch (err) {
       console.error('Error linking task:', err);
@@ -205,10 +167,7 @@
   const handleLinkNote = async (noteId: string) => {
     if (!event) return;
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      await eventsService.linkNoteToEvent(token, event.id, noteId);
+      await eventsService.linkNoteToEvent(event.id, noteId);
       const selectedNote = availableNotes.find(n => n.id === noteId);
       const eventTasks = event.tasks || [];
       const eventTaskIds = new Set(eventTasks.map(t => t.id));
@@ -216,18 +175,18 @@
 
       for (const task of noteTasks) {
         if (!eventTaskIds.has(task.id)) {
-          await eventsService.linkTaskToEvent(token, event.id, task.id);
+          await eventsService.linkTaskToEvent(event.id, task.id);
         }
       }
 
       const noteTaskIds = new Set(noteTasks.map(t => t.id));
       for (const task of eventTasks) {
         if (!noteTaskIds.has(task.id)) {
-          await taskService.linkNoteToTask(token, task.id, noteId);
+          await taskService.linkNoteToTask(task.id, noteId);
         }
       }
 
-      await loadEvent(token, event.id);
+      await loadEvent(event.id);
       setIsLinkNoteModalOpen(false);
     } catch (err) {
       console.error('Error linking note:', err);
@@ -248,11 +207,8 @@
   const confirmUnlinkTask = async () => {
     if (!event || !taskToUnlink) return;
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      await eventsService.unlinkTaskFromEvent(token, event.id, taskToUnlink);
-      await loadEvent(token, event.id);
+      await eventsService.unlinkTaskFromEvent(event.id, taskToUnlink);
+      await loadEvent(event.id);
       setShowUnlinkTaskModal(false);
       setTaskToUnlink(null);
     } catch (err) {
@@ -264,11 +220,8 @@
   const confirmUnlinkNote = async () => {
     if (!event || !noteToUnlink) return;
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      await eventsService.unlinkNoteFromEvent(token, event.id, noteToUnlink);
-      await loadEvent(token, event.id);
+      await eventsService.unlinkNoteFromEvent(event.id, noteToUnlink);
+      await loadEvent(event.id);
       setShowUnlinkNoteModal(false);
       setNoteToUnlink(null);
     } catch (err) {
@@ -276,6 +229,7 @@
       alert('Error al desvincular la nota');
     }
   };
+
 
    if (loading) {
      return (
@@ -314,7 +268,7 @@
            </div>
            <div className="flex gap-2 items-center">
              <ThemeToggle />
-             {isFeatureEnabled('ENABLE_EVENT_EDITING') && (
+             {isFeatureEnabled('ENABLE_EVENT_EDIT') && (
                <button
                  onClick={() => setIsEditModalOpen(true)}
                  className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-full transition-colors"
