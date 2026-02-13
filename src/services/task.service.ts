@@ -56,6 +56,8 @@ export interface TaskFilters {
   tag_ids?: string[];
   sort_by?: 'updated_at' | 'due_date';
   order?: 'asc' | 'desc';
+  due_date?: string;
+  show_overdue?: boolean;
 }
 
 const mapTaskResponse = (data: any): Task => {
@@ -87,6 +89,7 @@ export const taskService = {
       if (filters.tag_ids && filters.tag_ids.length > 0) {
         filters.tag_ids.forEach(id => params.append('tag_ids', id));
       }
+      // Note: due_date and show_overdue are handled client-side below
     }
 
     const queryString = params.toString();
@@ -104,11 +107,51 @@ export const taskService = {
       if (response.status === 401) {
         throw new Error('Unauthorized');
       }
-      throw new Error('Error fetching tasks');
+      throw new Error('Failed to fetch tasks');
     }
 
     const data = await response.json();
-    return data.map(mapTaskResponse);
+    let tasks = data.map(mapTaskResponse);
+
+    // Client-side filtering for dates
+    if (filters) {
+      tasks = tasks.filter((task: Task) => {
+        // Always show tasks without due date
+        if (!task.due_date) return true;
+
+        const taskDate = new Date(task.due_date);
+        taskDate.setHours(0, 0, 0, 0);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // If a specific date is selected
+        if (filters.due_date) {
+          // Adjust selection to local date for comparison
+          const selectedDate = new Date(filters.due_date + 'T00:00:00'); // Ensure local time parsing
+          selectedDate.setHours(0, 0, 0, 0);
+
+          if (filters.show_overdue) {
+            // Show everything up to selected date (Backlog + Day)
+            return taskDate <= selectedDate;
+          } else {
+            // Show ONLY selected date
+            return taskDate.getTime() === selectedDate.getTime();
+          }
+        } 
+        
+        // No specific date selected
+        if (!filters.show_overdue) {
+          // Don't show overdue (past tasks)
+          return taskDate >= today;
+        }
+
+        // Default: Show all (Overdue + Future)
+        return true;
+      });
+    }
+
+    return tasks;
   },
 
   async getTaskById(token: string, id: string): Promise<Task> {

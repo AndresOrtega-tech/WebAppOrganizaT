@@ -22,7 +22,15 @@ export default function HomePage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [filters, setFilters] = useState<TaskFiltersParams>({});
+  
+  const DEFAULT_FILTERS: TaskFiltersParams = {
+    is_completed: false,
+    sort_by: 'due_date',
+    order: 'asc',
+    show_overdue: true
+  };
+
+  const [filters, setFilters] = useState<TaskFiltersParams>(DEFAULT_FILTERS);
   const [activeContextMenuTaskId, setActiveContextMenuTaskId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -217,7 +225,7 @@ export default function HomePage() {
                         
                         {isFeatureEnabled('ENABLE_TASK_FILTERS') && (
                             <div className="mb-6">
-                                <TaskFilters onFiltersChange={handleFiltersChange} />
+                                <TaskFilters onFiltersChange={handleFiltersChange} initialFilters={DEFAULT_FILTERS} />
                             </div>
                         )}
 

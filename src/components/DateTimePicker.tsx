@@ -8,9 +8,10 @@ interface DateTimePickerProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (date: string) => void;
+  includeTime?: boolean;
 }
 
-export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }: DateTimePickerProps) {
+export default function DateTimePicker({ initialDate, isOpen, onClose, onSave, includeTime = true }: DateTimePickerProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string>('09:00');
@@ -191,7 +192,8 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
         </div>
 
         {/* Time Selector */}
-        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+        {includeTime && (
+          <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
             <div className="flex items-center gap-3 mb-2">
                 <Clock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Hora</span>
@@ -222,7 +224,8 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
                     </div>
                 )}
             </div>
-        </div>
+          </div>
+        )}
 
         {/* Footer Actions */}
         <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex gap-3">

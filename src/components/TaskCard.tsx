@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, Trash } from 'lucide-react';
+import { CheckCircle2, Circle, Trash, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -43,6 +43,8 @@ export default function TaskCard({
     return `${date.toLocaleDateString('es-MX', { month: 'short', day: 'numeric' })}, ${timeStr}`;
   };
 
+  const isOverdue = !task.is_completed && task.due_date && new Date(task.due_date) < new Date();
+
   const content = (
     <div 
       className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm dark:shadow-gray-800/50 border border-gray-100 dark:border-gray-800 flex items-center gap-4 group-hover:shadow-md dark:group-hover:shadow-gray-700 transition-all duration-200"
@@ -69,9 +71,17 @@ export default function TaskCard({
             </span>
           </div>
           {task.due_date && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-semibold">
-              {formatDate(task.due_date)}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className={`text-xs font-semibold ${isOverdue ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                {formatDate(task.due_date)}
+              </p>
+              {isOverdue && (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded border border-red-100 dark:border-red-800">
+                  <AlertTriangle className="w-3 h-3" />
+                  Atrasada
+                </span>
+              )}
+            </div>
           )}
           {task.description && (
             <div className="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-2 prose prose-sm max-w-none dark:prose-invert">

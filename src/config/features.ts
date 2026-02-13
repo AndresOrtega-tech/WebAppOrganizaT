@@ -32,6 +32,7 @@ export const FEATURE_FLAGS = {
   ENABLE_EVENT_EDITING: true, // Permite editar un evento existente
   ENABLE_EVENT_DELETION: true, // Permite eliminar un evento
   ENABLE_EVENT_LINKING: true, // Permite vincular eventos a tareas y notas, y viceversa
+  ENABLE_EVENT_FILTERS: true, // Permite filtrar eventos por fecha
   ENABLE_EVENT_AI_REFORMULATION: true, // Permite reformular descripción de evento con IA
 
   // --- Usuarios / Auth ---

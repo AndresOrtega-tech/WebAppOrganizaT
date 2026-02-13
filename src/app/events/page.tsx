@@ -8,16 +8,22 @@
  import EventModal from '@/components/EventModal';
  import { isFeatureEnabled } from '@/config/features';
  import { User } from '@/services/auth.service';
- import { Event, eventsService } from '@/services/events.service';
- import EventCard from '@/components/EventCard';
+ import { Event, EventFilters, eventsService } from '@/services/events.service';
+import EventCard from '@/components/EventCard';
+import DateTimePicker from '@/components/DateTimePicker';
+import { Calendar as CalendarIcon } from 'lucide-react';
 
- export default function EventsPage() {
-   const router = useRouter();
-   const [user, setUser] = useState<User | null>(null);
+export default function EventsPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [filters, setFilters] = useState<EventFilters>({
+    start_date: new Date().toISOString().split('T')[0]
+  });
+  const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null);
 
    useEffect(() => {
      if (!isFeatureEnabled('ENABLE_EVENTS_VIEW')) {
@@ -35,18 +41,18 @@
 
     try {
       setUser(JSON.parse(userData));
-      loadEvents(token);
+      loadEvents(token, filters);
     } catch (e) {
       console.error('Error parsing user data', e);
       router.push('/login');
     }
-   }, [router]);
+  }, [router, filters]);
 
-  const loadEvents = async (token: string) => {
+  const loadEvents = async (token: string, currentFilters?: EventFilters) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await eventsService.getEvents(token);
+      const data = await eventsService.getEvents(token, currentFilters);
       setEvents(data);
     } catch (err) {
       console.error('Error loading events:', err);
@@ -76,7 +82,7 @@
     setIsCreateModalOpen(false);
     const token = localStorage.getItem('access_token');
     if (token) {
-      loadEvents(token);
+      loadEvents(token, filters);
     }
   };
 
@@ -128,11 +134,78 @@
              Mis Eventos 📅
            </h2>
            <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm font-medium transition-colors">
-             Organiza tus reuniones, recordatorios y fechas importantes.
-           </p>
-         </div>
+            Organiza tus reuniones, recordatorios y fechas importantes.
+          </p>
+        </div>
 
-         {loading ? (
+        {isFeatureEnabled('ENABLE_EVENT_FILTERS') && (
+          <div className="mb-6 p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-800/50 border border-gray-100 dark:border-gray-800 flex flex-wrap items-end gap-4 transition-all">
+            <div className="space-y-1.5 w-full sm:w-auto">
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Desde</label>
+              <button
+                type="button"
+                onClick={() => setActivePicker('start')}
+                className="w-full sm:w-40 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:border-purple-400 transition-all flex items-center justify-between"
+              >
+                <span>{filters.start_date || 'Seleccionar'}</span>
+                <CalendarIcon className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+            <div className="space-y-1.5 w-full sm:w-auto">
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hasta</label>
+              <button
+                type="button"
+                onClick={() => setActivePicker('end')}
+                className="w-full sm:w-40 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:border-purple-400 transition-all flex items-center justify-between"
+              >
+                <span>{filters.end_date || 'Seleccionar'}</span>
+                <CalendarIcon className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+            {(filters.start_date || filters.end_date) && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setFilters({})}
+                  className="px-4 py-2 mb-[1px] text-sm font-bold text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all"
+                >
+                  Mostrar todo
+                </button>
+                {(filters.start_date !== new Date().toISOString().split('T')[0] || filters.end_date) && (
+                  <button
+                    onClick={() => setFilters({ start_date: new Date().toISOString().split('T')[0] })}
+                    className="px-4 py-2 mb-[1px] text-sm font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-xl transition-all"
+                  >
+                    Hoy
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        <DateTimePicker
+          isOpen={activePicker === 'start'}
+          onClose={() => setActivePicker(null)}
+          onSave={(date) => {
+            setFilters(prev => ({ ...prev, start_date: date.split('T')[0] }));
+            setActivePicker(null);
+          }}
+          initialDate={filters.start_date}
+          includeTime={false}
+        />
+
+        <DateTimePicker
+          isOpen={activePicker === 'end'}
+          onClose={() => setActivePicker(null)}
+          onSave={(date) => {
+            setFilters(prev => ({ ...prev, end_date: date.split('T')[0] }));
+            setActivePicker(null);
+          }}
+          initialDate={filters.end_date}
+          includeTime={false}
+        />
+
+        {loading ? (
            <div className="flex flex-col items-center justify-center py-20 text-gray-500 dark:text-gray-400 font-medium animate-pulse">
              <Loader2 className="w-8 h-8 animate-spin text-purple-400 mb-3" />
              <span>Cargando eventos...</span>
