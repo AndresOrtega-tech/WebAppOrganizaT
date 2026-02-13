@@ -69,13 +69,13 @@ export default function TaskDetailPage() {
       ? `/events/${fromId}`
       : from === 'task' && fromId
         ? `/tasks/${fromId}`
-        : '/home';
+        : '/tasks';
 
   const router = useRouter();
 
   useEffect(() => {
     if (!isFeatureEnabled('ENABLE_TASK_DETAIL')) {
-      router.push('/home');
+      router.push('/tasks');
       return;
     }
   }, [router]);

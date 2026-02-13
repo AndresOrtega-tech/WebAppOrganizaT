@@ -114,7 +114,7 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             <Link 
-              href="/home" 
+              href="/tasks" 
               className="p-2 -ml-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-all"
             >
               <ArrowLeft className="w-6 h-6" />

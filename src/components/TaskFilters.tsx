@@ -8,14 +8,26 @@ interface TaskFiltersProps {
   onFiltersChange: (filters: FilterParams) => void;
   className?: string;
   initialFilters?: FilterParams;
+  isOpen?: boolean;
+  onToggle?: () => void;
+  hideHeader?: boolean;
 }
 
-export default function TaskFilters({ onFiltersChange, className = '', initialFilters = {} }: TaskFiltersProps) {
+export default function TaskFilters({ 
+  onFiltersChange, 
+  className = '', 
+  initialFilters = {},
+  isOpen: controlledIsOpen,
+  onToggle: controlledOnToggle,
+  hideHeader = false
+}: TaskFiltersProps) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [filters, setFilters] = useState<FilterParams>(initialFilters);
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
 
   const loadTags = async () => {
     try {
@@ -27,16 +39,27 @@ export default function TaskFilters({ onFiltersChange, className = '', initialFi
   };
 
   useEffect(() => {
-    // Debounce filter changes if needed, or apply immediately
-    onFiltersChange(filters);
-  }, [filters, onFiltersChange]);
-
-  const handleToggleOpen = () => {
-    const nextOpen = !isOpen;
-    setIsOpen(nextOpen);
-    if (nextOpen && tags.length === 0) {
+    if (isOpen && tags.length === 0) {
       loadTags();
     }
+  }, [isOpen]);
+
+  useEffect(() => {
+    // Update local state if initialFilters changes (optional, but good for sync)
+    setFilters(initialFilters);
+  }, [initialFilters]);
+
+  const handleToggleOpen = () => {
+    if (controlledOnToggle) {
+      controlledOnToggle();
+    } else {
+      setInternalIsOpen(!internalIsOpen);
+    }
+  };
+
+  const updateFilters = (newFilters: FilterParams) => {
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const handleStatusChange = (value: string) => {
@@ -46,8 +69,9 @@ export default function TaskFilters({ onFiltersChange, className = '', initialFi
     } else {
       newFilters.is_completed = value === 'completed';
     }
-    setFilters(newFilters);
+    updateFilters(newFilters);
   };
+
 
   const toggleTag = (tagId: string) => {
     const currentTags = filters.tag_ids || [];
@@ -64,11 +88,11 @@ export default function TaskFilters({ onFiltersChange, className = '', initialFi
     } else {
       delete newFilters.tag_ids;
     }
-    setFilters(newFilters);
+    updateFilters(newFilters);
   };
 
   const clearFilters = () => {
-    setFilters({});
+    updateFilters({});
   };
 
   const activeFiltersCount = [
@@ -80,30 +104,32 @@ export default function TaskFilters({ onFiltersChange, className = '', initialFi
 
   return (
     <div className={`bg-white dark:bg-gray-900 rounded-3xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 ${className}`}>
-      <div className="flex items-center justify-between mb-4">
-        <button 
-          onClick={handleToggleOpen}
-          className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-        >
-          <Filter className="w-4 h-4" />
-          Filtros y Orden
-          {activeFiltersCount > 0 && (
-            <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full text-xs">
-              {activeFiltersCount}
-            </span>
-          )}
-        </button>
-        
-        {activeFiltersCount > 0 && (
+      {!hideHeader && (
+        <div className="flex items-center justify-between mb-4">
           <button 
-            onClick={clearFilters}
-            className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium flex items-center gap-1"
+            onClick={handleToggleOpen}
+            className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
           >
-            <X className="w-3 h-3" />
-            Limpiar
+            <Filter className="w-4 h-4" />
+            Filtros y Orden
+            {activeFiltersCount > 0 && (
+              <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full text-xs">
+                {activeFiltersCount}
+              </span>
+            )}
           </button>
-        )}
-      </div>
+          
+          {activeFiltersCount > 0 && (
+            <button 
+              onClick={clearFilters}
+              className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium flex items-center gap-1"
+            >
+              <X className="w-3 h-3" />
+              Limpiar
+            </button>
+          )}
+        </div>
+      )}
 
       {isOpen && (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">

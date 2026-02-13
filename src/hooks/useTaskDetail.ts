@@ -131,7 +131,7 @@ export const useTaskDetail = (taskId: string) => {
       setIsDeleting(true);
 
       await taskService.deleteTask(task.id);
-      router.push('/home');
+      router.push('/tasks');
     } catch (err) {
       console.error('Error deleting task:', err);
       alert('Error al eliminar la tarea');

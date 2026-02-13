@@ -90,7 +90,17 @@ class ApiClient {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || errorData.message || 'Error en la petición');
+        let errorMessage = errorData.detail || errorData.message || 'Error en la petición';
+        
+        if (typeof errorMessage !== 'string') {
+          if (Array.isArray(errorMessage)) {
+             errorMessage = errorMessage.map((e: any) => e.msg || JSON.stringify(e)).join(', ');
+          } else {
+             errorMessage = JSON.stringify(errorMessage);
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       // Check if response has content
