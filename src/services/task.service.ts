@@ -118,16 +118,16 @@ export const taskService = {
       const todayStr = new Date().toLocaleDateString('sv');
 
       tasks = tasks.filter((task: Task) => {
-        // Always show tasks without due date
-        if (!task.due_date) return true;
-
-        const taskDateStr = task.due_date;
+        // Extract YYYY-MM-DD from task due date (which might be ISO)
+        const taskDateStr = task.due_date ? task.due_date.split('T')[0] : null;
 
         // If a specific date is selected
         if (filters.due_date) {
+          // If filtering by specific date, DO NOT show tasks without date
+          if (!taskDateStr) return false;
+
           if (filters.show_overdue) {
             // Show everything up to selected date (Backlog + Day)
-            // String comparison works for ISO dates (YYYY-MM-DD)
             return taskDateStr <= filters.due_date;
           } else {
             // Show ONLY selected date
@@ -138,11 +138,15 @@ export const taskService = {
         // No specific date selected
         if (!filters.show_overdue) {
           // Don't show overdue (past tasks)
-          // Overdue means due_date < today, so we want due_date >= today
+          // If task has no date, it is NOT overdue, so we show it (unless user implies strict date filtering here too?)
+          // Assuming "si filtra alguna fecha" refers mainly to the explicit date picker.
+          // However, to be safe with "o asi", if strictly hiding overdue, we keep "no date" as they are effectively "future/pending".
+          if (!taskDateStr) return true;
+          
           return taskDateStr >= todayStr;
         }
 
-        // Default: Show all (Overdue + Future)
+        // Default: Show all
         return true;
       });
     }

@@ -22,7 +22,22 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave, i
 
   useEffect(() => {
     if (isOpen) {
-      const date = initialDate ? new Date(initialDate) : new Date();
+      // Handle timezone issues: YYYY-MM-DD defaults to UTC, which might be previous day in local time.
+      // Append time to ensure local parsing if it's a date-only string.
+      let date: Date;
+      if (initialDate) {
+        if (initialDate.includes('T')) {
+          date = new Date(initialDate);
+        } else {
+          // It's a date string like '2023-10-27'. Append T00:00:00 to force local time parsing in some browsers,
+          // or better yet, parse components manually to avoid any ambiguity.
+          const [year, month, day] = initialDate.split('-').map(Number);
+          date = new Date(year, month - 1, day);
+        }
+      } else {
+        date = new Date();
+      }
+      
       setSelectedDate(date);
       setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
       
