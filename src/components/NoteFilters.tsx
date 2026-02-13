@@ -5,12 +5,13 @@ import { Filter, X, ChevronDown } from 'lucide-react';
 
 interface NoteFiltersProps {
   onFiltersChange: (filters: FilterParams) => void;
+  initialFilters?: FilterParams;
   className?: string;
 }
 
-export default function NoteFilters({ onFiltersChange, className = '' }: NoteFiltersProps) {
+export default function NoteFilters({ onFiltersChange, initialFilters = {}, className = '' }: NoteFiltersProps) {
   const [tags, setTags] = useState<Tag[]>([]);
-  const [filters, setFilters] = useState<FilterParams>({});
+  const [filters, setFilters] = useState<FilterParams>(initialFilters);
   const [isOpen, setIsOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
 

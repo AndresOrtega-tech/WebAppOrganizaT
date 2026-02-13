@@ -151,12 +151,6 @@ export default function EventModal({ isOpen, onClose, onEventSaved, initialData 
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      
-      if (!token) {
-        router.push('/login');
-        return;
-      }
 
       const payload = formData.is_all_day
         ? (() => {
@@ -169,19 +163,12 @@ export default function EventModal({ isOpen, onClose, onEventSaved, initialData 
           })()
         : formData;
       const savedEvent = isEditMode && initialData
-        ? await eventsService.updateEvent(token, initialData.id, payload)
-        : await eventsService.createEvent(token, payload);
+        ? await eventsService.updateEvent(initialData.id, payload)
+        : await eventsService.createEvent(payload);
       onEventSaved(savedEvent);
       onClose();
     } catch (err) {
       console.error('Error saving event:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
       setError(`Error al ${isEditMode ? 'actualizar' : 'crear'} el evento`);
     } finally {
       setLoading(false);
