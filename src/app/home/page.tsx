@@ -21,19 +21,7 @@ export default function HomePage() {
   const router = useRouter();
   
   // State
-  const [user] = useState<User | null>(() => {
-    if (typeof window !== 'undefined') {
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        try {
-          return JSON.parse(userData);
-        } catch (e) {
-          console.error('Error parsing user data', e);
-        }
-      }
-    }
-    return null;
-  });
+  const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
@@ -56,6 +44,19 @@ export default function HomePage() {
   // Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createModalTab, setCreateModalTab] = useState<'task' | 'note' | 'event' | 'tag'>('task');
+
+  // Load User
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setUser(JSON.parse(userData));
+      } catch (e) {
+        console.error('Error parsing user data', e);
+      }
+    }
+  }, []);
 
   // Load Data
   const loadData = useCallback(async () => {
@@ -89,6 +90,7 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, [loadData]);
 
