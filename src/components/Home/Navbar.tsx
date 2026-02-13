@@ -8,7 +8,7 @@ interface NavbarProps {
   onLogout: () => void;
 }
 
-export default function Navbar({ user, onLogout }: NavbarProps) {
+export default function Navbar({ onLogout }: NavbarProps) {
   return (
     <nav className="flex items-center justify-between py-4 px-6 bg-gray-900 text-white rounded-none md:rounded-b-3xl mb-8">
       <div className="flex items-center gap-2">

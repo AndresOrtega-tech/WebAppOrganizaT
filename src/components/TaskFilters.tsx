@@ -42,7 +42,7 @@ export default function TaskFilters({
     if (isOpen && tags.length === 0) {
       loadTags();
     }
-  }, [isOpen]);
+  }, [isOpen, tags.length]);
 
   useEffect(() => {
     // Update local state if initialFilters changes (optional, but good for sync)

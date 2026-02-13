@@ -94,7 +94,7 @@ class ApiClient {
         
         if (typeof errorMessage !== 'string') {
           if (Array.isArray(errorMessage)) {
-             errorMessage = errorMessage.map((e: any) => e.msg || JSON.stringify(e)).join(', ');
+             errorMessage = errorMessage.map((e: { msg?: string } & Record<string, unknown>) => e.msg || JSON.stringify(e)).join(', ');
           } else {
              errorMessage = JSON.stringify(errorMessage);
           }

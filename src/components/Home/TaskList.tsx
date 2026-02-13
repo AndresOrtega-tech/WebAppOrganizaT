@@ -1,6 +1,10 @@
 import { useRouter } from 'next/navigation';
 import { Task } from '@/services/task.service';
-import { CheckCircle2, Circle, Clock, Tag as TagIcon } from 'lucide-react';
+import { 
+  Circle, 
+  Clock, 
+  Tag as TagIcon
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -66,12 +70,13 @@ export default function TaskList({ tasks, onComplete }: TaskListProps) {
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-gray-900 dark:text-white truncate">{task.title}</h3>
                   {task.description && (
-                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1 prose prose-xs dark:prose-invert">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ p: ({node, ...props}) => <span {...props} /> }}>
-                            {task.description}
-                        </ReactMarkdown>
-                     </div>
-                  )}
+                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1 prose prose-xs dark:prose-invert">
+                          {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ p: ({node: _node, ...props}) => <span {...props} /> }}>
+                              {task.description}
+                          </ReactMarkdown>
+                       </div>
+                    )}
                   
                   <div className="flex flex-wrap items-center gap-3 mt-3">
                     {dateText && (

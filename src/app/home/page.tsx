@@ -27,7 +27,6 @@ export default function HomePage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   
-  const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Initialize sidebar state based on screen size
@@ -51,6 +50,7 @@ export default function HomePage() {
     const userData = localStorage.getItem('user');
     if (userData) {
       try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUser(JSON.parse(userData));
       } catch (e) {
         console.error('Error parsing user data', e);
@@ -61,7 +61,6 @@ export default function HomePage() {
   // Load Data
   const loadData = useCallback(async () => {
     try {
-      setIsLoading(true);
       
       const [tasksData, tagsData] = await Promise.all([
         taskService.getTasks({ is_completed: false }),
@@ -87,12 +86,11 @@ export default function HomePage() {
 
     } catch (error) {
       console.error('Error loading home data:', error);
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, [loadData]);
 

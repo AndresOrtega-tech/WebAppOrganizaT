@@ -6,7 +6,6 @@ import {
   StickyNote, 
   CalendarDays, 
   Tag as TagIcon, 
-  User as UserIcon,
   LogOut,
   X
 } from 'lucide-react';

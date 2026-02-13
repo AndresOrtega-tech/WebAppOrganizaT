@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Note } from '@/services/notes.service';
-import { FileText, Tag as TagIcon } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -40,7 +40,8 @@ export default function RecentNotes({ notes }: RecentNotesProps) {
                          <ReactMarkdown 
                             remarkPlugins={[remarkGfm]} 
                             allowedElements={['p', 'strong', 'em', 'ul', 'ol', 'li']}
-                            components={{ p: ({node, ...props}) => <p className="mb-0" {...props} /> }}
+                            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                            components={{ p: ({node: _node, ...props}) => <p className="mb-0" {...props} /> }}
                         >
                             {note.content}
                         </ReactMarkdown>

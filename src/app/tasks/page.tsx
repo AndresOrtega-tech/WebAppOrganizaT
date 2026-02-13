@@ -12,7 +12,6 @@ import HomeHeader from '@/components/Home/HomeHeader';
 import TaskStats from '@/components/Home/TaskStats';
 import TaskList from '@/components/Home/TaskList';
 import TasksFilterBar from '@/components/Home/TasksFilterBar';
-import FloatingActionButton from '@/components/Home/FloatingActionButton';
 import TaskFilters from '@/components/TaskFilters';
 import CreateItemModal from '@/components/CreateItemModal';
 
@@ -33,7 +32,6 @@ export default function TasksPage() {
   const [filters, setFilters] = useState<TaskFiltersParams>(DEFAULT_FILTERS);
   
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
-  const [isLoadingTags, setIsLoadingTags] = useState(true);
   
   // UI State
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -78,13 +76,10 @@ export default function TasksPage() {
 
   const loadTags = useCallback(async () => {
     try {
-      setIsLoadingTags(true);
       const data = await tagsService.getTags();
       setTags(data);
     } catch (error) {
       console.error('Error loading tags:', error);
-    } finally {
-      setIsLoadingTags(false);
     }
   }, []);
 
@@ -162,7 +157,7 @@ export default function TasksPage() {
             {/* Stats */}
             <div>
                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Estado de Tareas</h2>
-               <TaskStats pendingCount={pendingCount} completedCount={completedCount} />
+               <TaskStats pendingCount={pendingCount} completedCount={completedCount} isLoading={isLoadingTasks} />
             </div>
 
             {/* Tasks Section */}
