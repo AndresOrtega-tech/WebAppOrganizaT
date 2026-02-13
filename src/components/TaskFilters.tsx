@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Tag, tagsService } from '@/services/tags.service';
 import { TaskFilters as FilterParams } from '@/services/task.service';
-import { Filter, X, ArrowUpDown, Calendar, CheckCircle2, ChevronDown, Calendar as CalendarIcon, Clock, AlertTriangle } from 'lucide-react';
+import { Filter, X, ChevronDown, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
 import DateTimePicker from './DateTimePicker';
 
 interface TaskFiltersProps {
@@ -27,10 +27,8 @@ export default function TaskFilters({ onFiltersChange, className = '', initialFi
   }, [filters, onFiltersChange]);
 
   const loadTags = async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
     try {
-      const data = await tagsService.getTags(token);
+      const data = await tagsService.getTags();
       setTags(data);
     } catch (error) {
       console.error('Error loading tags for filters:', error);

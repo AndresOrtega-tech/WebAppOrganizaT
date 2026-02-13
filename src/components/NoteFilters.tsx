@@ -23,10 +23,8 @@ export default function NoteFilters({ onFiltersChange, className = '' }: NoteFil
   }, [filters, onFiltersChange]);
 
   const loadTags = async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
     try {
-      const data = await tagsService.getTags(token);
+      const data = await tagsService.getTags();
       setTags(data);
     } catch (error) {
       console.error('Error loading tags for filters:', error);

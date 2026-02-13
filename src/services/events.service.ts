@@ -1,4 +1,5 @@
 import { API_BASE_URL } from './auth.service';
+import { apiClient } from './api.client';
 import type { Task } from './task.service';
 import type { Note } from './notes.service';
 
@@ -46,128 +47,58 @@ export interface EventFilters {
 }
 
 export const eventsService = {
-  async updateEvent(token: string, eventId: string, event: Partial<CreateEventRequest>): Promise<Event> {
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}`, {
+  async updateEvent(eventId: string, event: Partial<CreateEventRequest>): Promise<Event> {
+    const response = await apiClient.fetch<Event>(`${API_BASE_URL}/events/${eventId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(event),
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error updating event');
-    }
-
-    return response.json();
+    return response;
   },
-  async deleteEvent(token: string, eventId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}`, {
+  async deleteEvent(eventId: string): Promise<void> {
+    await apiClient.fetch<void>(`${API_BASE_URL}/events/${eventId}`, {
       method: 'DELETE',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
     });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error deleting event');
-    }
   },
-  async linkTaskToEvent(token: string, eventId: string, taskId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/events/tasks`, {
+  async linkTaskToEvent(eventId: string, taskId: string): Promise<void> {
+    await apiClient.fetch<void>(`${API_BASE_URL}/events/tasks`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ event_id: eventId, task_id: taskId }),
     });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error linking task to event');
-    }
   },
-  async unlinkTaskFromEvent(token: string, eventId: string, taskId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}/tasks/${taskId}`, {
+  async unlinkTaskFromEvent(eventId: string, taskId: string): Promise<void> {
+    await apiClient.fetch<void>(`${API_BASE_URL}/events/${eventId}/tasks/${taskId}`, {
       method: 'DELETE',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
     });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error unlinking task from event');
-    }
   },
-  async linkNoteToEvent(token: string, eventId: string, noteId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/events/notes`, {
+  async linkNoteToEvent(eventId: string, noteId: string): Promise<void> {
+    await apiClient.fetch<void>(`${API_BASE_URL}/events/notes`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ event_id: eventId, note_id: noteId }),
     });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error linking note to event');
-    }
   },
-  async unlinkNoteFromEvent(token: string, eventId: string, noteId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}/notes/${noteId}`, {
+  async unlinkNoteFromEvent(eventId: string, noteId: string): Promise<void> {
+    await apiClient.fetch<void>(`${API_BASE_URL}/events/${eventId}/notes/${noteId}`, {
       method: 'DELETE',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
     });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error unlinking note from event');
-    }
   },
-  async getEventById(token: string, eventId: string): Promise<Event> {
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}`, {
+  async getEventById(eventId: string): Promise<Event> {
+    const response = await apiClient.fetch<Event>(`${API_BASE_URL}/events/${eventId}`, {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error loading event');
-    }
-
-    return response.json();
+    return response;
   },
-  async getEvents(token: string, filters?: EventFilters): Promise<Event[]> {
+  async getEvents(filters?: EventFilters): Promise<Event[]> {
     const params = new URLSearchParams();
 
     if (filters?.start_date) {
@@ -179,40 +110,21 @@ export const eventsService = {
 
     const queryString = params.toString();
     const url = `${API_BASE_URL}/events/${queryString ? `?${queryString}` : ''}`;
-    const response = await fetch(url, {
+    const response = await apiClient.fetch<Event[]>(url, {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error loading events');
-    }
-
-    return response.json();
+    return response;
   },
-  async createEvent(token: string, event: CreateEventRequest): Promise<Event> {
-    const response = await fetch(`${API_BASE_URL}/events/`, {
+  async createEvent(event: CreateEventRequest): Promise<Event> {
+    const response = await apiClient.fetch<Event>(`${API_BASE_URL}/events/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(event),
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error creating event');
-    }
-
-    return response.json();
+    return response;
   },
 };

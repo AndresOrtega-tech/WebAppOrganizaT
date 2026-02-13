@@ -56,31 +56,18 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      
-      if (!token) {
-        router.push('/login');
-        return;
-      }
 
       let savedNote: Note;
       if (isEditMode && initialData) {
-        savedNote = await notesService.updateNote(token, initialData.id, formData);
+        savedNote = await notesService.updateNote(initialData.id, formData);
       } else {
-        savedNote = await notesService.createNote(token, formData);
+        savedNote = await notesService.createNote(formData);
       }
 
       onNoteSaved(savedNote);
       onClose();
     } catch (err) {
       console.error('Error saving note:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
       setError(`Error al ${isEditMode ? 'actualizar' : 'crear'} la nota`);
     } finally {
       setLoading(false);
@@ -92,15 +79,9 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
     
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      
-      if (!token) {
-        router.push('/login');
-        return;
-      }
 
       // Save current changes AND toggle archive status
-      const updatedNote = await notesService.updateNote(token, initialData.id, {
+      const updatedNote = await notesService.updateNote(initialData.id, {
         ...formData,
         is_archived: !initialData.is_archived
       });
@@ -109,10 +90,6 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
       onClose();
     } catch (err) {
       console.error('Error archiving note:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        router.push('/login');
-        return;
-      }
       setError('Error al actualizar el estado de la nota');
     } finally {
       setLoading(false);

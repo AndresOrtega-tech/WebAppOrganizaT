@@ -64,6 +64,23 @@ export const authService = {
     return response.json();
   },
 
+  async refreshToken(refreshToken: string): Promise<LoginResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Error al renovar la sesión');
+    }
+
+    return response.json();
+  },
+
   async updateAvatar(token: string, avatar: string): Promise<UpdateAvatarResponse> {
     const response = await fetch(`${API_BASE_URL}/users/avatar`, {
       method: 'PATCH',

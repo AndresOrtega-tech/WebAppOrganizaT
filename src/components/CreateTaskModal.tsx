@@ -44,12 +44,8 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        throw new Error('No auth token');
-      }
 
-      const newTask = await taskService.createTask(token, formData);
+      const newTask = await taskService.createTask(formData);
 
       onTaskCreated(newTask);
       onClose();

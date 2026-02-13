@@ -79,9 +79,7 @@ export default function TaskDetailPage() {
   const loadEvents = async () => {
     try {
       setEventsError(null);
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-      const data = await eventsService.getEvents(token);
+      const data = await eventsService.getEvents();
       setEvents(data);
     } catch (err) {
       console.error('Error loading events:', err);
@@ -95,10 +93,7 @@ export default function TaskDetailPage() {
     setIsLinkEventModalOpen(true);
     setIsLoadingEvents(true);
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      const data = await eventsService.getEvents(token);
+      const data = await eventsService.getEvents();
       const linkedIds = new Set(linkedEvents.map(e => e.id));
       setAvailableEvents(data.filter(e => !linkedIds.has(e.id)));
     } catch (err) {
@@ -112,10 +107,7 @@ export default function TaskDetailPage() {
   const handleLinkEvent = async (eventId: string) => {
     if (!task) return;
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      await eventsService.linkTaskToEvent(token, eventId, task.id);
+      await eventsService.linkTaskToEvent(eventId, task.id);
       const selectedEvent = availableEvents.find(e => e.id === eventId) || events.find(e => e.id === eventId);
       const eventNotes = selectedEvent?.notes || [];
       const taskNotes = task.notes || [];
@@ -123,14 +115,14 @@ export default function TaskDetailPage() {
 
       for (const note of taskNotes) {
         if (!eventNoteIds.has(note.id)) {
-          await eventsService.linkNoteToEvent(token, eventId, note.id);
+          await eventsService.linkNoteToEvent(eventId, note.id);
         }
       }
 
       const taskNoteIds = new Set(taskNotes.map(n => n.id));
       for (const note of eventNotes) {
         if (!taskNoteIds.has(note.id)) {
-          await taskService.linkNoteToTask(token, task.id, note.id);
+          await taskService.linkNoteToTask(task.id, note.id);
         }
       }
 
@@ -151,10 +143,7 @@ export default function TaskDetailPage() {
   const confirmUnlinkEvent = async () => {
     if (!eventToUnlink || !task) return;
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      await eventsService.unlinkTaskFromEvent(token, eventToUnlink, task.id);
+      await eventsService.unlinkTaskFromEvent(eventToUnlink, task.id);
       await loadEvents();
       await reloadTask();
       setShowUnlinkEventModal(false);
@@ -198,71 +187,24 @@ export default function TaskDetailPage() {
 
       <TaskInfo 
         task={task} 
-        onRemoveTag={handleRemoveTag}
+        isLinkingEnabled={isLinkingEnabled}
         onLinkNote={openLinkModal}
         onUnlinkNote={handleUnlinkNote}
-        isLinkingEnabled={isLinkingEnabled}
         linkedEvents={linkedEvents}
         onLinkEvent={openLinkEventModal}
         onUnlinkEvent={handleUnlinkEvent}
-        isEventLinkingEnabled={isEventLinkingEnabled && !eventsError}
       />
 
-      <TaskEditModal 
-        isOpen={isEditing}
-        onClose={() => setIsEditing(false)}
-        onSubmit={handleUpdate}
-        editForm={editForm}
-        setEditForm={setEditForm}
-        isSaving={isSaving}
-      />
-
-      <TaskTagsModal
-        isOpen={isTagsModalOpen}
-        onClose={() => setIsTagsModalOpen(false)}
-        onSubmit={handleTagsUpdate}
-        currentTagIds={task.tags.map(t => t.id)}
-        isSaving={isSaving}
-      />
-
-      <LinkItemModal
-        isOpen={isLinkModalOpen}
-        onClose={() => setIsLinkModalOpen(false)}
-        onLink={handleLinkNote}
-        items={availableNotes}
-        title="Vincular Nota"
-        isLoading={isLoadingNotes}
-      />
-
-      <LinkItemModal
-        isOpen={isLinkEventModalOpen}
-        onClose={() => setIsLinkEventModalOpen(false)}
-        onLink={handleLinkEvent}
-        items={availableEvents.map(event => ({
-          ...event,
-          description: event.description || undefined
-        }))}
-        title="Vincular Evento"
-        isLoading={isLoadingEvents}
-      />
-
-      <ConfirmationModal
-        isOpen={showUnlinkModal}
-        onClose={() => setShowUnlinkModal(false)}
-        onConfirm={confirmUnlinkNote}
-        title="Desvincular Nota"
-        message="¿Estás seguro de que quieres desvincular esta nota? La nota no se eliminará."
-        confirmText="Desvincular"
-      />
-
-      <ConfirmationModal
-        isOpen={showUnlinkEventModal}
-        onClose={() => setShowUnlinkEventModal(false)}
-        onConfirm={confirmUnlinkEvent}
-        title="Desvincular Evento"
-        message="¿Estás seguro de que quieres desvincular este evento? El evento no se eliminará."
-        confirmText="Desvincular"
-      />
+      {isEditing && (
+        <TaskEditModal 
+          isOpen={isEditing}
+          onClose={() => setIsEditing(false)}
+          onSubmit={handleUpdate}
+          editForm={editForm}
+          setEditForm={setEditForm}
+          isSaving={isSaving}
+        />
+      )}
 
       <ConfirmationModal
         isOpen={showDeleteModal}
@@ -274,6 +216,63 @@ export default function TaskDetailPage() {
         cancelText="Cancelar"
         isLoading={isDeleting}
       />
+
+      {isLinkingEnabled && (
+        <>
+          <LinkItemModal
+            isOpen={isLinkModalOpen}
+            onClose={() => setIsLinkModalOpen(false)}
+            onLink={handleLinkNote}
+            items={availableNotes}
+            title="Vincular Nota"
+            isLoading={isLoadingNotes}
+          />
+
+          <ConfirmationModal
+            isOpen={showUnlinkModal}
+            onClose={() => setShowUnlinkModal(false)}
+            onConfirm={confirmUnlinkNote}
+            title="Desvincular Nota"
+            message="¿Estás seguro de que quieres desvincular esta nota? La nota no se eliminará."
+            confirmText="Desvincular"
+          />
+        </>
+      )}
+
+      {isEventLinkingEnabled && (
+        <>
+          <LinkItemModal
+            isOpen={isLinkEventModalOpen}
+            onClose={() => setIsLinkEventModalOpen(false)}
+            onLink={handleLinkEvent}
+            items={availableEvents.map(e => ({
+              ...e,
+              description: e.description || undefined
+            }))}
+            title="Vincular Evento"
+            isLoading={isLoadingEvents}
+          />
+
+          <ConfirmationModal
+            isOpen={showUnlinkEventModal}
+            onClose={() => setShowUnlinkEventModal(false)}
+            onConfirm={confirmUnlinkEvent}
+            title="Desvincular Evento"
+            message="¿Estás seguro de que quieres desvincular este evento? El evento no se eliminará."
+            confirmText="Desvincular"
+          />
+        </>
+      )}
+
+      {isTagsModalOpen && (
+        <TaskTagsModal
+          isOpen={isTagsModalOpen}
+          onClose={() => setIsTagsModalOpen(false)}
+          onSubmit={handleTagsUpdate}
+          currentTagIds={task.tags.map(t => t.id)}
+          isSaving={isSaving}
+        />
+      )}
     </div>
   );
 }
