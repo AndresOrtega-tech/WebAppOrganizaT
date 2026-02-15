@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -8,12 +8,15 @@ import ConfirmationModal from '@/components/ConfirmationModal';
 import { useTaskDetail } from '@/hooks/useTaskDetail';
 import TaskHeader from '@/components/TaskDetail/TaskHeader';
 import TaskInfo from '@/components/TaskDetail/TaskInfo';
-import TaskEditModal from '@/components/TaskDetail/TaskEditModal';
 import TaskTagsModal from '@/components/TaskDetail/TaskTagsModal';
 import LinkItemModal from '@/components/LinkItemModal';
 import { isFeatureEnabled } from '@/config/features';
 import { Event, eventsService } from '@/services/events.service';
 import { taskService } from '@/services/task.service';
+import HomeSidebar from '@/components/Home/HomeSidebar';
+import { Tag, tagsService } from '@/services/tags.service';
+import { User } from '@/services/auth.service';
+import { apiClient } from '@/services/api.client';
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -24,8 +27,6 @@ export default function TaskDetailPage() {
     task,
     loading,
     error,
-    isEditing,
-    setIsEditing,
     isSaving,
     isDeleting,
     showDeleteModal,
@@ -48,7 +49,8 @@ export default function TaskDetailPage() {
     setShowUnlinkModal,
     confirmUnlinkNote,
     openLinkModal,
-    reloadTask
+    reloadTask,
+    hasUnsavedChanges
   } = useTaskDetail(id);
 
   const isLinkingEnabled = isFeatureEnabled('ENABLE_TASK_NOTE_LINKING');
@@ -61,6 +63,13 @@ export default function TaskDetailPage() {
   const [eventToUnlink, setEventToUnlink] = useState<string | null>(null);
   const [eventsError, setEventsError] = useState<string | null>(null);
 
+  const [user, setUser] = useState<User | null>(null);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const [isUnsavedModalOpen, setIsUnsavedModalOpen] = useState(false);
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
+
   const from = searchParams.get('from');
   const fromId = searchParams.get('fromId');
   const backHref = from === 'note' && fromId
@@ -72,6 +81,44 @@ export default function TaskDetailPage() {
         : '/tasks';
 
   const router = useRouter();
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsSidebarOpen(false);
+      }
+    };
+    handleResize();
+  }, []);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (e) {
+        console.error('Error parsing user data', e);
+      }
+    }
+  }, []);
+
+  const loadTags = useCallback(async () => {
+    try {
+      const data = await tagsService.getTags();
+      setTags(data);
+    } catch (error) {
+      console.error('Error loading tags:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTags();
+  }, [loadTags]);
+
+  const handleLogout = () => {
+    apiClient.logout();
+    router.push('/login');
+  };
 
   useEffect(() => {
     if (!isFeatureEnabled('ENABLE_TASK_DETAIL')) {
@@ -163,6 +210,19 @@ export default function TaskDetailPage() {
     }
   };
 
+  const navigateWithGuard = (href: string) => {
+    if (hasUnsavedChanges) {
+      setPendingRoute(href);
+      setIsUnsavedModalOpen(true);
+      return;
+    }
+    router.push(href);
+  };
+
+  const handleBack = () => {
+    navigateWithGuard(backHref);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
@@ -186,34 +246,54 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans">
-      <TaskHeader 
-        backHref={backHref}
-        onDelete={() => setShowDeleteModal(true)}
-        onEdit={() => setIsEditing(true)}
-        onManageTags={() => setIsTagsModalOpen(true)}
-      />
+    <div className="min-h-screen bg-gray-50 dark:bg-black font-sans">
+      <div className="flex">
+        <HomeSidebar
+          tags={tags}
+          user={user}
+          onLogout={handleLogout}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
 
-      <TaskInfo 
-        task={task} 
-        onRemoveTag={handleRemoveTag}
-        onLinkNote={openLinkModal}
-        onUnlinkNote={handleUnlinkNote}
-        isLinkingEnabled={isLinkingEnabled}
-        linkedEvents={linkedEvents}
-        onLinkEvent={openLinkEventModal}
-        onUnlinkEvent={handleUnlinkEvent}
-        isEventLinkingEnabled={isEventLinkingEnabled && !eventsError}
-      />
+        <main className="flex-1 p-4 md:p-8 transition-all duration-300">
+          <div className="max-w-7xl mx-auto space-y-6">
+            <TaskHeader 
+              onBack={handleBack}
+              onDelete={() => setShowDeleteModal(true)}
+              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            />
 
-      <TaskEditModal 
-        isOpen={isEditing}
-        onClose={() => setIsEditing(false)}
-        onSubmit={handleUpdate}
-        editForm={editForm}
-        setEditForm={setEditForm}
-        isSaving={isSaving}
-      />
+            <TaskInfo 
+              task={task}
+              editForm={editForm}
+              setEditForm={setEditForm}
+              onManageTags={() => setIsTagsModalOpen(true)}
+              onRemoveTag={handleRemoveTag}
+              onLinkNote={openLinkModal}
+              onUnlinkNote={handleUnlinkNote}
+              isLinkingEnabled={isLinkingEnabled}
+              linkedEvents={linkedEvents}
+              onLinkEvent={openLinkEventModal}
+              onUnlinkEvent={handleUnlinkEvent}
+              isEventLinkingEnabled={isEventLinkingEnabled && !eventsError}
+            />
+          </div>
+        </main>
+      </div>
+
+      {hasUnsavedChanges && (
+        <div className="fixed bottom-6 right-6 z-40">
+          <button
+            type="button"
+            onClick={() => handleUpdate()}
+            disabled={isSaving}
+            className="px-5 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-lg disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
+          >
+            Guardar cambios
+          </button>
+        </div>
+      )}
 
       <TaskTagsModal
         isOpen={isTagsModalOpen}
@@ -260,6 +340,24 @@ export default function TaskDetailPage() {
         title="Desvincular Evento"
         message="¿Estás seguro de que quieres desvincular este evento? El evento no se eliminará."
         confirmText="Desvincular"
+      />
+
+      <ConfirmationModal
+        isOpen={isUnsavedModalOpen}
+        onClose={() => setIsUnsavedModalOpen(false)}
+        onConfirm={async () => {
+          const ok = await handleUpdate();
+          if (ok) {
+            setIsUnsavedModalOpen(false);
+            const target = pendingRoute || backHref;
+            router.push(target);
+          }
+        }}
+        title="Cambios sin guardar"
+        message="Se detectaron cambios en esta tarea. ¿Quieres guardar antes de salir?"
+        confirmText="Guardar y salir"
+        cancelText="Cancelar"
+        isLoading={isSaving}
       />
 
       <ConfirmationModal

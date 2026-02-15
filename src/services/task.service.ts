@@ -54,10 +54,14 @@ export interface CreateTaskDTO {
 export interface TaskFilters {
   is_completed?: boolean;
   tag_ids?: string[];
-  sort_by?: 'updated_at' | 'due_date';
+  sort_by?: 'updated_at' | 'due_date' | 'priority';
   order?: 'asc' | 'desc';
   due_date?: string;
   show_overdue?: boolean;
+  start_date?: string;
+  end_date?: string;
+  date_field?: 'due_date' | 'updated_at' | 'created_at';
+  priority?: TaskPriority;
 }
 
 type TaskApiResponse = Omit<Task, 'tags' | 'notes' | 'reminders_data'> & {
@@ -97,6 +101,18 @@ export const taskService = {
       }
       if (filters.tag_ids && filters.tag_ids.length > 0) {
         filters.tag_ids.forEach(id => params.append('tag_ids', id));
+      }
+      if (filters.priority) {
+        params.append('priority', filters.priority);
+      }
+      if (filters.start_date) {
+        params.append('start_date', filters.start_date);
+      }
+      if (filters.end_date) {
+        params.append('end_date', filters.end_date);
+      }
+      if (filters.date_field) {
+        params.append('date_field', filters.date_field);
       }
       // Note: due_date and show_overdue are handled client-side below
     }

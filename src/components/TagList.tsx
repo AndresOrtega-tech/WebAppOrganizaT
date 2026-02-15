@@ -1,13 +1,15 @@
 import { Tag as TagIcon, X } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Tag } from '@/services/task.service';
 import { isFeatureEnabled } from '@/config/features';
 
 interface TagListProps {
   tags: Tag[];
   onRemoveTag?: (tagId: string) => void;
+  actions?: ReactNode;
 }
 
-export default function TagList({ tags, onRemoveTag }: TagListProps) {
+export default function TagList({ tags, onRemoveTag, actions }: TagListProps) {
   if (!tags || tags.length === 0) return null;
 
   return (
@@ -15,6 +17,11 @@ export default function TagList({ tags, onRemoveTag }: TagListProps) {
       <div className="flex items-center gap-2 mb-3">
         <TagIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
         <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Etiquetas</span>
+        {actions && (
+          <div className="ml-auto">
+            {actions}
+          </div>
+        )}
       </div>
       <div className="flex flex-wrap gap-2">
         {tags.map((tag) => (

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/services/auth.service';
-import { Task, taskService } from '@/services/task.service';
+import { Task, taskService, TaskPriority } from '@/services/task.service';
 import { Note, notesService } from '@/services/notes.service';
 import { Event, eventsService } from '@/services/events.service';
 import { Tag, tagsService } from '@/services/tags.service';
@@ -16,6 +16,33 @@ import TaskList from '@/components/Home/TaskList';
 import RecentNotes from '@/components/Home/RecentNotes';
 import TodayEvents from '@/components/Home/TodayEvents';
 import CreateItemModal from '@/components/CreateItemModal';
+
+const sortDashboardTasks = (tasks: Task[]): Task[] => {
+  const priorityOrder: { [key in TaskPriority]: number } = {
+    alta: 0,
+    media: 1,
+    baja: 2,
+  };
+
+  return [...tasks].sort((a, b) => {
+    const dateA = a.due_date ? a.due_date.split('T')[0] : '';
+    const dateB = b.due_date ? b.due_date.split('T')[0] : '';
+
+    if (dateA !== dateB) {
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      return dateA.localeCompare(dateB);
+    }
+
+    const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+    if (priorityDiff !== 0) return priorityDiff;
+
+    const updatedA = new Date(a.updated_at).getTime();
+    const updatedB = new Date(b.updated_at).getTime();
+    if (updatedA === updatedB) return 0;
+    return updatedB - updatedA;
+  });
+};
 
 export default function HomePage() {
   const router = useRouter();
@@ -61,13 +88,35 @@ export default function HomePage() {
   // Load Data
   const loadData = useCallback(async () => {
     try {
-      
+      const today = new Date();
+      const end = new Date(today);
+      end.setDate(end.getDate() + 7);
+
+      const startDateIso = today.toISOString();
+      const endDateIso = end.toISOString();
+
+      const startDate = startDateIso.split('T')[0];
+      const endDate = endDateIso.split('T')[0];
+
       const [tasksData, tagsData] = await Promise.all([
-        taskService.getTasks({ is_completed: false }),
-        tagsService.getTags()
+        taskService.getTasks({
+          is_completed: false,
+          start_date: startDateIso,
+          end_date: endDateIso,
+          date_field: 'due_date',
+        }),
+        tagsService.getTags(),
       ]);
-      
-      setTasks(tasksData);
+
+      const rangedTasks = tasksData.filter((task) => {
+        if (!task.due_date) return false;
+        const taskDate = task.due_date.split('T')[0];
+        return taskDate >= startDate && taskDate <= endDate;
+      });
+
+      const sortedTasks = sortDashboardTasks(rangedTasks);
+
+      setTasks(sortedTasks);
       setTags(tagsData);
 
       if (isFeatureEnabled('ENABLE_NOTES_VIEW')) {
@@ -117,6 +166,13 @@ export default function HomePage() {
     setIsCreateModalOpen(true);
   };
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const pendingTodayCount = tasks.filter((task) => {
+    if (task.is_completed) return false;
+    if (!task.due_date) return false;
+    return task.due_date.startsWith(todayStr);
+  }).length;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black transition-colors">
       <div className="flex">
@@ -134,7 +190,7 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto">
             <HomeHeader 
               userName={user?.full_name || 'Usuario'}
-              pendingTasksCount={tasks.length}
+              pendingTasksCount={pendingTodayCount}
               onNewItemClick={handleCreateClick}
               onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
               isSidebarOpen={isSidebarOpen}

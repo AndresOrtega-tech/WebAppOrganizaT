@@ -40,6 +40,9 @@ export const useTaskDetail = (taskId: string) => {
     reminders: null
   });
 
+  const [initialEditForm, setInitialEditForm] = useState<EditFormState | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   const getLocalDateTimeForInput = (isoString: string) => {
     const date = new Date(isoString);
     const offset = date.getTimezoneOffset();
@@ -91,20 +94,38 @@ export const useTaskDetail = (taskId: string) => {
         if (mappedReminders.length === 0) mappedReminders = null;
       }
 
-      setEditForm({
+      const nextForm: EditFormState = {
         title: task.title,
         description: task.description || '',
         due_date: task.due_date ? getLocalDateTimeForInput(task.due_date) : '',
         is_completed: task.is_completed,
         priority: task.priority || 'media',
         reminders: mappedReminders
-      });
+      };
+
+      setEditForm(nextForm);
+      setInitialEditForm(nextForm);
+      setHasUnsavedChanges(false);
     }
   }, [task]);
 
-  const handleUpdate = async (e?: React.FormEvent) => {
+  useEffect(() => {
+    if (!initialEditForm) return;
+
+    const isDirty =
+      editForm.title !== initialEditForm.title ||
+      editForm.description !== initialEditForm.description ||
+      editForm.due_date !== initialEditForm.due_date ||
+      editForm.is_completed !== initialEditForm.is_completed ||
+      editForm.priority !== initialEditForm.priority ||
+      JSON.stringify(editForm.reminders || []) !== JSON.stringify(initialEditForm.reminders || []);
+
+    setHasUnsavedChanges(isDirty);
+  }, [editForm, initialEditForm]);
+
+  const handleUpdate = async (e?: React.FormEvent): Promise<boolean> => {
     if (e) e.preventDefault();
-    if (!task) return;
+    if (!task) return false;
     
     try {
       setIsSaving(true);
@@ -114,11 +135,25 @@ export const useTaskDetail = (taskId: string) => {
           due_date: editForm.due_date ? new Date(editForm.due_date).toISOString() : null
       });
       
-      setTask(updatedTask);
+      setTask(prev => {
+        if (!prev) return updatedTask;
+        return {
+          ...prev,
+          ...updatedTask,
+          // Preservar relaciones ya cargadas que el PATCH no devuelve
+          tags: prev.tags,
+          notes: prev.notes,
+          reminders_data: updatedTask.reminders_data || prev.reminders_data,
+        };
+      });
       setIsEditing(false);
+      setInitialEditForm(editForm);
+      setHasUnsavedChanges(false);
+      return true;
     } catch (err) {
       console.error('Error updating task:', err);
       alert('Error al actualizar la tarea');
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -269,6 +304,7 @@ export const useTaskDetail = (taskId: string) => {
     reloadTask,
     editForm,
     setEditForm,
+    hasUnsavedChanges,
     handleUpdate,
     confirmDelete,
     handleTagsUpdate,

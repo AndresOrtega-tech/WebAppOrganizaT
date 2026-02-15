@@ -85,7 +85,19 @@ export default function TaskList({ tasks, onComplete }: TaskListProps) {
                         {dateText}
                       </span>
                     )}
-                    
+
+                    <span
+                      className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md border ${
+                        task.priority === 'alta'
+                          ? 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400 border-red-100 dark:border-red-800'
+                          : task.priority === 'media'
+                          ? 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-100 dark:border-yellow-800'
+                          : 'text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400 border-green-100 dark:border-green-800'
+                      }`}
+                    >
+                      {task.priority}
+                    </span>
+
                     {task.tags?.slice(0, 2).map(tag => (
                       <span 
                         key={tag.id}
