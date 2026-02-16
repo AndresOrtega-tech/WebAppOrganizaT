@@ -3,6 +3,8 @@ import { authService, API_BASE_URL } from './auth.service';
 class ApiClient {
   private isRefreshing = false;
   private failedQueue: Array<{ resolve: (value: unknown) => void; reject: (reason?: unknown) => void }> = [];
+  private cache = new Map<string, { expiry: number; data: unknown; inflight?: Promise<unknown> }>();
+  private defaultTTL = 15000;
 
   private processQueue(error: unknown, token: string | null = null) {
     this.failedQueue.forEach(prom => {
@@ -128,32 +130,71 @@ class ApiClient {
             url += `?${queryString}`;
         }
     }
-    return this.fetchWithAuth<T>(url, { method: 'GET' });
+    const cacheKey = url;
+    const now = Date.now();
+    const cached = this.cache.get(cacheKey);
+    if (cached && cached.expiry > now) {
+      this.revalidate(cacheKey, url);
+      return Promise.resolve(cached.data as T);
+    }
+    if (cached?.inflight) {
+      return cached.inflight as Promise<T>;
+    }
+    const inflight = this.fetchWithAuth<T>(url, { method: 'GET' }).then((data) => {
+      this.cache.set(cacheKey, { expiry: Date.now() + this.defaultTTL, data });
+      return data;
+    }).finally(() => {
+      const entry = this.cache.get(cacheKey);
+      if (entry) this.cache.set(cacheKey, { expiry: entry.expiry, data: entry.data });
+    });
+    this.cache.set(cacheKey, { expiry: now + this.defaultTTL, data: cached?.data, inflight });
+    return inflight;
   }
 
   async post<T = unknown>(endpoint: string, body: unknown): Promise<T> {
-    return this.fetchWithAuth<T>(endpoint, {
+    const result = await this.fetchWithAuth<T>(endpoint, {
       method: 'POST',
       body: JSON.stringify(body),
     });
+    this.cache.clear();
+    return result;
   }
 
   async put<T = unknown>(endpoint: string, body: unknown): Promise<T> {
-    return this.fetchWithAuth<T>(endpoint, {
+    const result = await this.fetchWithAuth<T>(endpoint, {
       method: 'PUT',
       body: JSON.stringify(body),
     });
+    this.cache.clear();
+    return result;
   }
   
   async patch<T = unknown>(endpoint: string, body: unknown): Promise<T> {
-    return this.fetchWithAuth<T>(endpoint, {
+    const result = await this.fetchWithAuth<T>(endpoint, {
       method: 'PATCH',
       body: JSON.stringify(body),
     });
+    this.cache.clear();
+    return result;
   }
 
   async delete<T = unknown>(endpoint: string): Promise<T> {
-    return this.fetchWithAuth<T>(endpoint, { method: 'DELETE' });
+    const result = await this.fetchWithAuth<T>(endpoint, { method: 'DELETE' });
+    this.cache.clear();
+    return result;
+  }
+
+  private async revalidate(cacheKey: string, url: string) {
+    if (this.cache.get(cacheKey)?.inflight) return;
+    const inflight = this.fetchWithAuth(url, { method: 'GET' }).then((data) => {
+      this.cache.set(cacheKey, { expiry: Date.now() + this.defaultTTL, data });
+      return data;
+    }).finally(() => {
+      const entry = this.cache.get(cacheKey);
+      if (entry) this.cache.set(cacheKey, { expiry: entry.expiry, data: entry.data });
+    });
+    const entry = this.cache.get(cacheKey);
+    this.cache.set(cacheKey, { expiry: entry?.expiry || Date.now() + this.defaultTTL, data: entry?.data, inflight });
   }
 }
 
