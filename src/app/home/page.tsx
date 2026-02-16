@@ -125,14 +125,18 @@ export default function HomePage() {
       }
 
       if (isFeatureEnabled('ENABLE_EVENTS_VIEW')) {
-        const todayLocal = new Date().toLocaleDateString('sv'); // YYYY-MM-DD in local tz
-        const eventsData = await eventsService.getEvents({
-          start_date: todayLocal,
-          end_date: todayLocal,
-        });
-        // Defensive client-side check in case backend returns a wider range
-        const todayEvents = eventsData.filter(e => (e.start_time || '').slice(0, 10) === todayLocal);
-        setEvents(todayEvents);
+        const todayLocal = new Date().toLocaleDateString('sv'); // YYYY-MM-DD (local)
+        let eventsData = await eventsService.getEvents({ start_date: todayLocal });
+        if (!Array.isArray(eventsData) || eventsData.length === 0) {
+          // Fallback: fetch all and filter by local date to avoid backend TZ mismatches
+          const allEvents = await eventsService.getEvents();
+          eventsData = allEvents.filter(e => {
+            if (!e.start_time) return false;
+            const localDate = new Date(e.start_time).toLocaleDateString('sv');
+            return localDate === todayLocal;
+          });
+        }
+        setEvents(eventsData);
       }
 
     } catch (error) {

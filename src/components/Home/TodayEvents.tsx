@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Event } from '@/services/events.service';
 import { Clock, MapPin } from 'lucide-react';
 
@@ -36,34 +37,35 @@ export default function TodayEvents({ events }: TodayEventsProps) {
                 <p className="text-gray-400 text-xs">No tienes eventos para hoy</p>
             </div>
         ) : (
-            events.map(event => (
-            <div 
-                key={event.id}
-                className="flex bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all duration-200"
+          events.map(event => (
+            <Link 
+              key={event.id}
+              href={`/events/${event.id}`}
+              className="flex bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all duration-200 cursor-pointer"
+              title="Ver detalle del evento"
             >
-                <div className="flex flex-col justify-center items-center pr-4 border-r border-gray-100 dark:border-gray-800 min-w-[70px]">
-                    <span className="text-xs font-bold text-gray-900 dark:text-white">{formatTime(event.start_time)}</span>
-                </div>
-                <div className="pl-4 flex-1 min-w-0">
-                    <h3 className="font-bold text-sm text-gray-900 dark:text-white truncate">{event.title}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                        {event.location && (
-                            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                                <MapPin className="w-3 h-3" />
-                                <span className="truncate">{event.location}</span>
-                            </div>
-                        )}
-                        {!event.location && (
-                            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                                <Clock className="w-3 h-3" />
-                                <span>30 min</span>
-                            </div>
-                        )}
+              <div className="flex flex-col justify-center items-center pr-4 border-r border-gray-100 dark:border-gray-800 min-w-[70px]">
+                <span className="text-xs font-bold text-gray-900 dark:text-white">{formatTime(event.start_time)}</span>
+              </div>
+              <div className="pl-4 flex-1 min-w-0">
+                <h3 className="font-bold text-sm text-gray-900 dark:text-white truncate">{event.title}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  {event.location ? (
+                    <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                      <MapPin className="w-3 h-3" />
+                      <span className="truncate">{event.location}</span>
                     </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                      <Clock className="w-3 h-3" />
+                      <span>30 min</span>
+                    </div>
+                  )}
                 </div>
-                <div className="w-1 rounded-full self-stretch ml-2" style={{ backgroundColor: getEventColor(event.id) }}></div>
-            </div>
-            ))
+              </div>
+              <div className="w-1 rounded-full self-stretch ml-2" style={{ backgroundColor: getEventColor(event.id) }} />
+            </Link>
+          ))
         )}
       </div>
     </div>
