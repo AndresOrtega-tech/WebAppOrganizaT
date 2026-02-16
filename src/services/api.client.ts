@@ -133,7 +133,7 @@ class ApiClient {
     const cacheKey = url;
     const now = Date.now();
     const cached = this.cache.get(cacheKey);
-    if (cached && cached.expiry > now) {
+    if (cached && cached.expiry > now && cached.data !== undefined) {
       this.revalidate(cacheKey, url);
       return Promise.resolve(cached.data as T);
     }
@@ -147,7 +147,8 @@ class ApiClient {
       const entry = this.cache.get(cacheKey);
       if (entry) this.cache.set(cacheKey, { expiry: entry.expiry, data: entry.data });
     });
-    this.cache.set(cacheKey, { expiry: now + this.defaultTTL, data: cached?.data, inflight });
+    // Store placeholder with no valid expiry so subsequent calls await inflight
+    this.cache.set(cacheKey, { expiry: 0, data: cached?.data, inflight });
     return inflight;
   }
 
@@ -194,7 +195,8 @@ class ApiClient {
       if (entry) this.cache.set(cacheKey, { expiry: entry.expiry, data: entry.data });
     });
     const entry = this.cache.get(cacheKey);
-    this.cache.set(cacheKey, { expiry: entry?.expiry || Date.now() + this.defaultTTL, data: entry?.data, inflight });
+    // Keep expiry 0 when we only have inflight to avoid serving undefined data
+    this.cache.set(cacheKey, { expiry: entry?.data !== undefined ? (entry?.expiry || Date.now() + this.defaultTTL) : 0, data: entry?.data, inflight });
   }
 }
 

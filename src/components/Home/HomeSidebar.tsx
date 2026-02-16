@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Home, 
   CheckSquare, 
@@ -13,6 +13,9 @@ import { Tag } from '@/services/tags.service';
 import { User } from '@/services/auth.service';
 import { isFeatureEnabled } from '@/config/features';
 import ThemeToggle from '@/components/ThemeToggle';
+import { taskService } from '@/services/task.service';
+import { notesService } from '@/services/notes.service';
+import { eventsService } from '@/services/events.service';
 
 interface HomeSidebarProps {
   tags: Tag[];
@@ -24,6 +27,42 @@ interface HomeSidebarProps {
 
 export default function HomeSidebar({ tags, user, onLogout, isOpen, onClose }: HomeSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const prefetchRouteAndData = (href: string) => {
+    try {
+      router.prefetch(href);
+      const today = new Date();
+      const todayLocal = today.toLocaleDateString('sv');
+      const in7 = new Date(today);
+      in7.setDate(in7.getDate() + 7);
+      const in7Local = in7.toLocaleDateString('sv');
+
+      if (href === '/home') {
+        // Warm common home queries
+        void taskService.getTasks({
+          is_completed: false,
+          start_date: todayLocal,
+          end_date: in7Local,
+          date_field: 'due_date',
+        });
+        if (isFeatureEnabled('ENABLE_NOTES_VIEW')) {
+          void notesService.getNotes();
+        }
+        if (isFeatureEnabled('ENABLE_EVENTS_VIEW')) {
+          void eventsService.getEvents({ start_date: todayLocal });
+        }
+      } else if (href === '/tasks') {
+        void taskService.getTasks({ is_completed: false, sort_by: 'due_date', order: 'asc' });
+      } else if (href === '/notes') {
+        void notesService.getNotes();
+      } else if (href === '/events') {
+        void eventsService.getEvents({ start_date: todayLocal });
+      }
+    } catch {
+      // best-effort prefetch; ignore errors
+    }
+  };
 
   const navItems = [
     { name: 'Inicio', href: '/home', icon: Home, enabled: true },
@@ -77,6 +116,9 @@ export default function HomeSidebar({ tags, user, onLogout, isOpen, onClose }: H
             <Link
               key={item.href}
               href={item.href}
+              prefetch
+              onMouseEnter={() => prefetchRouteAndData(item.href)}
+              onFocus={() => prefetchRouteAndData(item.href)}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'

@@ -92,17 +92,15 @@ export default function HomePage() {
       const end = new Date(today);
       end.setDate(end.getDate() + 7);
 
-      const startDateIso = today.toISOString();
-      const endDateIso = end.toISOString();
-
-      const startDate = startDateIso.split('T')[0];
-      const endDate = endDateIso.split('T')[0];
+      // Use local YYYY-MM-DD to produce a stable cache key across navigations
+      const startDateLocal = today.toLocaleDateString('sv');
+      const endDateLocal = end.toLocaleDateString('sv');
 
       const [tasksData, tagsData] = await Promise.all([
         taskService.getTasks({
           is_completed: false,
-          start_date: startDateIso,
-          end_date: endDateIso,
+          start_date: startDateLocal,
+          end_date: endDateLocal,
           date_field: 'due_date',
         }),
         tagsService.getTags(),
@@ -111,7 +109,7 @@ export default function HomePage() {
       const rangedTasks = tasksData.filter((task) => {
         if (!task.due_date) return false;
         const taskDate = task.due_date.split('T')[0];
-        return taskDate >= startDate && taskDate <= endDate;
+        return taskDate >= startDateLocal && taskDate <= endDateLocal;
       });
 
       const sortedTasks = sortDashboardTasks(rangedTasks);
