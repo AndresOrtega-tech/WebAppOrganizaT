@@ -298,7 +298,9 @@ export default function CreateItemModal({
         }
       } else if (activeTab === 'event') {
         const newEvent = await eventsService.createEvent(eventForm);
-        // Events don't support tags in this version
+        if (selectedTagIds.length > 0) {
+          await eventsService.assignTagsToEvent(newEvent.id, selectedTagIds);
+        }
         // Link Items
         for (const item of linkedItems) {
           if (item.type === 'task') {
@@ -780,8 +782,8 @@ export default function CreateItemModal({
             </div>
           )}
 
-          {/* SHARED TAGS SECTION (Task & Note only) */}
-          {(activeTab === 'task' || activeTab === 'note') && (
+          {/* SHARED TAGS SECTION (Task, Note & Event) */}
+          {(activeTab === 'task' || activeTab === 'note' || activeTab === 'event') && (
             <div className="space-y-4">
               {/* Tags Selection */}
               <div>
