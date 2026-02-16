@@ -20,6 +20,21 @@ export default function HomeHeader({
 }: HomeHeaderProps) {
   const firstName = userName.split(' ')[0];
 
+  const hour = new Date().getHours();
+  let greeting = 'Buenos días';
+
+  if (hour >= 0 && hour < 3) {
+    greeting = 'Para los desvelados';
+  } else if (hour >= 3 && hour < 6) {
+    greeting = 'Para los madrugadores';
+  } else if (hour >= 6 && hour < 12) {
+    greeting = 'Buenos días';
+  } else if (hour >= 12 && hour < 19) {
+    greeting = 'Buenas tardes';
+  } else {
+    greeting = 'Buenas noches';
+  }
+
   return (
     <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
       <div className="flex items-center gap-4">
@@ -32,7 +47,7 @@ export default function HomeHeader({
         </button>
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-            Buenos días, {firstName}
+            {greeting}, {firstName}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm md:text-base">
             Tienes <span className="font-semibold text-indigo-600 dark:text-indigo-400">{pendingTasksCount} tareas pendientes</span> hoy
