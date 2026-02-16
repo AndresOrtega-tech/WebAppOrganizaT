@@ -125,11 +125,13 @@ export default function HomePage() {
       }
 
       if (isFeatureEnabled('ENABLE_EVENTS_VIEW')) {
-        // For demo/simplicity, getting all events and filtering for today client-side
-        // In a real app, you'd pass a date range to the API
-        const eventsData = await eventsService.getEvents();
-        const today = new Date().toISOString().split('T')[0];
-        const todayEvents = eventsData.filter(e => e.start_time.startsWith(today));
+        const todayLocal = new Date().toLocaleDateString('sv'); // YYYY-MM-DD in local tz
+        const eventsData = await eventsService.getEvents({
+          start_date: todayLocal,
+          end_date: todayLocal,
+        });
+        // Defensive client-side check in case backend returns a wider range
+        const todayEvents = eventsData.filter(e => (e.start_time || '').slice(0, 10) === todayLocal);
         setEvents(todayEvents);
       }
 
