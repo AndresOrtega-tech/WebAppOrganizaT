@@ -24,9 +24,9 @@ export default function HomeHeader({
   let greeting = 'Buenos días';
 
   if (hour >= 0 && hour < 3) {
-    greeting = 'Para los desvelados';
+    greeting = 'Buenas noches';
   } else if (hour >= 3 && hour < 6) {
-    greeting = 'Para los madrugadores';
+    greeting = 'Buenos días';
   } else if (hour >= 6 && hour < 12) {
     greeting = 'Buenos días';
   } else if (hour >= 12 && hour < 19) {
