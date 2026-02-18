@@ -3,17 +3,84 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/services/auth.service';
-import { Task, taskService, TaskFilters as TaskFiltersParams } from '@/services/task.service';
+import { Task, taskService, TaskFilters as TaskFiltersParams, TaskPriority } from '@/services/task.service';
 import { Tag, tagsService } from '@/services/tags.service';
 import { apiClient } from '@/services/api.client';
 
 import HomeSidebar from '@/components/Home/HomeSidebar';
 import HomeHeader from '@/components/Home/HomeHeader';
-import TaskStats from '@/components/Home/TaskStats';
 import TaskList from '@/components/Home/TaskList';
 import TasksFilterBar from '@/components/Home/TasksFilterBar';
 import TaskFilters from '@/components/TaskFilters';
 import CreateItemModal from '@/components/CreateItemModal';
+
+const sortTasksForList = (tasks: Task[], filters: TaskFiltersParams): Task[] => {
+  const todayStr = new Date().toLocaleDateString('sv');
+
+  const showOnlyCompleted = filters.is_completed === true;
+
+  let working = [...tasks];
+
+  if (!showOnlyCompleted) {
+    working = working.filter(task => {
+      if (!task.due_date) return true;
+      const taskDateStr = task.due_date.split('T')[0];
+      return !(taskDateStr < todayStr && task.is_completed);
+    });
+  }
+
+  if ((filters.sort_by && filters.sort_by !== 'due_date') || filters.due_date) {
+    return working;
+  }
+
+  const priorityOrder: { [key in TaskPriority]: number } = {
+    alta: 0,
+    media: 1,
+    baja: 2,
+  };
+
+  const sortFn = (a: Task, b: Task) => {
+    const dateA = a.due_date ? a.due_date.split('T')[0] : '';
+    const dateB = b.due_date ? b.due_date.split('T')[0] : '';
+
+    if (dateA !== dateB) {
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      return dateA.localeCompare(dateB);
+    }
+
+    const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+    if (priorityDiff !== 0) return priorityDiff;
+
+    const updatedA = new Date(a.updated_at).getTime();
+    const updatedB = new Date(b.updated_at).getTime();
+    return updatedB - updatedA;
+  };
+
+  const overduePending: Task[] = [];
+  const dated: Task[] = [];
+  const noDate: Task[] = [];
+
+  for (const task of working) {
+    const taskDateStr = task.due_date ? task.due_date.split('T')[0] : null;
+    if (!taskDateStr) {
+      noDate.push(task);
+      continue;
+    }
+
+    if (taskDateStr < todayStr && !task.is_completed) {
+      overduePending.push(task);
+    } else {
+      dated.push(task);
+    }
+  }
+
+  overduePending.sort(sortFn);
+  dated.sort(sortFn);
+  noDate.sort(sortFn);
+
+  return [...overduePending, ...dated, ...noDate];
+};
 
 export default function TasksPage() {
   const router = useRouter();
@@ -24,53 +91,55 @@ export default function TasksPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   
   const DEFAULT_FILTERS: TaskFiltersParams = {
-    is_completed: false,
     sort_by: 'due_date',
-    order: 'asc'
+    order: 'asc',
+    show_overdue: true,
   };
 
   const [filters, setFilters] = useState<TaskFiltersParams>(DEFAULT_FILTERS);
-  
-  const [isLoadingTasks, setIsLoadingTasks] = useState(true);
-  
+
   // UI State
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = window.localStorage.getItem('sidebar_open');
+    if (stored !== null) {
+      return stored === 'true';
+    }
+    return window.innerWidth >= 768;
+  });
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createModalTab, setCreateModalTab] = useState<'task' | 'note' | 'event' | 'tag'>('task');
 
-  // Initialize sidebar state based on screen size
+  const setSidebarOpen = (open: boolean) => {
+    setIsSidebarOpen(open);
+  };
+
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsSidebarOpen(false);
-      }
-    };
-    handleResize();
-  }, []);
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('sidebar_open', String(isSidebarOpen));
+  }, [isSidebarOpen]);
 
   // Load User
   useEffect(() => {
     const userData = localStorage.getItem('user');
-    if (userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (e) {
-        console.error('Error parsing user data', e);
-      }
+    if (!userData) return;
+    try {
+      const parsed = JSON.parse(userData) as User;
+      queueMicrotask(() => setUser(parsed));
+    } catch (e) {
+      console.error('Error parsing user data', e);
     }
   }, []);
 
   // Load Data
   const loadTasks = useCallback(async (currentFilters: TaskFiltersParams) => {
     try {
-      setIsLoadingTasks(true);
       const data = await taskService.getTasks(currentFilters);
-      setTasks(data);
+      const ordered = sortTasksForList(data, currentFilters);
+      setTasks(ordered);
     } catch (error) {
       console.error('Error loading tasks:', error);
-    } finally {
-      setIsLoadingTasks(false);
     }
   }, []);
 
@@ -84,8 +153,9 @@ export default function TasksPage() {
   }, []);
 
   useEffect(() => {
-    loadTasks(filters);
-    loadTags();
+    void (async () => {
+      await Promise.all([loadTasks(filters), loadTags()]);
+    })();
   }, [filters, loadTasks, loadTags]);
 
   // Handlers
@@ -139,7 +209,7 @@ export default function TasksPage() {
           user={user} 
           onLogout={handleLogout} 
           isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
+          onClose={() => setSidebarOpen(false)}
         />
 
         {/* Main Content */}
@@ -148,17 +218,12 @@ export default function TasksPage() {
             <HomeHeader 
               userName={user?.full_name || 'Usuario'}
               pendingTasksCount={pendingCount}
+              completedTasksCount={completedCount}
               onNewItemClick={handleCreateClick}
-              onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              onMenuClick={() => setSidebarOpen(!isSidebarOpen)}
               isSidebarOpen={isSidebarOpen}
               createButtonLabel="Nueva Tarea"
             />
-
-            {/* Stats */}
-            <div>
-               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Estado de Tareas</h2>
-               <TaskStats pendingCount={pendingCount} completedCount={completedCount} isLoading={isLoadingTasks} />
-            </div>
 
             {/* Tasks Section */}
             <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 border border-gray-100 dark:border-gray-800 min-h-[400px]">
@@ -187,7 +252,8 @@ export default function TasksPage() {
 
               <TaskList 
                 tasks={tasks} 
-                onComplete={handleTaskComplete} 
+                onComplete={handleTaskComplete}
+                origin="tasks"
               />
             </div>
           </div>

@@ -55,11 +55,12 @@ interface EventApiResponse extends Omit<Event, 'tasks' | 'notes' | 'tags'> {
 
 const mapEventResponse = (data: unknown): Event => {
   const d = data as EventApiResponse;
+  const rootTags = (d as EventApiResponse & { tags?: Tag[] }).tags;
   return {
     ...d,
     tasks: d.tasks || [],
     notes: d.notes || [],
-    tags: (d as any).tags || (d.event_tags?.map(et => et.tags) || []),
+    tags: rootTags || (d.event_tags?.map(et => et.tags) || []),
     reminders_data: d.reminders_data || [],
   };
 };

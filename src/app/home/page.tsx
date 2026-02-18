@@ -53,20 +53,23 @@ export default function HomePage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
-  
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = window.localStorage.getItem('sidebar_open');
+    if (stored !== null) {
+      return stored === 'true';
+    }
+    return window.innerWidth >= 768;
+  });
 
-  // Initialize sidebar state based on screen size
+  const setSidebarOpen = (open: boolean) => {
+    setIsSidebarOpen(open);
+  };
+
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsSidebarOpen(false);
-      }
-    };
-    
-    // Set initial state
-    handleResize();
-  }, []);
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('sidebar_open', String(isSidebarOpen));
+  }, [isSidebarOpen]);
   
   // Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -92,29 +95,38 @@ export default function HomePage() {
       const end = new Date(today);
       end.setDate(end.getDate() + 7);
 
-      // Use local YYYY-MM-DD to produce a stable cache key across navigations
-      const startDateLocal = today.toLocaleDateString('sv');
+      const todayLocal = today.toLocaleDateString('sv');
       const endDateLocal = end.toLocaleDateString('sv');
 
       const [tasksData, tagsData] = await Promise.all([
         taskService.getTasks({
-          is_completed: false,
-          start_date: startDateLocal,
-          end_date: endDateLocal,
           date_field: 'due_date',
+          show_overdue: true,
         }),
         tagsService.getTags(),
       ]);
 
-      const rangedTasks = tasksData.filter((task) => {
+      const overduePending = tasksData.filter(task => {
         if (!task.due_date) return false;
         const taskDate = task.due_date.split('T')[0];
-        return taskDate >= startDateLocal && taskDate <= endDateLocal;
+        return taskDate < todayLocal && !task.is_completed;
       });
 
-      const sortedTasks = sortDashboardTasks(rangedTasks);
+      const inRange = tasksData.filter(task => {
+        if (!task.due_date) return false;
+        const taskDate = task.due_date.split('T')[0];
+        return taskDate >= todayLocal && taskDate <= endDateLocal;
+      });
 
-      setTasks(sortedTasks);
+      const pendingOverdue = overduePending;
+      const pendingUpcoming = inRange.filter(task => !task.is_completed);
+      const completedUpcoming = inRange.filter(task => task.is_completed);
+
+      const sortedOverdue = sortDashboardTasks(pendingOverdue);
+      const sortedPendingUpcoming = sortDashboardTasks(pendingUpcoming);
+      const sortedCompleted = sortDashboardTasks(completedUpcoming);
+
+      setTasks([...sortedOverdue, ...sortedPendingUpcoming, ...sortedCompleted]);
       setTags(tagsData);
 
       if (isFeatureEnabled('ENABLE_NOTES_VIEW')) {
@@ -170,11 +182,15 @@ export default function HomePage() {
     setIsCreateModalOpen(true);
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const pendingTodayCount = tasks.filter((task) => {
-    if (task.is_completed) return false;
+  const pendingWeekCount = tasks.filter((task) => !task.is_completed).length;
+  const completedWeekCount = tasks.filter((task) => {
     if (!task.due_date) return false;
-    return task.due_date.startsWith(todayStr);
+    const todayLocal = new Date().toLocaleDateString('sv');
+    const end = new Date();
+    end.setDate(end.getDate() + 7);
+    const endDateLocal = end.toLocaleDateString('sv');
+    const taskDate = task.due_date.split('T')[0];
+    return task.is_completed && taskDate >= todayLocal && taskDate <= endDateLocal;
   }).length;
 
   return (
@@ -186,7 +202,7 @@ export default function HomePage() {
           user={user} 
           onLogout={handleLogout} 
           isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
+          onClose={() => setSidebarOpen(false)}
         />
 
         {/* Main Content */}
@@ -194,9 +210,10 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto">
             <HomeHeader 
               userName={user?.full_name || 'Usuario'}
-              pendingTasksCount={pendingTodayCount}
+              pendingTasksCount={pendingWeekCount}
+              completedTasksCount={completedWeekCount}
               onNewItemClick={handleCreateClick}
-              onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              onMenuClick={() => setSidebarOpen(!isSidebarOpen)}
               isSidebarOpen={isSidebarOpen}
             />
 
@@ -207,7 +224,8 @@ export default function HomePage() {
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Tareas</h2>
                   <TaskList 
                     tasks={tasks} 
-                    onComplete={handleTaskComplete} 
+                    onComplete={handleTaskComplete}
+                    origin="home"
                   />
                 </div>
               </div>

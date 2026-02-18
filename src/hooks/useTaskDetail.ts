@@ -30,6 +30,7 @@ export const useTaskDetail = (taskId: string) => {
   const [noteToUnlink, setNoteToUnlink] = useState<string | null>(null);
   const [availableNotes, setAvailableNotes] = useState<Note[]>([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+  const [isCreatingNote, setIsCreatingNote] = useState(false);
 
   const [editForm, setEditForm] = useState<EditFormState>({
     title: '',
@@ -279,6 +280,29 @@ export const useTaskDetail = (taskId: string) => {
     await loadTask(taskId);
   };
 
+  const createNoteForTask = async (title: string, content: string) => {
+    if (!taskId) return null;
+
+    try {
+      setIsCreatingNote(true);
+      const newNote = await notesService.createNote({
+        title: title || 'Sin título',
+        content
+      });
+
+      await taskService.linkNoteToTask(taskId, newNote.id);
+      await loadTask(taskId);
+
+      return newNote;
+    } catch (err) {
+      console.error('Error creating note for task:', err);
+      alert('Error al crear la nota para la tarea');
+      return null;
+    } finally {
+      setIsCreatingNote(false);
+    }
+  };
+
   return {
     task,
     loading,
@@ -308,6 +332,8 @@ export const useTaskDetail = (taskId: string) => {
     handleUpdate,
     confirmDelete,
     handleTagsUpdate,
-    handleRemoveTag
+    handleRemoveTag,
+    createNoteForTask,
+    isCreatingNote
   };
 };

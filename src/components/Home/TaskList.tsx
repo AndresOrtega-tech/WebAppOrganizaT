@@ -2,6 +2,7 @@ import { useRouter } from 'next/navigation';
 import { Task } from '@/services/task.service';
 import { 
   Circle, 
+  CheckCircle2,
   Clock, 
   Tag as TagIcon
 } from 'lucide-react';
@@ -11,9 +12,10 @@ import remarkGfm from 'remark-gfm';
 interface TaskListProps {
   tasks: Task[];
   onComplete: (taskId: string) => void;
+  origin?: 'home' | 'tasks';
 }
 
-export default function TaskList({ tasks, onComplete }: TaskListProps) {
+export default function TaskList({ tasks, onComplete, origin }: TaskListProps) {
   const router = useRouter();
 
   const formatDate = (dateString: string | null) => {
@@ -44,17 +46,21 @@ export default function TaskList({ tasks, onComplete }: TaskListProps) {
       
       <div className="space-y-3">
         {tasks.length === 0 ? (
-           <div className="p-8 text-center bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800">
-             <p className="text-gray-400 text-sm">No tienes tareas pendientes para hoy 🎉</p>
-           </div>
+          <div className="p-8 text-center bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800">
+            <p className="text-gray-400 text-sm">No tienes tareas para esta semana 🎉</p>
+          </div>
         ) : (
           tasks.map(task => {
             const dateText = formatDate(task.due_date);
-            
+            const isCompleted = task.is_completed;
+
             return (
               <div 
                 key={task.id}
-                onClick={() => router.push(`/tasks/${task.id}`)}
+                onClick={() => {
+                  const search = origin ? `?from=${origin}` : '';
+                  router.push(`/tasks/${task.id}${search}`);
+                }}
                 className="group bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-900/30 transition-all duration-200 flex gap-4 items-start cursor-pointer"
               >
                 <button 
@@ -62,13 +68,23 @@ export default function TaskList({ tasks, onComplete }: TaskListProps) {
                     e.stopPropagation();
                     onComplete(task.id);
                   }}
-                  className="mt-1 flex-shrink-0 text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  className={`mt-1 flex-shrink-0 transition-colors ${
+                    isCompleted
+                      ? 'text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300'
+                      : 'text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400'
+                  }`}
                 >
-                  <Circle className="w-6 h-6" />
+                  {isCompleted ? (
+                    <CheckCircle2 className="w-6 h-6" />
+                  ) : (
+                    <Circle className="w-6 h-6" />
+                  )}
                 </button>
                 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-gray-900 dark:text-white truncate">{task.title}</h3>
+                  <h3 className={`font-bold truncate ${isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
+                    {task.title}
+                  </h3>
                   {task.description && (
                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1 prose prose-xs dark:prose-invert">
                           {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}

@@ -4,6 +4,7 @@ import { isFeatureEnabled } from '@/config/features';
 interface HomeHeaderProps {
   userName: string;
   pendingTasksCount: number;
+  completedTasksCount: number;
   onNewItemClick: (type: 'task' | 'note' | 'event') => void;
   onMenuClick: () => void;
   isSidebarOpen: boolean;
@@ -13,6 +14,7 @@ interface HomeHeaderProps {
 export default function HomeHeader({ 
   userName, 
   pendingTasksCount, 
+  completedTasksCount,
   onNewItemClick, 
   onMenuClick,
   isSidebarOpen,
@@ -49,9 +51,24 @@ export default function HomeHeader({
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
             {greeting}, {firstName}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm md:text-base">
-            Tienes <span className="font-semibold text-indigo-600 dark:text-indigo-400">{pendingTasksCount} tareas pendientes</span> hoy
-          </p>
+          <div className="mt-2 flex flex-wrap gap-3 text-xs md:text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-baseline gap-1">
+              <span className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                Pendientes
+              </span>
+              <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                {pendingTasksCount}
+              </span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                Completadas
+              </span>
+              <span className="text-lg font-bold text-emerald-500 dark:text-emerald-400">
+                {completedTasksCount}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 

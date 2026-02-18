@@ -50,7 +50,9 @@ export default function TaskDetailPage() {
     confirmUnlinkNote,
     openLinkModal,
     reloadTask,
-    hasUnsavedChanges
+    hasUnsavedChanges,
+    createNoteForTask,
+    isCreatingNote
   } = useTaskDetail(id);
 
   const isLinkingEnabled = isFeatureEnabled('ENABLE_TASK_NOTE_LINKING');
@@ -66,29 +68,62 @@ export default function TaskDetailPage() {
   const [user, setUser] = useState<User | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [origin, setOrigin] = useState<{ from: string; fromId?: string | null } | null>(null);
 
   const [isUnsavedModalOpen, setIsUnsavedModalOpen] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
-  const from = searchParams.get('from');
-  const fromId = searchParams.get('fromId');
-  const backHref = from === 'note' && fromId
-    ? `/notes/${fromId}`
-    : from === 'event' && fromId
-      ? `/events/${fromId}`
-      : from === 'task' && fromId
-        ? `/tasks/${fromId}`
-        : '/tasks';
-
   const router = useRouter();
 
+  const setSidebarOpen = (open: boolean) => {
+    setIsSidebarOpen(open);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('sidebar_open', String(open));
+    }
+  };
+
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsSidebarOpen(false);
+    if (typeof window === 'undefined') return;
+    const nextFrom = searchParams.get('from');
+    const nextFromId = searchParams.get('fromId');
+    if (nextFrom) {
+      const value = { from: nextFrom, fromId: nextFromId || null };
+      setOrigin(value);
+      window.localStorage.setItem('task_detail_origin', JSON.stringify(value));
+      return;
+    }
+    const stored = window.localStorage.getItem('task_detail_origin');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as { from: string; fromId?: string | null };
+        setOrigin(parsed);
+      } catch {
+        setOrigin(null);
       }
-    };
-    handleResize();
+    }
+  }, [searchParams]);
+
+  const backHref =
+    origin?.from === 'note' && origin.fromId
+      ? `/notes/${origin.fromId}`
+      : origin?.from === 'event' && origin.fromId
+        ? `/events/${origin.fromId}`
+        : origin?.from === 'task' && origin.fromId
+          ? `/tasks/${origin.fromId}`
+          : origin?.from === 'home'
+            ? '/home'
+            : '/tasks';
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = window.localStorage.getItem('sidebar_open');
+    if (stored !== null) {
+      setIsSidebarOpen(stored === 'true');
+      return;
+    }
+    const isDesktop = window.innerWidth >= 768;
+    setIsSidebarOpen(isDesktop);
+    window.localStorage.setItem('sidebar_open', String(isDesktop));
   }, []);
 
   useEffect(() => {
@@ -253,7 +288,7 @@ export default function TaskDetailPage() {
           user={user}
           onLogout={handleLogout}
           isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
+          onClose={() => setSidebarOpen(false)}
         />
 
         <main className="flex-1 p-4 md:p-8 transition-all duration-300">
@@ -261,7 +296,7 @@ export default function TaskDetailPage() {
             <TaskHeader 
               onBack={handleBack}
               onDelete={() => setShowDeleteModal(true)}
-              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+              onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)}
             />
 
             <TaskInfo 
@@ -272,11 +307,13 @@ export default function TaskDetailPage() {
               onRemoveTag={handleRemoveTag}
               onLinkNote={openLinkModal}
               onUnlinkNote={handleUnlinkNote}
+              onCreateNote={createNoteForTask}
               isLinkingEnabled={isLinkingEnabled}
               linkedEvents={linkedEvents}
               onLinkEvent={openLinkEventModal}
               onUnlinkEvent={handleUnlinkEvent}
               isEventLinkingEnabled={isEventLinkingEnabled && !eventsError}
+              isCreatingNote={isCreatingNote}
             />
           </div>
         </main>
