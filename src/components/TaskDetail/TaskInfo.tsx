@@ -39,6 +39,7 @@ export default function TaskInfo({ task, editForm, setEditForm, onRemoveTag, onM
   const [isCreatingInlineNote, setIsCreatingInlineNote] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [newNoteContent, setNewNoteContent] = useState('');
+  const [noteError, setNoteError] = useState('');
 
   const { isReformulating, handleReformulate } = useAiReformulation(
     editForm.description,
@@ -109,25 +110,29 @@ export default function TaskInfo({ task, editForm, setEditForm, onRemoveTag, onM
     setIsCreatingInlineNote(true);
     setNewNoteTitle('');
     setNewNoteContent('');
+    setNoteError('');
   };
 
   const handleCancelCreateNote = () => {
     setIsCreatingInlineNote(false);
     setNewNoteTitle('');
     setNewNoteContent('');
+    setNoteError('');
   };
 
   const handleSaveCreateNote = async () => {
     if (!onCreateNote) return;
     if (!newNoteContent.trim()) {
-      alert('La nota no puede estar vacía');
+      setNoteError('La nota no puede estar vacía');
       return;
     }
+    setNoteError('');
     const created = await onCreateNote(newNoteTitle.trim(), newNoteContent.trim());
     if (created) {
       setIsCreatingInlineNote(false);
       setNewNoteTitle('');
       setNewNoteContent('');
+      setNoteError('');
     }
   };
 
@@ -296,6 +301,11 @@ export default function TaskInfo({ task, editForm, setEditForm, onRemoveTag, onM
                     rows={3}
                     className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-xs text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none"
                   />
+                  {noteError && (
+                    <p className="text-[11px] text-red-500 mt-1">
+                      {noteError}
+                    </p>
+                  )}
                   <div className="flex justify-end gap-2 pt-1">
                     <button
                       type="button"

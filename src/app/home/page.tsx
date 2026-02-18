@@ -182,16 +182,25 @@ export default function HomePage() {
     setIsCreateModalOpen(true);
   };
 
-  const pendingWeekCount = tasks.filter((task) => !task.is_completed).length;
-  const completedWeekCount = tasks.filter((task) => {
+  const countsToday = new Date();
+  const countsEnd = new Date(countsToday);
+  countsEnd.setDate(countsEnd.getDate() + 7);
+  const countsTodayLocal = countsToday.toLocaleDateString('sv');
+  const countsEndDateLocal = countsEnd.toLocaleDateString('sv');
+
+  const isInUpcomingRange = (task: Task) => {
     if (!task.due_date) return false;
-    const todayLocal = new Date().toLocaleDateString('sv');
-    const end = new Date();
-    end.setDate(end.getDate() + 7);
-    const endDateLocal = end.toLocaleDateString('sv');
     const taskDate = task.due_date.split('T')[0];
-    return task.is_completed && taskDate >= todayLocal && taskDate <= endDateLocal;
-  }).length;
+    return taskDate >= countsTodayLocal && taskDate <= countsEndDateLocal;
+  };
+
+  const pendingWeekCount = tasks.filter(
+    (task) => !task.is_completed && isInUpcomingRange(task)
+  ).length;
+
+  const completedWeekCount = tasks.filter(
+    (task) => task.is_completed && isInUpcomingRange(task)
+  ).length;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black transition-colors">
