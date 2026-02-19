@@ -25,6 +25,11 @@ const sortDashboardTasks = (tasks: Task[]): Task[] => {
   };
 
   return [...tasks].sort((a, b) => {
+    // Pending tasks first, then completed
+    if (a.is_completed !== b.is_completed) {
+      return a.is_completed ? 1 : -1;
+    }
+
     const dateA = a.due_date ? a.due_date.split('T')[0] : '';
     const dateB = b.due_date ? b.due_date.split('T')[0] : '';
 
