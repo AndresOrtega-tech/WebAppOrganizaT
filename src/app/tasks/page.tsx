@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/services/auth.service';
-import { Task, taskService, TaskFilters as TaskFiltersParams, TaskPriority } from '@/services/task.service';
+import { Task, taskService, TaskFilters as TaskFiltersParams } from '@/services/task.service';
 import { Tag, tagsService } from '@/services/tags.service';
 import { apiClient } from '@/services/api.client';
 
@@ -13,74 +13,6 @@ import TaskList from '@/components/Home/TaskList';
 import TasksFilterBar from '@/components/Home/TasksFilterBar';
 import TaskFilters from '@/components/TaskFilters';
 import CreateItemModal from '@/components/CreateItemModal';
-
-const sortTasksForList = (tasks: Task[], filters: TaskFiltersParams): Task[] => {
-  const todayStr = new Date().toLocaleDateString('sv');
-
-  const showOnlyCompleted = filters.is_completed === true;
-
-  let working = [...tasks];
-
-  if (!showOnlyCompleted) {
-    working = working.filter(task => {
-      if (!task.due_date) return true;
-      const taskDateStr = task.due_date.split('T')[0];
-      return !(taskDateStr < todayStr && task.is_completed);
-    });
-  }
-
-  if ((filters.sort_by && filters.sort_by !== 'due_date') || filters.due_date) {
-    return working;
-  }
-
-  const priorityOrder: { [key in TaskPriority]: number } = {
-    alta: 0,
-    media: 1,
-    baja: 2,
-  };
-
-  const sortFn = (a: Task, b: Task) => {
-    const dateA = a.due_date ? a.due_date.split('T')[0] : '';
-    const dateB = b.due_date ? b.due_date.split('T')[0] : '';
-
-    if (dateA !== dateB) {
-      if (!dateA) return 1;
-      if (!dateB) return -1;
-      return dateA.localeCompare(dateB);
-    }
-
-    const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
-    if (priorityDiff !== 0) return priorityDiff;
-
-    const updatedA = new Date(a.updated_at).getTime();
-    const updatedB = new Date(b.updated_at).getTime();
-    return updatedB - updatedA;
-  };
-
-  const overduePending: Task[] = [];
-  const dated: Task[] = [];
-  const noDate: Task[] = [];
-
-  for (const task of working) {
-    const taskDateStr = task.due_date ? task.due_date.split('T')[0] : null;
-    if (!taskDateStr) {
-      noDate.push(task);
-      continue;
-    }
-
-    if (taskDateStr < todayStr && !task.is_completed) {
-      overduePending.push(task);
-    } else {
-      dated.push(task);
-    }
-  }
-
-  overduePending.sort(sortFn);
-  dated.sort(sortFn);
-  noDate.sort(sortFn);
-
-  return [...overduePending, ...dated, ...noDate];
-};
 
 export default function TasksPage() {
   const router = useRouter();
@@ -94,6 +26,7 @@ export default function TasksPage() {
     sort_by: 'due_date',
     order: 'asc',
     show_overdue: true,
+    view: 'tasks',
   };
 
   const [filters, setFilters] = useState<TaskFiltersParams>(DEFAULT_FILTERS);
@@ -136,8 +69,7 @@ export default function TasksPage() {
   const loadTasks = useCallback(async (currentFilters: TaskFiltersParams) => {
     try {
       const data = await taskService.getTasks(currentFilters);
-      const ordered = sortTasksForList(data, currentFilters);
-      setTasks(ordered);
+      setTasks(data);
     } catch (error) {
       console.error('Error loading tasks:', error);
     }
@@ -182,7 +114,10 @@ export default function TasksPage() {
   };
 
   const handleFiltersChange = (newFilters: TaskFiltersParams) => {
-    setFilters(newFilters);
+    setFilters({
+      ...newFilters,
+      view: 'tasks',
+    });
   };
 
   const handleClearFilters = () => {

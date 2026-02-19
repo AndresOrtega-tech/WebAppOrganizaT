@@ -62,6 +62,8 @@ export interface TaskFilters {
   end_date?: string;
   date_field?: 'due_date' | 'updated_at' | 'created_at';
   priority?: TaskPriority;
+  view?: 'home' | 'tasks';
+  cursor?: string;
 }
 
 type TaskApiResponse = Omit<Task, 'tags' | 'notes' | 'reminders_data'> & {
@@ -114,17 +116,37 @@ export const taskService = {
       if (filters.date_field) {
         params.append('date_field', filters.date_field);
       }
-      // Note: due_date and show_overdue are handled client-side below
+      if (filters.due_date) {
+        params.append('due_date', filters.due_date);
+      }
+      if (filters.show_overdue !== undefined) {
+        params.append('show_overdue', String(filters.show_overdue));
+      }
+      if (filters.view) {
+        params.append('view', filters.view);
+      }
+      if (filters.cursor) {
+        params.append('cursor', filters.cursor);
+      }
     }
 
     const queryString = params.toString();
     const url = `/tasks/${queryString ? `?${queryString}` : ''}`;
 
-    const data = await apiClient.get(url);
-    let tasks = (data as TaskApiResponse[]).map(mapTaskResponse);
+    const data = await apiClient.get<unknown>(url);
 
-    // Client-side filtering for dates
-    if (filters) {
+    let rawTasks: TaskApiResponse[] = [];
+
+    if (Array.isArray(data)) {
+      rawTasks = data as TaskApiResponse[];
+    } else if (data && typeof data === 'object' && 'data' in data && Array.isArray((data as { data?: unknown }).data)) {
+      rawTasks = (data as { data: TaskApiResponse[] }).data;
+    }
+
+    let tasks = rawTasks.map(mapTaskResponse);
+
+    // Client-side filtering for dates (legacy flows without view)
+    if (filters && !filters.view) {
       const todayStr = new Date().toLocaleDateString('sv');
 
       tasks = tasks.filter((task: Task) => {

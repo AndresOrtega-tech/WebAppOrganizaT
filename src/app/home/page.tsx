@@ -80,8 +80,8 @@ export default function HomePage() {
     const userData = localStorage.getItem('user');
     if (userData) {
       try {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setUser(JSON.parse(userData));
+        const parsed = JSON.parse(userData) as User;
+        queueMicrotask(() => setUser(parsed));
       } catch (e) {
         console.error('Error parsing user data', e);
       }
@@ -91,42 +91,15 @@ export default function HomePage() {
   // Load Data
   const loadData = useCallback(async () => {
     try {
-      const today = new Date();
-      const end = new Date(today);
-      end.setDate(end.getDate() + 7);
-
-      const todayLocal = today.toLocaleDateString('sv');
-      const endDateLocal = end.toLocaleDateString('sv');
-
       const [tasksData, tagsData] = await Promise.all([
         taskService.getTasks({
-          date_field: 'due_date',
-          show_overdue: true,
+          view: 'home',
         }),
         tagsService.getTags(),
       ]);
 
-      const overduePending = tasksData.filter(task => {
-        if (!task.due_date) return false;
-        const taskDate = task.due_date.split('T')[0];
-        return taskDate < todayLocal && !task.is_completed;
-      });
-
-      const inRange = tasksData.filter(task => {
-        if (!task.due_date) return false;
-        const taskDate = task.due_date.split('T')[0];
-        return taskDate >= todayLocal && taskDate <= endDateLocal;
-      });
-
-      const pendingOverdue = overduePending;
-      const pendingUpcoming = inRange.filter(task => !task.is_completed);
-      const completedUpcoming = inRange.filter(task => task.is_completed);
-
-      const sortedOverdue = sortDashboardTasks(pendingOverdue);
-      const sortedPendingUpcoming = sortDashboardTasks(pendingUpcoming);
-      const sortedCompleted = sortDashboardTasks(completedUpcoming);
-
-      setTasks([...sortedOverdue, ...sortedPendingUpcoming, ...sortedCompleted]);
+      const sortedTasks = sortDashboardTasks(tasksData);
+      setTasks(sortedTasks);
       setTags(tagsData);
 
       if (isFeatureEnabled('ENABLE_NOTES_VIEW')) {
@@ -182,25 +155,8 @@ export default function HomePage() {
     setIsCreateModalOpen(true);
   };
 
-  const countsToday = new Date();
-  const countsEnd = new Date(countsToday);
-  countsEnd.setDate(countsEnd.getDate() + 7);
-  const countsTodayLocal = countsToday.toLocaleDateString('sv');
-  const countsEndDateLocal = countsEnd.toLocaleDateString('sv');
-
-  const isInUpcomingRange = (task: Task) => {
-    if (!task.due_date) return false;
-    const taskDate = task.due_date.split('T')[0];
-    return taskDate >= countsTodayLocal && taskDate <= countsEndDateLocal;
-  };
-
-  const pendingWeekCount = tasks.filter(
-    (task) => !task.is_completed && isInUpcomingRange(task)
-  ).length;
-
-  const completedWeekCount = tasks.filter(
-    (task) => task.is_completed && isInUpcomingRange(task)
-  ).length;
+  const pendingWeekCount = tasks.filter(task => !task.is_completed).length;
+  const completedWeekCount = tasks.filter(task => task.is_completed).length;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black transition-colors">
