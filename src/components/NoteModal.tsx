@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { X, Loader2, StickyNote, Archive, RotateCcw } from 'lucide-react';
 import { Note, notesService } from '@/services/notes.service';
 import { useAiReformulation } from '@/hooks/useAiReformulation';
@@ -14,8 +13,8 @@ interface NoteModalProps {
 }
 
 export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }: NoteModalProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     content: ''
@@ -46,35 +45,28 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
+    if (formData.content.length > 800) {
+      setError('El contenido excede los 800 caracteres. Por favor, reformúlalo con IA.');
+      return;
+    }
+
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      
-      if (!token) {
-        router.push('/login');
-        return;
-      }
 
       let savedNote: Note;
       if (isEditMode && initialData) {
-        savedNote = await notesService.updateNote(token, initialData.id, formData);
+        savedNote = await notesService.updateNote(initialData.id, formData);
       } else {
-        savedNote = await notesService.createNote(token, formData);
+        savedNote = await notesService.createNote(formData);
       }
 
       onNoteSaved(savedNote);
       onClose();
     } catch (err) {
       console.error('Error saving note:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
-      alert(`Error al ${isEditMode ? 'actualizar' : 'crear'} la nota`);
+      setError(`Error al ${isEditMode ? 'actualizar' : 'crear'} la nota`);
     } finally {
       setLoading(false);
     }
@@ -85,15 +77,7 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
     
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
-      // Save current changes AND toggle archive status
-      const updatedNote = await notesService.updateNote(token, initialData.id, {
+      const updatedNote = await notesService.updateNote(initialData.id, {
         ...formData,
         is_archived: !initialData.is_archived
       });
@@ -102,11 +86,7 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
       onClose();
     } catch (err) {
       console.error('Error archiving note:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        router.push('/login');
-        return;
-      }
-      alert('Error al actualizar el estado de la nota');
+      setError('Error al archivar la nota');
     } finally {
       setLoading(false);
     }
@@ -135,6 +115,15 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {error && (
+          <div className="px-6 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800">
+            <p className="text-sm text-red-600 dark:text-red-400 font-medium flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+              {error}
+            </p>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
@@ -175,7 +164,6 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
               value={formData.content}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
               rows={6}
-              maxLength={800}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 resize-none font-medium"
               placeholder="Escribe aquí los detalles..."
             />
@@ -214,7 +202,7 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || formData.content.length > 800}
               className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-200 dark:shadow-none active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}

@@ -1,293 +1,225 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/services/auth.service';
-import { Task, taskService, TaskFilters as TaskFiltersParams } from '@/services/task.service';
-import TaskCard from '@/components/TaskCard';
-import CreateTaskModal from '@/components/CreateTaskModal';
-import ConfirmationModal from '@/components/ConfirmationModal';
-import TagsSidebar from '@/components/TagsSidebar';
-import TaskFilters from '@/components/TaskFilters';
-import ThemeToggle from '@/components/ThemeToggle';
-import { Plus, User as UserIcon, Loader2, StickyNote, CalendarDays } from 'lucide-react';
+import { Task, taskService, TaskPriority } from '@/services/task.service';
+import { Note, notesService } from '@/services/notes.service';
+import { Event, eventsService } from '@/services/events.service';
+import { Tag, tagsService } from '@/services/tags.service';
+import { apiClient } from '@/services/api.client';
 import { isFeatureEnabled } from '@/config/features';
-import Link from 'next/link';
+
+import HomeSidebar from '@/components/Home/HomeSidebar';
+import HomeHeader from '@/components/Home/HomeHeader';
+import TaskList from '@/components/Home/TaskList';
+import RecentNotes from '@/components/Home/RecentNotes';
+import TodayEvents from '@/components/Home/TodayEvents';
+import CreateItemModal from '@/components/CreateItemModal';
+
+const sortDashboardTasks = (tasks: Task[]): Task[] => {
+  const priorityOrder: { [key in TaskPriority]: number } = {
+    alta: 0,
+    media: 1,
+    baja: 2,
+  };
+
+  return [...tasks].sort((a, b) => {
+    // Pending tasks first, then completed
+    if (a.is_completed !== b.is_completed) {
+      return a.is_completed ? 1 : -1;
+    }
+
+    const dateA = a.due_date ? a.due_date.split('T')[0] : '';
+    const dateB = b.due_date ? b.due_date.split('T')[0] : '';
+
+    if (dateA !== dateB) {
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      return dateA.localeCompare(dateB);
+    }
+
+    const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+    if (priorityDiff !== 0) return priorityDiff;
+
+    const updatedA = new Date(a.updated_at).getTime();
+    const updatedB = new Date(b.updated_at).getTime();
+    if (updatedA === updatedB) return 0;
+    return updatedB - updatedA;
+  });
+};
 
 export default function HomePage() {
   const router = useRouter();
+  
+  // State
   const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [filters, setFilters] = useState<TaskFiltersParams>({});
-  const [activeContextMenuTaskId, setActiveContextMenuTaskId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    const userData = localStorage.getItem('user');
-
-    if (!token || !userData) {
-      router.push('/login');
-      return;
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = window.localStorage.getItem('sidebar_open');
+    if (stored !== null) {
+      return stored === 'true';
     }
+    return window.innerWidth >= 768;
+  });
 
-    try {
-      setUser(JSON.parse(userData));
-      loadTasks(token, filters);
-    } catch (e) {
-      console.error('Error parsing user data', e);
-      router.push('/login');
-    }
-  }, [router]);
-
-  const loadTasks = async (token: string, currentFilters: TaskFiltersParams) => {
-    try {
-      setLoading(true);
-      const data = await taskService.getTasks(token, currentFilters);
-      setTasks(data);
-    } catch (error) {
-      console.error('Error loading tasks:', error);
-      if (error instanceof Error && error.message === 'Unauthorized') {
-         handleLogout();
-      }
-    } finally {
-      setLoading(false);
-    }
+  const setSidebarOpen = (open: boolean) => {
+    setIsSidebarOpen(open);
   };
 
-  const handleFiltersChange = useCallback((newFilters: TaskFiltersParams) => {
-    setFilters(newFilters);
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      loadTasks(token, newFilters);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('sidebar_open', String(isSidebarOpen));
+  }, [isSidebarOpen]);
+  
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createModalTab, setCreateModalTab] = useState<'task' | 'note' | 'event' | 'tag'>('task');
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        const parsed = JSON.parse(userData) as User;
+        queueMicrotask(() => setUser(parsed));
+      } catch (e) {
+        console.error('Error parsing user data', e);
+      }
     }
   }, []);
 
-  const handleTaskCreated = (newTask: Task) => {
-    // Reload tasks to respect current sort/filter order from backend
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      loadTasks(token, filters);
+  const loadData = useCallback(async () => {
+    try {
+      const [tasksData, tagsData] = await Promise.all([
+        taskService.getTasks({
+          view: 'home',
+        }),
+        tagsService.getTags(),
+      ]);
+
+      const sortedTasks = sortDashboardTasks(tasksData);
+      setTasks(sortedTasks);
+      setTags(tagsData);
+
+      if (isFeatureEnabled('ENABLE_NOTES_VIEW')) {
+        const notesData = await notesService.getNotes();
+        setNotes(notesData.slice(0, 3)); // Only recent notes
+      }
+
+      if (isFeatureEnabled('ENABLE_EVENTS_VIEW')) {
+        const todayLocal = new Date().toLocaleDateString('sv'); // YYYY-MM-DD (local)
+        let eventsData = await eventsService.getEvents({ start_date: todayLocal });
+        if (!Array.isArray(eventsData) || eventsData.length === 0) {
+          // Fallback: fetch all and filter by local date to avoid backend TZ mismatches
+          const allEvents = await eventsService.getEvents();
+          eventsData = allEvents.filter(e => {
+            if (!e.start_time) return false;
+            const localDate = new Date(e.start_time).toLocaleDateString('sv');
+            return localDate === todayLocal;
+          });
+        }
+        setEvents(eventsData);
+      }
+
+    } catch (error) {
+      console.error('Error loading home data:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData();
+  }, [loadData]);
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refresh_token');
+    apiClient.logout();
     router.push('/login');
   };
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, task: Task) => {
-    e.preventDefault();
-    if (!isFeatureEnabled('ENABLE_TASK_CONTEXT_MENU')) return;
-    setActiveContextMenuTaskId(task.id);
-  }, []);
-
-  const handleContextMenuUpdate = () => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      loadTasks(token, filters);
-    }
-  };
-
-  const handleDeleteTask = (taskId: string) => {
-    setTaskToDelete(taskId);
-  };
-
-  const confirmDelete = async () => {
-    if (!taskToDelete) return;
-
+  const handleTaskComplete = async (taskId: string) => {
     try {
-      setIsDeleting(true);
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        router.push('/login');
-        return;
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        await taskService.updateTask(taskId, { is_completed: !task.is_completed });
+        loadData();
       }
-
-      await taskService.deleteTask(token, taskToDelete);
-      const updatedTasks = tasks.filter((t) => t.id !== taskToDelete);
-      setTasks(updatedTasks);
-      setTaskToDelete(null);
-    } catch (err) {
-      console.error('Error deleting task:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        handleLogout();
-        return;
-      }
-      alert('Error al eliminar la tarea');
-    } finally {
-      setIsDeleting(false);
+    } catch (error) {
+      console.error('Error updating task:', error);
     }
   };
 
-  const pendingCount = tasks.filter(t => !t.is_completed).length;
-  const completedCount = tasks.filter(t => t.is_completed).length;
+  const handleCreateClick = (type: 'task' | 'note' | 'event' | 'tag') => {
+    setCreateModalTab(type);
+    setIsCreateModalOpen(true);
+  };
 
-  if (!user) return null;
+  const pendingWeekCount = tasks.filter(task => !task.is_completed).length;
+  const completedWeekCount = tasks.filter(task => task.is_completed).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans transition-colors duration-200">
-        {/* Navbar */}
-        <nav className="bg-white dark:bg-gray-900 px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm dark:shadow-gray-800/50 dark:border-b dark:border-gray-800 transition-colors duration-200">
-            <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 tracking-tight">OrganizaT</h1>
-            <div className="flex items-center gap-2">
-                <ThemeToggle />
-                {isFeatureEnabled('ENABLE_NOTES_VIEW') && (
-                    <Link
-                        href="/notes"
-                        className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 px-3 py-2 rounded-xl text-sm font-bold hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors flex items-center gap-2"
-                        title="Mis Notas"
-                    >
-                        <StickyNote className="w-4 h-4" />
-                        <span className="hidden sm:inline">Notas</span>
-                    </Link>
-                )}
-                {isFeatureEnabled('ENABLE_EVENTS_VIEW') && (
-                    <Link
-                        href="/events"
-                        className="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-3 py-2 rounded-xl text-sm font-bold hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors flex items-center gap-2"
-                        title="Mis Eventos"
-                    >
-                        <CalendarDays className="w-4 h-4" />
-                        <span className="hidden sm:inline">Eventos</span>
-                    </Link>
-                )}
-                {isFeatureEnabled('ENABLE_USER_PROFILE') && (
-                    <Link
-                        href="/profile"
-                        className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 p-2 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                        title="Mi Perfil"
-                    >
-                        <UserIcon className="w-5 h-5" />
-                    </Link>
-                )}
-                <button 
-                    onClick={handleLogout}
-                    className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
-                >
-                    Salir
-                </button>
-            </div>
-        </nav>
-
-        <main className="px-6 py-8 max-w-5xl mx-auto">
-            {/* Greeting */}
-            <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">
-                    Hola, {user.avatar || user.full_name.split(' ')[0]} 👋
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm font-medium transition-colors">
-                    Aquí tienes el resumen de tus tareas para hoy.
-                </p>
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-8 items-start">
-                {/* Sidebar */}
-                {isFeatureEnabled('ENABLE_TAGS_VIEW') && (
-                    <aside className="w-full md:w-auto shrink-0 sticky top-24">
-                        <TagsSidebar />
-                    </aside>
-                )}
-
-                {/* Main Content */}
-                <div className="flex-1 w-full max-w-md mx-auto md:max-w-none">
-                    {/* Stats */}
-                    <div className="mb-8">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 transition-colors">Estado de Tareas</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-sm dark:shadow-none transition-colors">
-                                <span className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2 transition-colors">{pendingCount}</span>
-                                <span className="text-sm font-semibold text-blue-900/70 dark:text-blue-300 transition-colors">Pendientes</span>
-                            </div>
-                            <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-sm dark:shadow-none transition-colors">
-                                <span className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2 transition-colors">{completedCount}</span>
-                                <span className="text-sm font-semibold text-green-900/70 dark:text-green-300 transition-colors">Completadas</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Task List */}
-                    <div>
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 transition-colors">Próximas Tareas</h3>
-                        
-                        {isFeatureEnabled('ENABLE_TASK_FILTERS') && (
-                            <div className="mb-6">
-                                <TaskFilters onFiltersChange={handleFiltersChange} />
-                            </div>
-                        )}
-
-                        <div className="space-y-4 relative min-h-[200px]">
-                            {loading && tasks.length > 0 && (
-                                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-3xl transition-all duration-300">
-                                    <Loader2 className="w-8 h-8 animate-spin text-indigo-600 dark:text-indigo-400" />
-                                </div>
-                            )}
-
-                            {loading && tasks.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-20 text-gray-500 dark:text-gray-400 font-medium animate-pulse">
-                                    <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mb-3" />
-                                    <span>Cargando tareas...</span>
-                                </div>
-                            ) : tasks.length === 0 ? (
-                                <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-3xl shadow-sm dark:shadow-gray-800/50 border border-gray-100 dark:border-gray-800 transition-colors">
-                                    <p className="text-gray-400 font-medium">No se encontraron tareas</p>
-                                    <p className="text-gray-300 dark:text-gray-600 text-sm mt-1">Prueba con otros filtros</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {tasks.map((task) => (
-                                        <TaskCard
-                                            key={task.id}
-                                            task={task}
-                                            onDelete={() => handleDeleteTask(task.id)}
-                                            onContextMenu={handleContextMenu}
-                                            isContextMenuOpen={activeContextMenuTaskId === task.id}
-                                            onMenuClose={() => setActiveContextMenuTaskId(null)}
-                                            onUpdate={handleContextMenuUpdate}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        {/* Floating Action Button */}
-            {isFeatureEnabled('ENABLE_TASK_CREATION') && (
-                <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="fixed bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-2 z-40"
-                >
-                    <Plus className="w-5 h-5" />
-                    <span>Agregar Tarea</span>
-                </button>
-            )}
-
-            {isFeatureEnabled('ENABLE_TASK_CREATION') && (
-                <CreateTaskModal 
-                    isOpen={isCreateModalOpen}
-                    onClose={() => setIsCreateModalOpen(false)}
-                    onTaskCreated={handleTaskCreated}
-                />
-            )}
-
-        <ConfirmationModal
-            isOpen={!!taskToDelete}
-            onClose={() => setTaskToDelete(null)}
-            onConfirm={confirmDelete}
-            title="Eliminar Tarea"
-            message="¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer."
-            confirmText="Eliminar"
-            cancelText="Cancelar"
-            isLoading={isDeleting}
+    <div className="min-h-screen bg-gray-50 dark:bg-black transition-colors">
+      <div className="flex">
+        {/* Sidebar */}
+        <HomeSidebar 
+          tags={tags} 
+          user={user} 
+          onLogout={handleLogout} 
+          isOpen={isSidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
+
+        {/* Main Content */}
+        <main className="flex-1 p-4 md:p-8 transition-all duration-300">
+          <div className="max-w-7xl mx-auto">
+            <HomeHeader 
+              userName={user?.full_name || 'Usuario'}
+              pendingTasksCount={pendingWeekCount}
+              completedTasksCount={completedWeekCount}
+              onNewItemClick={handleCreateClick}
+              onMenuClick={() => setSidebarOpen(!isSidebarOpen)}
+              isSidebarOpen={isSidebarOpen}
+            />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left Column: Tasks */}
+              <div className="lg:col-span-2 space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Tareas</h2>
+                  <TaskList 
+                    tasks={tasks} 
+                    onComplete={handleTaskComplete}
+                    origin="home"
+                  />
+                </div>
+              </div>
+
+              {/* Right Column: Notes & Events */}
+              <div className="space-y-8">
+                {isFeatureEnabled('ENABLE_NOTES_VIEW') && (
+                  <RecentNotes notes={notes} />
+                )}
+                
+                {isFeatureEnabled('ENABLE_EVENTS_VIEW') && (
+                  <TodayEvents events={events} />
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <CreateItemModal 
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreated={() => {
+          loadData();
+          setIsCreateModalOpen(false);
+        }}
+        initialTab={createModalTab}
+      />
     </div>
   );
 }

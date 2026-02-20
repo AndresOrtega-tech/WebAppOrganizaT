@@ -52,7 +52,7 @@ export default function UpdatePasswordPage() {
 
     setIsLoading(true);
     try {
-      const response = await authService.changePassword(accessToken, newPassword);
+      const response = await authService.resetPassword(accessToken, newPassword);
       setSuccess(response.message || 'Contraseña actualizada exitosamente');
       setNewPassword('');
       setConfirmPassword('');

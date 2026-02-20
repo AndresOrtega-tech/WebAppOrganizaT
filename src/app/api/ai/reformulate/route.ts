@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.GEMINI_API_Key;
+    const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(
@@ -25,7 +25,11 @@ export async function POST(req: NextRequest) {
 
     const NOTE_LIMIT = 800;
     const TASK_LIMIT = 500;
-    const limit = type === 'note' ? NOTE_LIMIT : TASK_LIMIT;
+    const EVENT_LIMIT = 500;
+    
+    let limit = TASK_LIMIT;
+    if (type === 'note') limit = NOTE_LIMIT;
+    else if (type === 'event') limit = EVENT_LIMIT;
 
     let attempts = 0;
     const maxAttempts = 3;
@@ -37,6 +41,8 @@ export async function POST(req: NextRequest) {
       
       if (type === 'note') {
         prompt = `Reformulate the following note content to be more explanatory and detailed. Expand on key points if necessary to improve clarity. Keep the language in Spanish. Ensure the response is STRICTLY under ${limit} characters.${retryInstruction} Just provide the reformulated text, nothing else:\n\n${text}`;
+      } else if (type === 'event') {
+        prompt = `Reformulate the following event description to be clear, concise, and informative. Keep the language in Spanish. Ensure the response is STRICTLY under ${limit} characters.${retryInstruction} Just provide the reformulated text, nothing else:\n\n${text}`;
       } else {
         prompt = `Reformulate the following task description to be more clear, concise, and explanatory. Keep the language in Spanish. Reduce character count if possible while maintaining meaning. Ensure the response is STRICTLY under ${limit} characters.${retryInstruction} Just provide the reformulated text, nothing else:\n\n${text}`;
       }

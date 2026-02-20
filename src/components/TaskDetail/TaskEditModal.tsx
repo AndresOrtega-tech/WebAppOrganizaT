@@ -24,11 +24,28 @@ export default function TaskEditModal({
   isSaving 
 }: TaskEditModalProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { isReformulating, handleReformulate } = useAiReformulation(
     editForm.description,
     (newText) => setEditForm(prev => ({ ...prev, description: newText }))
   );
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (editForm.description.length > 500) {
+      setError('La descripción excede los 500 caracteres. Por favor, reformúlala con IA.');
+      return;
+    }
+    try {
+      await onSubmit(e);
+    } catch (err) {
+      console.error(err);
+      setError('Error al guardar los cambios');
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -58,8 +75,17 @@ export default function TaskEditModal({
           </button>
         </div>
         
+        {error && (
+          <div className="px-6 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800">
+            <p className="text-sm text-red-600 dark:text-red-400 font-medium flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+              {error}
+            </p>
+          </div>
+        )}
+
         <div className="p-6 overflow-y-auto">
-          <form id="edit-form" onSubmit={onSubmit} className="space-y-5">
+          <form id="edit-form" onSubmit={handleSubmit} className="space-y-5">
             {/* Title */}
             <div className="space-y-1.5">
               <label htmlFor="title" className="block text-sm font-bold text-gray-700 dark:text-gray-300">
@@ -119,7 +145,6 @@ export default function TaskEditModal({
               <textarea
                 id="description"
                 rows={4}
-                maxLength={500}
                 value={editForm.description}
                 onChange={(e) => setEditForm({...editForm, description: e.target.value})}
                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all resize-none placeholder-gray-400 dark:placeholder-gray-500"
@@ -225,7 +250,7 @@ export default function TaskEditModal({
           <button
             type="submit"
             form="edit-form"
-            disabled={isSaving}
+            disabled={isSaving || editForm.description.length > 500}
             className="px-4 py-2 bg-indigo-600 dark:bg-indigo-700 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 disabled:opacity-70 flex items-center gap-2 transition-all"
           >
             {isSaving ? (

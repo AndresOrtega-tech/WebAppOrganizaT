@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { CalendarDays, Loader2, MapPin, X } from 'lucide-react';
 import DateTimePicker from '@/components/DateTimePicker';
 import { CreateEventRequest, Event, eventsService, Reminder, ReminderData } from '@/services/events.service';
+import AiReformulateButton from './AiReformulateButton';
+import { useAiReformulation } from '@/hooks/useAiReformulation';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -67,7 +68,6 @@ const mapReminders = (startTime: string, remindersData?: ReminderData[]) => {
 };
 
 export default function EventModal({ isOpen, onClose, onEventSaved, initialData }: EventModalProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
@@ -81,6 +81,12 @@ export default function EventModal({ isOpen, onClose, onEventSaved, initialData 
     is_all_day: false,
     reminders: null
   });
+
+  const { isReformulating, handleReformulate } = useAiReformulation(
+    formData.description || '',
+    (newText) => setFormData(prev => ({ ...prev, description: newText })),
+    'event'
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -135,14 +141,13 @@ export default function EventModal({ isOpen, onClose, onEventSaved, initialData 
       }
     }
 
+    if ((formData.description?.length || 0) > 500) {
+      setError('La descripción excede los 500 caracteres. Por favor, reformúlala con IA.');
+      return;
+    }
+
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      
-      if (!token) {
-        router.push('/login');
-        return;
-      }
 
       const payload = formData.is_all_day
         ? (() => {
@@ -155,19 +160,12 @@ export default function EventModal({ isOpen, onClose, onEventSaved, initialData 
           })()
         : formData;
       const savedEvent = isEditMode && initialData
-        ? await eventsService.updateEvent(token, initialData.id, payload)
-        : await eventsService.createEvent(token, payload);
+        ? await eventsService.updateEvent(initialData.id, payload)
+        : await eventsService.createEvent(payload);
       onEventSaved(savedEvent);
       onClose();
     } catch (err) {
       console.error('Error saving event:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
       setError(`Error al ${isEditMode ? 'actualizar' : 'crear'} el evento`);
     } finally {
       setLoading(false);
@@ -222,9 +220,22 @@ export default function EventModal({ isOpen, onClose, onEventSaved, initialData 
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
-              Descripción
-            </label>
+            <div className="flex justify-between items-center mb-1.5 ml-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Descripción
+              </label>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-medium ${(formData.description?.length || 0) > 500 ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                  {formData.description?.length || 0}/500
+                </span>
+                <AiReformulateButton
+                  onClick={handleReformulate}
+                  isLoading={isReformulating}
+                  hasText={(formData.description?.length || 0) > 0}
+                  featureFlag="ENABLE_EVENT_AI_REFORMULATION"
+                />
+              </div>
+            </div>
             <textarea
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -360,7 +371,7 @@ export default function EventModal({ isOpen, onClose, onEventSaved, initialData 
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (formData.description?.length || 0) > 500}
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {loading ? (

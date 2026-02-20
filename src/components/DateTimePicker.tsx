@@ -1,37 +1,49 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, X, Clock, Calendar as CalendarIcon } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 
 interface DateTimePickerProps {
   initialDate?: string | null;
   isOpen: boolean;
   onClose: () => void;
   onSave: (date: string) => void;
+  includeTime?: boolean;
 }
 
-export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }: DateTimePickerProps) {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
-  const [selectedTime, setSelectedTime] = useState<string>('09:00');
-  const [timeInput, setTimeInput] = useState<string>('09:00');
-  const [showTimeList, setShowTimeList] = useState(false);
-  
-  const timeListRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      const date = initialDate ? new Date(initialDate) : new Date();
-      setSelectedDate(date);
-      setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
-      
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      const timeStr = `${hours}:${minutes}`;
-      setSelectedTime(timeStr);
-      setTimeInput(timeStr);
+const parseInitialDate = (initialDate?: string | null) => {
+  if (initialDate) {
+    if (initialDate.includes('T')) {
+      return new Date(initialDate);
     }
-  }, [isOpen, initialDate]);
+    const [year, month, day] = initialDate.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date();
+};
+
+const buildInitialState = (initialDate?: string | null) => {
+  const date = parseInitialDate(initialDate);
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const timeStr = `${hours}:${minutes}`;
+  return {
+    selectedDate: date,
+    currentMonth: new Date(date.getFullYear(), date.getMonth(), 1),
+    selectedTime: timeStr,
+    timeInput: timeStr
+  };
+};
+
+function DateTimePickerContent({ initialDate, onClose, onSave, includeTime = true }: DateTimePickerProps) {
+  const initialState = buildInitialState(initialDate);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => initialState.selectedDate);
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => initialState.currentMonth);
+  const [selectedTime, setSelectedTime] = useState<string>(() => initialState.selectedTime);
+  const [timeInput, setTimeInput] = useState<string>(() => initialState.timeInput);
+  const [showTimeList, setShowTimeList] = useState(false);
+
+  const timeListRef = useRef<HTMLDivElement>(null);
 
   // Calendar Logic
   const daysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -129,8 +141,6 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
     onClose();
   };
 
-  if (!isOpen) return null;
-
   const weekDays = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
   const monthNames = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -191,7 +201,8 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
         </div>
 
         {/* Time Selector */}
-        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+        {includeTime && (
+          <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
             <div className="flex items-center gap-3 mb-2">
                 <Clock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Hora</span>
@@ -222,7 +233,8 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
                     </div>
                 )}
             </div>
-        </div>
+          </div>
+        )}
 
         {/* Footer Actions */}
         <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex gap-3">
@@ -243,5 +255,15 @@ export default function DateTimePicker({ initialDate, isOpen, onClose, onSave }:
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DateTimePicker(props: DateTimePickerProps) {
+  if (!props.isOpen) return null;
+  return (
+    <DateTimePickerContent
+      key={props.initialDate ?? 'new'}
+      {...props}
+    />
   );
 }

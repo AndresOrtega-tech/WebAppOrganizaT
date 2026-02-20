@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './auth.service';
+import { apiClient } from './api.client';
 import { Note } from './notes.service';
 
 export interface Tag {
@@ -54,21 +54,38 @@ export interface CreateTaskDTO {
 export interface TaskFilters {
   is_completed?: boolean;
   tag_ids?: string[];
-  sort_by?: 'updated_at' | 'due_date';
+  sort_by?: 'updated_at' | 'due_date' | 'priority';
   order?: 'asc' | 'desc';
+  due_date?: string;
+  show_overdue?: boolean;
+  start_date?: string;
+  end_date?: string;
+  date_field?: 'due_date' | 'updated_at' | 'created_at';
+  priority?: TaskPriority;
+  view?: 'home' | 'tasks';
+  cursor?: string;
 }
 
-const mapTaskResponse = (data: any): Task => {
+type TaskApiResponse = Omit<Task, 'tags' | 'notes' | 'reminders_data'> & {
+  tags?: Tag[];
+  notes?: Note[];
+  task_tags?: Array<{ tags: Tag }>;
+  task_notes?: Array<{ notes: Note }>;
+  reminders_data?: ReminderData[];
+  reminders?: ReminderData[];
+};
+
+const mapTaskResponse = (data: TaskApiResponse): Task => {
   return {
     ...data,
-    notes: data.notes || (data.task_notes?.map((tn: any) => tn.notes) || []),
-    tags: data.tags || (data.task_tags?.map((tt: any) => tt.tags) || []),
+    notes: data.notes || (data.task_notes?.map((tn) => tn.notes) || []),
+    tags: data.tags || (data.task_tags?.map((tt) => tt.tags) || []),
     reminders_data: data.reminders_data || data.reminders || [],
   };
 };
 
 export const taskService = {
-  async getTasks(token: string, filters?: TaskFilters): Promise<Task[]> {
+  async getTasks(filters?: TaskFilters): Promise<Task[]> {
     const params = new URLSearchParams();
     
     // Add select to fetch relations
@@ -87,187 +104,120 @@ export const taskService = {
       if (filters.tag_ids && filters.tag_ids.length > 0) {
         filters.tag_ids.forEach(id => params.append('tag_ids', id));
       }
+      if (filters.priority) {
+        params.append('priority', filters.priority);
+      }
+      if (filters.start_date) {
+        params.append('start_date', filters.start_date);
+      }
+      if (filters.end_date) {
+        params.append('end_date', filters.end_date);
+      }
+      if (filters.date_field) {
+        params.append('date_field', filters.date_field);
+      }
+      if (filters.due_date) {
+        params.append('due_date', filters.due_date);
+      }
+      if (filters.show_overdue !== undefined) {
+        params.append('show_overdue', String(filters.show_overdue));
+      }
+      if (filters.view) {
+        params.append('view', filters.view);
+      }
+      if (filters.cursor) {
+        params.append('cursor', filters.cursor);
+      }
     }
 
     const queryString = params.toString();
-    const url = `${API_BASE_URL}/tasks/${queryString ? `?${queryString}` : ''}`;
+    const url = `/tasks/${queryString ? `?${queryString}` : ''}`;
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+    const data = await apiClient.get<unknown>(url);
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error fetching tasks');
+    let rawTasks: TaskApiResponse[] = [];
+
+    if (Array.isArray(data)) {
+      rawTasks = data as TaskApiResponse[];
+    } else if (data && typeof data === 'object' && 'data' in data && Array.isArray((data as { data?: unknown }).data)) {
+      rawTasks = (data as { data: TaskApiResponse[] }).data;
     }
 
-    const data = await response.json();
-    return data.map(mapTaskResponse);
+    let tasks = rawTasks.map(mapTaskResponse);
+
+    // Client-side filtering for dates (legacy flows without view)
+    if (filters && !filters.view) {
+      const todayStr = new Date().toLocaleDateString('sv');
+
+      tasks = tasks.filter((task: Task) => {
+        // Extract YYYY-MM-DD from task due date (which might be ISO)
+        const taskDateStr = task.due_date ? task.due_date.split('T')[0] : null;
+
+        // If a specific date is selected
+        if (filters.due_date) {
+          // If filtering by specific date, DO NOT show tasks without date
+          if (!taskDateStr) return false;
+
+          if (filters.show_overdue) {
+            // Show everything up to selected date (Backlog + Day)
+            return taskDateStr <= filters.due_date;
+          } else {
+            // Show ONLY selected date
+            return taskDateStr === filters.due_date;
+          }
+        } 
+        
+        // No specific date selected
+        if (!filters.show_overdue) {
+          // Don't show overdue (past tasks)
+          if (!taskDateStr) return true;
+          return taskDateStr >= todayStr;
+        }
+
+        // Default: Show all
+        return true;
+      });
+    }
+
+    return tasks;
   },
 
-  async getTaskById(token: string, id: string): Promise<Task> {
+  async getTaskById(id: string): Promise<Task> {
     const params = new URLSearchParams();
     params.append('select', '*,task_tags(tags(*)),task_notes(notes(id,title,content)),reminders_data(*)');
     const queryString = params.toString();
 
-    const response = await fetch(`${API_BASE_URL}/tasks/${id}?${queryString}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error fetching task details');
-    }
-
-    const data = await response.json();
-    return mapTaskResponse(data);
+    const data = await apiClient.get(`/tasks/${id}?${queryString}`);
+    return mapTaskResponse(data as TaskApiResponse);
   },
 
-  async createTask(token: string, taskData: CreateTaskDTO): Promise<Task> {
-    const response = await fetch(`${API_BASE_URL}/tasks/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(taskData),
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error creating task');
-    }
-
-    return response.json();
+  async createTask(taskData: CreateTaskDTO): Promise<Task> {
+    const data = await apiClient.post('/tasks/', taskData);
+    return mapTaskResponse(data as TaskApiResponse);
   },
 
-  async updateTask(token: string, id: string, taskData: Partial<Task>): Promise<Task> {
-    const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(taskData),
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error updating task');
-    }
-
-    const data = await response.json();
-    return mapTaskResponse(data);
+  async updateTask(id: string, taskData: Partial<Task>): Promise<Task> {
+    const data = await apiClient.patch(`/tasks/${id}`, taskData);
+    return mapTaskResponse(data as TaskApiResponse);
   },
 
-  async deleteTask(token: string, id: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error deleting task');
-    }
+  async deleteTask(id: string): Promise<void> {
+    await apiClient.delete(`/tasks/${id}`);
   },
 
-  async assignTagsToTask(token: string, taskId: string, tagIds: string[]): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/tasks/tags`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ task_id: taskId, tag_ids: tagIds }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error assigning tags to task');
-    }
+  async assignTagsToTask(taskId: string, tagIds: string[]): Promise<void> {
+    await apiClient.post('/tasks/tags', { task_id: taskId, tag_ids: tagIds });
   },
 
-  async removeTagFromTask(token: string, taskId: string, tagId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/tags/${tagId}`, {
-      method: 'DELETE',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error removing tag from task');
-    }
+  async removeTagFromTask(taskId: string, tagId: string): Promise<void> {
+    await apiClient.delete(`/tasks/${taskId}/tags/${tagId}`);
   },
 
-  async linkNoteToTask(token: string, taskId: string, noteId: string): Promise<void> {
-    const url = `${API_BASE_URL}/tasks/notes`;
-    console.log('Linking note to task at:', url, { task_id: taskId, note_id: noteId });
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ task_id: taskId, note_id: noteId }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      const errorText = await response.text();
-      console.error('Error linking note to task:', response.status, errorText);
-      throw new Error(`Error linking note to task: ${response.status} ${errorText}`);
-    }
+  async linkNoteToTask(taskId: string, noteId: string): Promise<void> {
+    await apiClient.post('/tasks/notes', { task_id: taskId, note_id: noteId });
   },
 
-  async unlinkNoteFromTask(token: string, taskId: string, noteId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/notes/${noteId}`, {
-      method: 'DELETE',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Error unlinking note from task');
-    }
+  async unlinkNoteFromTask(taskId: string, noteId: string): Promise<void> {
+    await apiClient.delete(`/tasks/${taskId}/notes/${noteId}`);
   },
 };

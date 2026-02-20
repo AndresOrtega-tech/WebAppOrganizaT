@@ -1,14 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Tag, tagsService } from '@/services/tags.service';
 import { Tag as TagIcon, Loader2, Plus, Pencil } from 'lucide-react';
 import TagModal from './TagModal';
 import { isFeatureEnabled } from '@/config/features';
 
 export default function TagsSidebar() {
-  const router = useRouter();
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -17,11 +15,8 @@ export default function TagsSidebar() {
 
   useEffect(() => {
     const fetchTags = async () => {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
       try {
-        const data = await tagsService.getTags(token);
+        const data = await tagsService.getTags();
         setTags(data);
       } catch (err) {
         console.error('Error fetching tags:', err);
@@ -35,30 +30,20 @@ export default function TagsSidebar() {
   }, []);
 
   const handleSaveTag = async (data: { name: string; color: string }) => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-
     try {
       if (editingTag) {
         // Update existing tag
-        const updatedTag = await tagsService.updateTag(token, editingTag.id, data);
+        const updatedTag = await tagsService.updateTag(editingTag.id, data);
         setTags((prev) => prev.map((tag) => (tag.id === editingTag.id ? updatedTag : tag)));
       } else {
         // Create new tag
-        const createdTag = await tagsService.createTag(token, data);
+        const createdTag = await tagsService.createTag(data);
         setTags((prev) => [...prev, createdTag]);
       }
       setIsModalOpen(false);
       setEditingTag(null);
     } catch (err) {
       console.error('Error saving tag:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
       alert('Error al guardar la etiqueta');
     }
   };
@@ -78,23 +63,13 @@ export default function TagsSidebar() {
   const handleDeleteTag = async () => {
     if (!editingTag) return;
     
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-
     try {
-      await tagsService.deleteTag(token, editingTag.id);
+      await tagsService.deleteTag(editingTag.id);
       setTags((prev) => prev.filter((tag) => tag.id !== editingTag.id));
       setIsModalOpen(false);
       setEditingTag(null);
     } catch (err) {
       console.error('Error deleting tag:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
       alert('Error al eliminar la etiqueta');
     }
   };

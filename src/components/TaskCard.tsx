@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, Trash } from 'lucide-react';
+import { CheckCircle2, Circle, Trash, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -43,6 +43,8 @@ export default function TaskCard({
     return `${date.toLocaleDateString('es-MX', { month: 'short', day: 'numeric' })}, ${timeStr}`;
   };
 
+  const isOverdue = !task.is_completed && task.due_date && task.due_date < new Date().toLocaleDateString('sv');
+
   const content = (
     <div 
       className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm dark:shadow-gray-800/50 border border-gray-100 dark:border-gray-800 flex items-center gap-4 group-hover:shadow-md dark:group-hover:shadow-gray-700 transition-all duration-200"
@@ -69,23 +71,31 @@ export default function TaskCard({
             </span>
           </div>
           {task.due_date && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-semibold">
-              {formatDate(task.due_date)}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className={`text-xs font-semibold ${isOverdue ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                {formatDate(task.due_date)}
+              </p>
+              {isOverdue && (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded border border-red-100 dark:border-red-800">
+                  <AlertTriangle className="w-3 h-3" />
+                  Atrasada
+                </span>
+              )}
+            </div>
           )}
           {task.description && (
             <div className="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-2 prose prose-sm max-w-none dark:prose-invert">
               <ReactMarkdown 
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  p: ({node, ...props}) => <p className="mb-0" {...props} />,
-                  ul: ({node, ...props}) => <ul className="list-disc list-inside ml-1" {...props} />,
-                  ol: ({node, ...props}) => <ol className="list-decimal list-inside ml-1" {...props} />,
-                  li: ({node, ...props}) => <li className="marker:text-gray-400" {...props} />,
-                  h1: ({node, ...props}) => <strong className="font-bold" {...props} />,
-                  h2: ({node, ...props}) => <strong className="font-bold" {...props} />,
-                  h3: ({node, ...props}) => <strong className="font-bold" {...props} />,
-                  strong: ({node, ...props}) => <strong className="font-bold text-gray-900 dark:text-white" {...props} />,
+                  p: ({node: _node, ...props}) => <p className="mb-0" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  ul: ({node: _node, ...props}) => <ul className="list-disc list-inside ml-1" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  ol: ({node: _node, ...props}) => <ol className="list-decimal list-inside ml-1" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  li: ({node: _node, ...props}) => <li className="marker:text-gray-400" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  h1: ({node: _node, ...props}) => <strong className="font-bold" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  h2: ({node: _node, ...props}) => <strong className="font-bold" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  h3: ({node: _node, ...props}) => <strong className="font-bold" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  strong: ({node: _node, ...props}) => <strong className="font-bold text-gray-900 dark:text-white" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
                 }}
               >
                 {task.description}
@@ -126,7 +136,7 @@ export default function TaskCard({
       </div>
   );
 
-  const card = isFeatureEnabled('ENABLE_TASK_DETAILS') ? (
+  const card = isFeatureEnabled('ENABLE_TASK_DETAIL') ? (
     <Link href={`/tasks/${task.id}`} className="block group">
       {content}
     </Link>

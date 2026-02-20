@@ -24,13 +24,15 @@ export default function LoginPage() {
     try {
       const response = await authService.login({ email, password });
       
-      // Guardar token en localStorage
       localStorage.setItem('access_token', response.access_token);
+      if (response.refresh_token) {
+        localStorage.setItem('refresh_token', response.refresh_token);
+      }
       localStorage.setItem('user', JSON.stringify(response.user));
       
       router.push('/home');
     } catch (err) {
-      setError('Credenciales incorrectas. Por favor intenta de nuevo.');
+      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
       console.error(err);
     } finally {
       setIsLoading(false);

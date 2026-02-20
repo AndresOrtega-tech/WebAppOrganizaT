@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, authService } from '@/services/auth.service';
+import { User } from '@/services/auth.service';
+import { userService } from '@/services/user.service';
 import { Loader2, ArrowLeft, Save, User as UserIcon, Lock } from 'lucide-react';
 import Link from 'next/link';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -25,21 +26,18 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
-    const token = localStorage.getItem('access_token');
 
-    if (!token || !userData) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      setAvatar(parsedUser.avatar || '');
-    } catch (e) {
-      console.error('Error parsing user data', e);
-      router.push('/login');
-    } finally {
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        setAvatar(parsedUser.avatar || '');
+      } catch (e) {
+        console.error('Error parsing user data', e);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
       setIsLoading(false);
     }
   }, [router]);
@@ -50,14 +48,8 @@ export default function ProfilePage() {
     setSuccess('');
     setIsSaving(true);
 
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
     try {
-      const response = await authService.updateAvatar(token, avatar);
+      const response = await userService.updateAvatar(avatar);
       
       // Update local state and local storage
       if (user) {
@@ -93,15 +85,9 @@ export default function ProfilePage() {
 
     setIsChangingPassword(true);
 
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
     try {
-      const response = await authService.changePassword(token, newPassword);
-      setPasswordSuccess(response.message || 'Contraseña actualizada exitosamente');
+      const response = await userService.changePassword(newPassword);
+      setPasswordSuccess(response.message || 'Contraseña actualizada correctamente');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
@@ -128,7 +114,7 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             <Link 
-              href="/home" 
+              href="/tasks" 
               className="p-2 -ml-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-all"
             >
               <ArrowLeft className="w-6 h-6" />

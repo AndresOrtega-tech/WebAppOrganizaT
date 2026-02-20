@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Save, Loader2, Tag as TagIcon, Check } from 'lucide-react';
 import { Tag, tagsService } from '@/services/tags.service';
 
-interface NoteTagsModalProps {
+interface EventTagsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (tagIds: string[]) => Promise<void>;
@@ -10,13 +10,13 @@ interface NoteTagsModalProps {
   isSaving: boolean;
 }
 
-export default function NoteTagsModal({
+export default function EventTagsModal({
   isOpen,
   onClose,
   onSubmit,
   currentTagIds,
   isSaving
-}: NoteTagsModalProps) {
+}: EventTagsModalProps) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
@@ -41,7 +41,7 @@ export default function NoteTagsModal({
   };
 
   const toggleTag = (tagId: string) => {
-    setSelectedTagIds(prev => 
+    setSelectedTagIds(prev =>
       prev.includes(tagId)
         ? prev.filter(id => id !== tagId)
         : [...prev, tagId]
@@ -61,16 +61,16 @@ export default function NoteTagsModal({
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <TagIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            Gestionar Etiquetas de Nota
+            Gestionar Etiquetas de Evento
           </h2>
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <div className="p-6 overflow-y-auto">
           {isLoadingTags ? (
             <div className="flex justify-center py-8">
@@ -96,8 +96,8 @@ export default function NoteTagsModal({
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div 
-                        className="w-3 h-3 rounded-full ring-2 ring-white dark:ring-gray-800" 
+                      <div
+                        className="w-3 h-3 rounded-full ring-2 ring-white dark:ring-gray-800"
                         style={{ backgroundColor: tag.color }}
                       />
                       <span className="font-medium">{tag.name}</span>
@@ -141,3 +141,4 @@ export default function NoteTagsModal({
     </div>
   );
 }
+

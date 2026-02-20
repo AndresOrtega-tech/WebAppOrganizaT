@@ -1,37 +1,65 @@
 import { useState, useEffect } from 'react';
 import { Tag, tagsService } from '@/services/tags.service';
 import { TaskFilters as FilterParams } from '@/services/task.service';
-import { Filter, X, ArrowUpDown, Calendar, CheckCircle2, ChevronDown } from 'lucide-react';
+import { Filter, X, ChevronDown, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
+import DateTimePicker from './DateTimePicker';
 
 interface TaskFiltersProps {
   onFiltersChange: (filters: FilterParams) => void;
   className?: string;
+  initialFilters?: FilterParams;
+  isOpen?: boolean;
+  onToggle?: () => void;
+  hideHeader?: boolean;
 }
 
-export default function TaskFilters({ onFiltersChange, className = '' }: TaskFiltersProps) {
+export default function TaskFilters({ 
+  onFiltersChange, 
+  className = '', 
+  initialFilters = {},
+  isOpen: controlledIsOpen,
+  onToggle: controlledOnToggle,
+  hideHeader = false
+}: TaskFiltersProps) {
   const [tags, setTags] = useState<Tag[]>([]);
-  const [filters, setFilters] = useState<FilterParams>({});
-  const [isOpen, setIsOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterParams>(initialFilters);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-  useEffect(() => {
-    loadTags();
-  }, []);
-
-  useEffect(() => {
-    // Debounce filter changes if needed, or apply immediately
-    onFiltersChange(filters);
-  }, [filters, onFiltersChange]);
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
 
   const loadTags = async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
     try {
-      const data = await tagsService.getTags(token);
+      const data = await tagsService.getTags();
       setTags(data);
     } catch (error) {
       console.error('Error loading tags for filters:', error);
     }
+  };
+
+  useEffect(() => {
+    if (isOpen && tags.length === 0) {
+      loadTags();
+    }
+  }, [isOpen, tags.length]);
+
+  useEffect(() => {
+    // Update local state if initialFilters changes (optional, but good for sync)
+    setFilters(initialFilters);
+  }, [initialFilters]);
+
+  const handleToggleOpen = () => {
+    if (controlledOnToggle) {
+      controlledOnToggle();
+    } else {
+      setInternalIsOpen(!internalIsOpen);
+    }
+  };
+
+  const updateFilters = (newFilters: FilterParams) => {
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const handleStatusChange = (value: string) => {
@@ -41,8 +69,9 @@ export default function TaskFilters({ onFiltersChange, className = '' }: TaskFil
     } else {
       newFilters.is_completed = value === 'completed';
     }
-    setFilters(newFilters);
+    updateFilters(newFilters);
   };
+
 
   const toggleTag = (tagId: string) => {
     const currentTags = filters.tag_ids || [];
@@ -59,45 +88,48 @@ export default function TaskFilters({ onFiltersChange, className = '' }: TaskFil
     } else {
       delete newFilters.tag_ids;
     }
-    setFilters(newFilters);
+    updateFilters(newFilters);
   };
 
   const clearFilters = () => {
-    setFilters({});
+    updateFilters({});
   };
 
   const activeFiltersCount = [
     filters.is_completed !== undefined,
     filters.tag_ids && filters.tag_ids.length > 0,
-    filters.sort_by !== undefined
+    filters.sort_by !== undefined,
+    filters.due_date !== undefined
   ].filter(Boolean).length;
 
   return (
     <div className={`bg-white dark:bg-gray-900 rounded-3xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 ${className}`}>
-      <div className="flex items-center justify-between mb-4">
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-        >
-          <Filter className="w-4 h-4" />
-          Filtros y Orden
-          {activeFiltersCount > 0 && (
-            <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full text-xs">
-              {activeFiltersCount}
-            </span>
-          )}
-        </button>
-        
-        {activeFiltersCount > 0 && (
+      {!hideHeader && (
+        <div className="flex items-center justify-between mb-4">
           <button 
-            onClick={clearFilters}
-            className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium flex items-center gap-1"
+            onClick={handleToggleOpen}
+            className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
           >
-            <X className="w-3 h-3" />
-            Limpiar
+            <Filter className="w-4 h-4" />
+            Filtros y Orden
+            {activeFiltersCount > 0 && (
+              <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full text-xs">
+                {activeFiltersCount}
+              </span>
+            )}
           </button>
-        )}
-      </div>
+          
+          {activeFiltersCount > 0 && (
+            <button 
+              onClick={clearFilters}
+              className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium flex items-center gap-1"
+            >
+              <X className="w-3 h-3" />
+              Limpiar
+            </button>
+          )}
+        </div>
+      )}
 
       {isOpen && (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -173,6 +205,70 @@ export default function TaskFilters({ onFiltersChange, className = '' }: TaskFil
               )}
             </div>
           </div>
+
+          {/* Date Filter */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
+              Fecha de Vencimiento
+            </label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsDatePickerOpen(true)}
+                className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium border transition-all flex items-center justify-between ${
+                  filters.due_date
+                    ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300'
+                    : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <span>{filters.due_date ? new Date(filters.due_date).toLocaleDateString() : 'Seleccionar fecha'}</span>
+                <CalendarIcon className="w-4 h-4 opacity-50" />
+              </button>
+              {filters.due_date && (
+                <button
+                  onClick={() => {
+                    const newFilters = { ...filters };
+                    delete newFilters.due_date;
+                    setFilters(newFilters);
+                  }}
+                  className="px-3 py-2 rounded-xl text-sm font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            
+            <div className="mt-3">
+               <button
+                 onClick={() => setFilters({ ...filters, show_overdue: !filters.show_overdue })}
+                 className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+                   filters.show_overdue
+                     ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400'
+                     : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
+                 }`}
+               >
+                 <div className="flex items-center gap-2">
+                   <AlertTriangle className={`w-4 h-4 ${filters.show_overdue ? 'fill-amber-500/20' : ''}`} />
+                   <span>Mostrar atrasadas</span>
+                 </div>
+                 <div className={`w-9 h-5 rounded-full transition-colors relative ${filters.show_overdue ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                   <div className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${filters.show_overdue ? 'translate-x-4' : 'translate-x-0'}`} />
+                 </div>
+               </button>
+            </div>
+          </div>
+
+          <DateTimePicker
+            isOpen={isDatePickerOpen}
+            onClose={() => setIsDatePickerOpen(false)}
+            onSave={(date) => {
+              // Extract just the date part YYYY-MM-DD using local time
+              const dateStr = new Date(date).toLocaleDateString('sv');
+              setFilters({ ...filters, due_date: dateStr });
+              setIsDatePickerOpen(false);
+            }}
+            initialDate={filters.due_date}
+            includeTime={false}
+          />
 
           {/* Sort Options */}
           <div>

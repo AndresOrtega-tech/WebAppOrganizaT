@@ -3,7 +3,7 @@ import { useState } from 'react';
 export function useAiReformulation(
   text: string,
   onReformulated: (newText: string) => void,
-  type: 'task' | 'note' = 'task'
+  type: 'task' | 'note' | 'event' = 'task'
 ) {
   const [isReformulating, setIsReformulating] = useState(false);
 

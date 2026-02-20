@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { CheckCircle, Circle, Tag as TagIcon, Loader2, X } from 'lucide-react';
 import { Task, taskService } from '@/services/task.service';
 import { Tag, tagsService } from '@/services/tags.service';
@@ -42,11 +41,9 @@ export default function TaskContextMenu({ task: initialTask, onClose, onUpdate }
     if (tags.length > 0) return;
     
     setLoadingTags(true);
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
 
     try {
-      const data = await tagsService.getTags(token);
+      const data = await tagsService.getTags();
       setTags(data);
     } catch (error) {
       console.error('Error fetching tags:', error);
@@ -56,11 +53,8 @@ export default function TaskContextMenu({ task: initialTask, onClose, onUpdate }
   };
 
   const handleToggleStatus = async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-
     try {
-      await taskService.updateTask(token, task.id, { is_completed: !task.is_completed });
+      await taskService.updateTask(task.id, { is_completed: !task.is_completed });
       onUpdate();
       onClose();
     } catch (error) {
@@ -70,17 +64,14 @@ export default function TaskContextMenu({ task: initialTask, onClose, onUpdate }
   };
 
   const handleToggleTag = async (tag: Tag, isAssigned: boolean) => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-
     try {
       if (isAssigned) {
         // Remove tag
-        await taskService.removeTagFromTask(token, task.id, tag.id);
+        await taskService.removeTagFromTask(task.id, tag.id);
         setTask(prev => ({ ...prev, tags: prev.tags.filter(t => t.id !== tag.id) }));
       } else {
         // Assign tag
-        await taskService.assignTagsToTask(token, task.id, [tag.id]);
+        await taskService.assignTagsToTask(task.id, [tag.id]);
         setTask(prev => ({ ...prev, tags: [...prev.tags, tag] }));
       }
       onUpdate();

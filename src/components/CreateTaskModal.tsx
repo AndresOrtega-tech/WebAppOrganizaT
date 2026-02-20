@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { X, Calendar, Loader2 } from 'lucide-react';
 import { Task, taskService, CreateTaskDTO, TaskPriority } from '@/services/task.service';
 import DateTimePicker from './DateTimePicker';
@@ -13,8 +12,8 @@ interface CreateTaskModalProps {
 }
 
 export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: CreateTaskModalProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [formData, setFormData] = useState<CreateTaskDTO>({
     title: '',
@@ -34,15 +33,17 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
+    if ((formData.description?.length || 0) > 500) {
+      setError('La descripción excede los 500 caracteres. Por favor, reformúlala con IA.');
+      return;
+    }
+
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        throw new Error('No auth token');
-      }
 
-      const newTask = await taskService.createTask(token, formData);
+      const newTask = await taskService.createTask(formData);
 
       onTaskCreated(newTask);
       onClose();
@@ -57,14 +58,7 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
       });
     } catch (err) {
       console.error('Error creating task:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
-      alert('Error al crear la tarea');
+      setError('Error al crear la tarea');
     } finally {
       setLoading(false);
     }
@@ -96,6 +90,15 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {error && (
+          <div className="px-6 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800">
+            <p className="text-sm text-red-600 dark:text-red-400 font-medium flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+              {error}
+            </p>
+          </div>
+        )}
         
         <div className="p-6 overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -159,7 +162,6 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
               <textarea
                 id="create-description"
                 rows={3}
-                maxLength={500}
                 value={formData.description || ''}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
@@ -244,7 +246,7 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }: Crea
             <div className="pt-4">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || (formData.description?.length || 0) > 500}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {loading ? (

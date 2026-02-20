@@ -30,6 +30,7 @@ export const useTaskDetail = (taskId: string) => {
   const [noteToUnlink, setNoteToUnlink] = useState<string | null>(null);
   const [availableNotes, setAvailableNotes] = useState<Note[]>([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+  const [isCreatingNote, setIsCreatingNote] = useState(false);
 
   const [editForm, setEditForm] = useState<EditFormState>({
     title: '',
@@ -40,6 +41,9 @@ export const useTaskDetail = (taskId: string) => {
     reminders: null
   });
 
+  const [initialEditForm, setInitialEditForm] = useState<EditFormState | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   const getLocalDateTimeForInput = (isoString: string) => {
     const date = new Date(isoString);
     const offset = date.getTimezoneOffset();
@@ -47,37 +51,24 @@ export const useTaskDetail = (taskId: string) => {
     return localDate.toISOString().slice(0, 16);
   };
 
-  const loadTask = useCallback(async (token: string, id: string) => {
+  const loadTask = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      const data = await taskService.getTaskById(token, id);
+      const data = await taskService.getTaskById(id);
       setTask(data);
     } catch (err) {
       console.error('Error loading task:', err);
       setError('No se pudo cargar la tarea.');
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-      }
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
     if (taskId) {
-      loadTask(token, taskId);
+      loadTask(taskId);
     }
-  }, [taskId, router, loadTask]);
+  }, [taskId, loadTask]);
 
   useEffect(() => {
     if (task) {
@@ -104,46 +95,66 @@ export const useTaskDetail = (taskId: string) => {
         if (mappedReminders.length === 0) mappedReminders = null;
       }
 
-      setEditForm({
+      const nextForm: EditFormState = {
         title: task.title,
         description: task.description || '',
         due_date: task.due_date ? getLocalDateTimeForInput(task.due_date) : '',
         is_completed: task.is_completed,
         priority: task.priority || 'media',
         reminders: mappedReminders
-      });
+      };
+
+      setEditForm(nextForm);
+      setInitialEditForm(nextForm);
+      setHasUnsavedChanges(false);
     }
   }, [task]);
 
-  const handleUpdate = async (e?: React.FormEvent) => {
+  useEffect(() => {
+    if (!initialEditForm) return;
+
+    const isDirty =
+      editForm.title !== initialEditForm.title ||
+      editForm.description !== initialEditForm.description ||
+      editForm.due_date !== initialEditForm.due_date ||
+      editForm.is_completed !== initialEditForm.is_completed ||
+      editForm.priority !== initialEditForm.priority ||
+      JSON.stringify(editForm.reminders || []) !== JSON.stringify(initialEditForm.reminders || []);
+
+    setHasUnsavedChanges(isDirty);
+  }, [editForm, initialEditForm]);
+
+  const handleUpdate = async (e?: React.FormEvent): Promise<boolean> => {
     if (e) e.preventDefault();
-    if (!task) return;
+    if (!task) return false;
     
     try {
       setIsSaving(true);
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-          router.push('/login');
-          return;
-      }
 
-      const updatedTask = await taskService.updateTask(token, task.id, {
+      const updatedTask = await taskService.updateTask(task.id, {
           ...editForm,
           due_date: editForm.due_date ? new Date(editForm.due_date).toISOString() : null
       });
       
-      setTask(updatedTask);
+      setTask(prev => {
+        if (!prev) return updatedTask;
+        return {
+          ...prev,
+          ...updatedTask,
+          // Preservar relaciones ya cargadas que el PATCH no devuelve
+          tags: prev.tags,
+          notes: prev.notes,
+          reminders_data: updatedTask.reminders_data || prev.reminders_data,
+        };
+      });
       setIsEditing(false);
+      setInitialEditForm(editForm);
+      setHasUnsavedChanges(false);
+      return true;
     } catch (err) {
       console.error('Error updating task:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
       alert('Error al actualizar la tarea');
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -154,23 +165,11 @@ export const useTaskDetail = (taskId: string) => {
 
     try {
       setIsDeleting(true);
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
 
-      await taskService.deleteTask(token, task.id);
-      router.push('/home');
+      await taskService.deleteTask(task.id);
+      router.push('/tasks');
     } catch (err) {
       console.error('Error deleting task:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
       alert('Error al eliminar la tarea');
       setIsDeleting(false);
     }
@@ -181,11 +180,6 @@ export const useTaskDetail = (taskId: string) => {
 
     try {
       setIsSaving(true);
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
 
       // Calculate diffs
       const currentTagIds = task.tags.map(t => t.id);
@@ -194,19 +188,19 @@ export const useTaskDetail = (taskId: string) => {
 
       // 1. Add new tags (if any)
       if (tagsToAdd.length > 0) {
-        await taskService.assignTagsToTask(token, task.id, tagsToAdd);
+        await taskService.assignTagsToTask(task.id, tagsToAdd);
       }
 
       // 2. Remove unselected tags (if any)
       if (tagsToRemove.length > 0) {
         // Execute sequentially to avoid race conditions or backend overload
         for (const tagId of tagsToRemove) {
-          await taskService.removeTagFromTask(token, task.id, tagId);
+          await taskService.removeTagFromTask(task.id, tagId);
         }
       }
       
       // Reload task to get updated tags
-      await loadTask(token, task.id);
+      await loadTask(task.id);
       setIsTagsModalOpen(false);
     } catch (err) {
       console.error('Error updating tags:', err);
@@ -220,30 +214,16 @@ export const useTaskDetail = (taskId: string) => {
     if (!task) return;
 
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
       // Optimistic update
       const updatedTags = task.tags.filter(t => t.id !== tagId);
       setTask({ ...task, tags: updatedTags });
 
-      await taskService.removeTagFromTask(token, task.id, tagId);
+      await taskService.removeTagFromTask(task.id, tagId);
     } catch (err) {
       console.error('Error removing tag:', err);
-      if (err instanceof Error && err.message === 'Unauthorized') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refresh_token');
-        router.push('/login');
-        return;
-      }
       alert('Error al eliminar la etiqueta de la tarea');
       // Revert optimistic update
-      const token = localStorage.getItem('access_token');
-      if (token) loadTask(token, task.id);
+      loadTask(task.id);
     }
   };
 
@@ -251,10 +231,7 @@ export const useTaskDetail = (taskId: string) => {
     setIsLinkModalOpen(true);
     setIsLoadingNotes(true);
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      const notes = await notesService.getNotes(token);
+      const notes = await notesService.getNotes();
       // Filter out already linked notes
       const linkedNoteIds = task?.notes?.map(n => n.id) || [];
       const available = notes.filter(n => !linkedNoteIds.includes(n.id));
@@ -270,11 +247,8 @@ export const useTaskDetail = (taskId: string) => {
   const handleLinkNote = async (noteId: string) => {
     if (!task) return;
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      await taskService.linkNoteToTask(token, task.id, noteId);
-      await loadTask(token, task.id); // Reload to show new link
+      await taskService.linkNoteToTask(task.id, noteId);
+      await loadTask(task.id); // Reload to show new link
       setIsLinkModalOpen(false);
     } catch (err) {
       console.error('Error linking note:', err);
@@ -291,11 +265,8 @@ export const useTaskDetail = (taskId: string) => {
     if (!task || !noteToUnlink) return;
 
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      await taskService.unlinkNoteFromTask(token, task.id, noteToUnlink);
-      await loadTask(token, task.id); // Reload to update list
+      await taskService.unlinkNoteFromTask(task.id, noteToUnlink);
+      await loadTask(task.id); // Reload to update list
       setShowUnlinkModal(false);
       setNoteToUnlink(null);
     } catch (err) {
@@ -305,9 +276,31 @@ export const useTaskDetail = (taskId: string) => {
   };
 
   const reloadTask = async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token || !taskId) return;
-    await loadTask(token, taskId);
+    if (!taskId) return;
+    await loadTask(taskId);
+  };
+
+  const createNoteForTask = async (title: string, content: string) => {
+    if (!taskId) return null;
+
+    try {
+      setIsCreatingNote(true);
+      const newNote = await notesService.createNote({
+        title: title || 'Sin título',
+        content
+      });
+
+      await taskService.linkNoteToTask(taskId, newNote.id);
+      await loadTask(taskId);
+
+      return newNote;
+    } catch (err) {
+      console.error('Error creating note for task:', err);
+      alert('Error al crear la nota para la tarea');
+      return null;
+    } finally {
+      setIsCreatingNote(false);
+    }
   };
 
   return {
@@ -335,9 +328,12 @@ export const useTaskDetail = (taskId: string) => {
     reloadTask,
     editForm,
     setEditForm,
+    hasUnsavedChanges,
     handleUpdate,
     confirmDelete,
     handleTagsUpdate,
-    handleRemoveTag
+    handleRemoveTag,
+    createNoteForTask,
+    isCreatingNote
   };
 };

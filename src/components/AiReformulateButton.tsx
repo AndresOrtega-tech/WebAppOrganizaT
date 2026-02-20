@@ -1,14 +1,16 @@
 import { Loader2, Sparkles } from 'lucide-react';
-import { isFeatureEnabled } from '@/config/features';
+import { isFeatureEnabled, FeatureFlag } from '@/config/features';
 
 interface AiReformulateButtonProps {
   onClick: () => void;
   isLoading: boolean;
   hasText: boolean;
+  featureFlag?: FeatureFlag;
 }
 
-export default function AiReformulateButton({ onClick, isLoading, hasText }: AiReformulateButtonProps) {
-  if (!isFeatureEnabled('ENABLE_AI_REFORMULATION') || !hasText) return null;
+export default function AiReformulateButton({ onClick, isLoading, hasText, featureFlag }: AiReformulateButtonProps) {
+  const flagToCheck = featureFlag || 'ENABLE_AI_REFORMULATION';
+  if (!isFeatureEnabled(flagToCheck) || !hasText) return null;
 
   return (
     <button

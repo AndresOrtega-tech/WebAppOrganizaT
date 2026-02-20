@@ -12,6 +12,7 @@ Para mantener la consistencia y rendimiento, se aplican límites estrictos de ca
 
 - **Notas:** Máximo **800** caracteres.
 - **Tareas:** Máximo **500** caracteres.
+- **Eventos:** Máximo **500** caracteres.
 
 ## Lógica de Reintento
 El backend implementa un mecanismo de "Retry Loop" (máximo 3 intentos) si la respuesta de la IA excede el límite:

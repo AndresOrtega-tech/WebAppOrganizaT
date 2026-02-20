@@ -38,15 +38,14 @@ export default function RegisterPage() {
     }
 
     try {
-      // Exclude confirmPassword from the API request
-      const { confirmPassword, ...registerData } = formData;
-      // Convert empty avatar to undefined
-      const apiData = {
-        ...registerData,
-        avatar: registerData.avatar || undefined
+      const registerData = {
+        full_name: formData.full_name,
+        email: formData.email,
+        password: formData.password,
+        avatar: formData.avatar || undefined
       };
-      
-      await authService.register(apiData);
+
+      await authService.register(registerData);
       router.push('/register/confirmation');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al registrar usuario');
