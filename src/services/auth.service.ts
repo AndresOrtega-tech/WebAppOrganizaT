@@ -64,42 +64,7 @@ export const authService = {
     return response.json();
   },
 
-  async refreshToken(refreshToken: string): Promise<LoginResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Error al renovar la sesión');
-    }
-
-    return response.json();
-  },
-
-  async updateAvatar(token: string, avatar: string): Promise<UpdateAvatarResponse> {
-    const response = await fetch(`${API_BASE_URL}/users/avatar`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ avatar }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Error al actualizar el avatar');
-    }
-
-    return response.json();
-  },
-
-  async changePassword(token: string, password: string): Promise<{ message: string }> {
+  async resetPassword(token: string, password: string): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE_URL}/users/password`, {
       method: 'PATCH',
       headers: {
@@ -115,14 +80,24 @@ export const authService = {
     }
 
     const raw = await response.text();
-    if (!raw) {
-      return { message: 'Contraseña actualizada exitosamente' };
+    return raw ? JSON.parse(raw) : { message: 'Contraseña actualizada' };
+  },
+
+  async refreshToken(refresh_token: string): Promise<LoginResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh_token }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || errorData.message || 'Error al refrescar token');
     }
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return { message: 'Contraseña actualizada exitosamente' };
-    }
+
+    return response.json();
   },
 
   async requestPasswordReset(email: string): Promise<{ message: string }> {
@@ -148,5 +123,5 @@ export const authService = {
     } catch {
       return { message: 'Se ha enviado un correo con instrucciones para restablecer tu contraseña.' };
     }
-  },
+  }
 };

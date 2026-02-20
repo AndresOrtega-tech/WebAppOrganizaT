@@ -1,4 +1,3 @@
-import { API_BASE_URL } from './auth.service';
 import { apiClient } from './api.client';
 import { Note } from './notes.service';
 
@@ -55,17 +54,32 @@ export interface CreateTaskDTO {
 export interface TaskFilters {
   is_completed?: boolean;
   tag_ids?: string[];
-  sort_by?: 'updated_at' | 'due_date';
+  sort_by?: 'updated_at' | 'due_date' | 'priority';
   order?: 'asc' | 'desc';
   due_date?: string;
   show_overdue?: boolean;
+  start_date?: string;
+  end_date?: string;
+  date_field?: 'due_date' | 'updated_at' | 'created_at';
+  priority?: TaskPriority;
+  view?: 'home' | 'tasks';
+  cursor?: string;
 }
 
-const mapTaskResponse = (data: any): Task => {
+type TaskApiResponse = Omit<Task, 'tags' | 'notes' | 'reminders_data'> & {
+  tags?: Tag[];
+  notes?: Note[];
+  task_tags?: Array<{ tags: Tag }>;
+  task_notes?: Array<{ notes: Note }>;
+  reminders_data?: ReminderData[];
+  reminders?: ReminderData[];
+};
+
+const mapTaskResponse = (data: TaskApiResponse): Task => {
   return {
     ...data,
-    notes: data.notes || (data.task_notes?.map((tn: any) => tn.notes) || []),
-    tags: data.tags || (data.task_tags?.map((tt: any) => tt.tags) || []),
+    notes: data.notes || (data.task_notes?.map((tn) => tn.notes) || []),
+    tags: data.tags || (data.task_tags?.map((tt) => tt.tags) || []),
     reminders_data: data.reminders_data || data.reminders || [],
   };
 };
@@ -90,17 +104,49 @@ export const taskService = {
       if (filters.tag_ids && filters.tag_ids.length > 0) {
         filters.tag_ids.forEach(id => params.append('tag_ids', id));
       }
-      // Note: due_date and show_overdue are handled client-side below
+      if (filters.priority) {
+        params.append('priority', filters.priority);
+      }
+      if (filters.start_date) {
+        params.append('start_date', filters.start_date);
+      }
+      if (filters.end_date) {
+        params.append('end_date', filters.end_date);
+      }
+      if (filters.date_field) {
+        params.append('date_field', filters.date_field);
+      }
+      if (filters.due_date) {
+        params.append('due_date', filters.due_date);
+      }
+      if (filters.show_overdue !== undefined) {
+        params.append('show_overdue', String(filters.show_overdue));
+      }
+      if (filters.view) {
+        params.append('view', filters.view);
+      }
+      if (filters.cursor) {
+        params.append('cursor', filters.cursor);
+      }
     }
 
     const queryString = params.toString();
-    const url = `${API_BASE_URL}/tasks/${queryString ? `?${queryString}` : ''}`;
+    const url = `/tasks/${queryString ? `?${queryString}` : ''}`;
 
-    const data = await apiClient.fetch<any[]>(url);
-    let tasks = data.map(mapTaskResponse);
+    const data = await apiClient.get<unknown>(url);
 
-    // Client-side filtering for dates
-    if (filters) {
+    let rawTasks: TaskApiResponse[] = [];
+
+    if (Array.isArray(data)) {
+      rawTasks = data as TaskApiResponse[];
+    } else if (data && typeof data === 'object' && 'data' in data && Array.isArray((data as { data?: unknown }).data)) {
+      rawTasks = (data as { data: TaskApiResponse[] }).data;
+    }
+
+    let tasks = rawTasks.map(mapTaskResponse);
+
+    // Client-side filtering for dates (legacy flows without view)
+    if (filters && !filters.view) {
       const todayStr = new Date().toLocaleDateString('sv');
 
       tasks = tasks.filter((task: Task) => {
@@ -124,11 +170,7 @@ export const taskService = {
         // No specific date selected
         if (!filters.show_overdue) {
           // Don't show overdue (past tasks)
-          // If task has no date, it is NOT overdue, so we show it (unless user implies strict date filtering here too?)
-          // Assuming "si filtra alguna fecha" refers mainly to the explicit date picker.
-          // However, to be safe with "o asi", if strictly hiding overdue, we keep "no date" as they are effectively "future/pending".
           if (!taskDateStr) return true;
-          
           return taskDateStr >= todayStr;
         }
 
@@ -145,68 +187,37 @@ export const taskService = {
     params.append('select', '*,task_tags(tags(*)),task_notes(notes(id,title,content)),reminders_data(*)');
     const queryString = params.toString();
 
-    const data = await apiClient.fetch<any>(`${API_BASE_URL}/tasks/${id}?${queryString}`);
-    return mapTaskResponse(data);
+    const data = await apiClient.get(`/tasks/${id}?${queryString}`);
+    return mapTaskResponse(data as TaskApiResponse);
   },
 
   async createTask(taskData: CreateTaskDTO): Promise<Task> {
-    const data = await apiClient.fetch<Task>(`${API_BASE_URL}/tasks/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(taskData),
-    });
-    return data;
+    const data = await apiClient.post('/tasks/', taskData);
+    return mapTaskResponse(data as TaskApiResponse);
   },
 
   async updateTask(id: string, taskData: Partial<Task>): Promise<Task> {
-    const data = await apiClient.fetch<any>(`${API_BASE_URL}/tasks/${id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(taskData),
-    });
-    return mapTaskResponse(data);
+    const data = await apiClient.patch(`/tasks/${id}`, taskData);
+    return mapTaskResponse(data as TaskApiResponse);
   },
 
   async deleteTask(id: string): Promise<void> {
-    await apiClient.fetch<void>(`${API_BASE_URL}/tasks/${id}`, {
-      method: 'DELETE',
-    });
+    await apiClient.delete(`/tasks/${id}`);
   },
 
   async assignTagsToTask(taskId: string, tagIds: string[]): Promise<void> {
-    await apiClient.fetch<void>(`${API_BASE_URL}/tasks/tags`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ task_id: taskId, tag_ids: tagIds }),
-    });
+    await apiClient.post('/tasks/tags', { task_id: taskId, tag_ids: tagIds });
   },
 
   async removeTagFromTask(taskId: string, tagId: string): Promise<void> {
-    await apiClient.fetch<void>(`${API_BASE_URL}/tasks/${taskId}/tags/${tagId}`, {
-      method: 'DELETE',
-    });
+    await apiClient.delete(`/tasks/${taskId}/tags/${tagId}`);
   },
 
   async linkNoteToTask(taskId: string, noteId: string): Promise<void> {
-    const url = `${API_BASE_URL}/tasks/notes`;
-    await apiClient.fetch<void>(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ task_id: taskId, note_id: noteId }),
-    });
+    await apiClient.post('/tasks/notes', { task_id: taskId, note_id: noteId });
   },
 
   async unlinkNoteFromTask(taskId: string, noteId: string): Promise<void> {
-    await apiClient.fetch<void>(`${API_BASE_URL}/tasks/${taskId}/notes/${noteId}`, {
-      method: 'DELETE',
-    });
+    await apiClient.delete(`/tasks/${taskId}/notes/${noteId}`);
   },
 };

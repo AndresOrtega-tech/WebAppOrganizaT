@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { X, Loader2, StickyNote, Archive, RotateCcw } from 'lucide-react';
 import { Note, notesService } from '@/services/notes.service';
 import { useAiReformulation } from '@/hooks/useAiReformulation';
@@ -14,7 +13,6 @@ interface NoteModalProps {
 }
 
 export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }: NoteModalProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -79,8 +77,6 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
     
     try {
       setLoading(true);
-
-      // Save current changes AND toggle archive status
       const updatedNote = await notesService.updateNote(initialData.id, {
         ...formData,
         is_archived: !initialData.is_archived
@@ -90,7 +86,7 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
       onClose();
     } catch (err) {
       console.error('Error archiving note:', err);
-      setError('Error al actualizar el estado de la nota');
+      setError('Error al archivar la nota');
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,3 @@
-import { API_BASE_URL } from './auth.service';
 import { apiClient } from './api.client';
 
 export interface Tag {
@@ -22,46 +21,18 @@ export interface UpdateTagRequest {
 
 export const tagsService = {
   async getTags(): Promise<Tag[]> {
-    const response = await apiClient.fetch<Tag[]>(`${API_BASE_URL}/tags/`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    return response;
+    return await apiClient.get<Tag[]>('/tags/');
   },
 
   async createTag(data: CreateTagRequest): Promise<Tag> {
-    const response = await apiClient.fetch<Tag>(`${API_BASE_URL}/tags/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    return response;
+    return await apiClient.post<Tag>('/tags/', data);
   },
 
   async updateTag(id: string, data: UpdateTagRequest): Promise<Tag> {
-    const response = await apiClient.fetch<Tag>(`${API_BASE_URL}/tags/${id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    return response;
+    return await apiClient.patch<Tag>(`/tags/${id}`, data);
   },
 
   async deleteTag(id: string): Promise<void> {
-    await apiClient.fetch<void>(`${API_BASE_URL}/tags/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    await apiClient.delete<void>(`/tags/${id}`);
   },
 };

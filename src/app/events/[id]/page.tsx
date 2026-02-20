@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, CalendarDays, MapPin, Bell, Loader2, Pencil, Trash2 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import EventModal from '@/components/EventModal';
+import EventTagsModal from '@/components/EventDetail/EventTagsModal';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import LinkItemModal from '@/components/LinkItemModal';
 import LinkedItemsList from '@/components/LinkedItemsList';
@@ -47,7 +48,9 @@ export default function EventDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSavingTags, setIsSavingTags] = useState(false);
   const [isLinkTaskModalOpen, setIsLinkTaskModalOpen] = useState(false);
   const [isLinkNoteModalOpen, setIsLinkNoteModalOpen] = useState(false);
   const [availableTasks, setAvailableTasks] = useState<Task[]>([]);
@@ -99,6 +102,36 @@ export default function EventDetailPage() {
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
+    }
+  };
+
+  const handleTagsUpdate = async (tagIds: string[]) => {
+    if (!event) return;
+
+    try {
+      setIsSavingTags(true);
+
+      const currentTagIds = (event.tags || []).map(t => t.id);
+      const tagsToAdd = tagIds.filter(id => !currentTagIds.includes(id));
+      const tagsToRemove = currentTagIds.filter(id => !tagIds.includes(id));
+
+      if (tagsToAdd.length > 0) {
+        await eventsService.assignTagsToEvent(event.id, tagsToAdd);
+      }
+
+      if (tagsToRemove.length > 0) {
+        for (const tagId of tagsToRemove) {
+          await eventsService.removeTagFromEvent(event.id, tagId);
+        }
+      }
+
+      await loadEvent(event.id);
+      setIsTagsModalOpen(false);
+    } catch (err) {
+      console.error('Error updating event tags:', err);
+      alert('Error al actualizar las etiquetas del evento');
+    } finally {
+      setIsSavingTags(false);
     }
   };
 
@@ -267,7 +300,7 @@ export default function EventDetailPage() {
           </div>
           <div className="flex gap-2 items-center">
             <ThemeToggle />
-            {isFeatureEnabled('ENABLE_EVENT_EDITING') && (
+            {isFeatureEnabled('ENABLE_EVENT_EDIT') && (
               <button
                 onClick={() => setIsEditModalOpen(true)}
                 className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-full transition-colors"
@@ -292,11 +325,25 @@ export default function EventDetailPage() {
       <main className="max-w-2xl mx-auto px-6 py-8">
         <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
           <div className="p-6 space-y-8">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{event.title}</h2>
+            <div className="space-y-3">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{event.title}</h2>
               <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                 {event.description || 'Sin descripción'}
               </p>
+              {event.tags && event.tags.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Etiquetas</span>
+                  {event.tags.map(tag => (
+                    <span
+                      key={tag.id}
+                      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-gray-200 dark:border-gray-700"
+                      style={{ backgroundColor: `${tag.color}1A`, color: tag.color }}
+                    >
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -387,6 +434,16 @@ export default function EventDetailPage() {
         onEventSaved={handleEventSaved}
         initialData={event}
       />
+
+      {event && (
+        <EventTagsModal
+          isOpen={isTagsModalOpen}
+          onClose={() => setIsTagsModalOpen(false)}
+          onSubmit={handleTagsUpdate}
+          currentTagIds={(event.tags || []).map(t => t.id)}
+          isSaving={isSavingTags}
+        />
+      )}
 
       <LinkItemModal
         isOpen={isLinkTaskModalOpen}

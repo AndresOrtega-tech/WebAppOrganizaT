@@ -3,15 +3,16 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CalendarDays, CheckSquare, StickyNote, User as UserIcon, Plus, Loader2 } from 'lucide-react';
+import { CalendarDays, CheckSquare, StickyNote, User as UserIcon, Plus, Loader2, Home } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import EventModal from '@/components/EventModal';
 import { isFeatureEnabled } from '@/config/features';
-import { User } from '@/services/auth.service';
+import { apiClient } from '@/services/api.client';
 import { Event, EventFilters, eventsService } from '@/services/events.service';
 import EventCard from '@/components/EventCard';
 import DateTimePicker from '@/components/DateTimePicker';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import { User } from '@/services/auth.service';
 
 export default function EventsPage() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function EventsPage() {
 
   useEffect(() => {
     if (!isFeatureEnabled('ENABLE_EVENTS_VIEW')) {
-      router.push('/home');
+      router.push('/tasks');
       return;
     }
 
@@ -62,9 +63,7 @@ export default function EventsPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refresh_token');
+    apiClient.logout();
     router.push('/login');
   };
 
@@ -78,11 +77,21 @@ export default function EventsPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans transition-colors duration-200">
       <nav className="bg-white dark:bg-gray-900 px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm dark:shadow-gray-800/50 dark:border-b dark:border-gray-800 transition-colors duration-200">
-        <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 tracking-tight">OrganizaT</h1>
+        <Link href="/home" className="hover:opacity-80 transition-opacity">
+          <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 tracking-tight">OrganizaT</h1>
+        </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Link
             href="/home"
+            className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-3 py-2 rounded-xl text-sm font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+            title="Ir al Inicio"
+          >
+            <Home className="w-4 h-4" />
+            <span className="hidden sm:inline">Inicio</span>
+          </Link>
+          <Link
+            href="/tasks"
             className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-2 rounded-xl text-sm font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center gap-2"
             title="Mis Tareas"
           >

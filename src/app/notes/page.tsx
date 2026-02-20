@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { User } from '@/services/auth.service';
 import { Note, notesService, NoteFilters as NoteFiltersParams } from '@/services/notes.service';
@@ -11,12 +11,13 @@ import ConfirmationModal from '@/components/ConfirmationModal';
 import NoteFilters from '@/components/NoteFilters';
 import TagsSidebar from '@/components/TagsSidebar';
 import ThemeToggle from '@/components/ThemeToggle';
-import { Loader2, User as UserIcon, CheckSquare, Plus, StickyNote, CalendarDays } from 'lucide-react';
+import { Loader2, User as UserIcon, CheckSquare, Plus, CalendarDays, Home } from 'lucide-react';
 import { isFeatureEnabled } from '@/config/features';
+
+import { apiClient } from '@/services/api.client';
 
 function NotesContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,9 +29,21 @@ function NotesContent() {
   });
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const loadNotes = useCallback(async (currentFilters: NoteFiltersParams) => {
+    try {
+      setLoading(true);
+      const data = await notesService.getNotes(currentFilters);
+      setNotes(data);
+    } catch (error) {
+      console.error('Error loading notes:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isFeatureEnabled('ENABLE_NOTES_VIEW')) {
-      router.push('/home');
+      router.push('/tasks');
       return;
     }
 
@@ -43,41 +56,23 @@ function NotesContent() {
 
     try {
       setUser(JSON.parse(userData));
-      
-      // Initial load with potential URL params if we wanted to support deep linking
-      // For now, we rely on NoteFilters to drive the state via onFiltersChange
-      // But we need to load notes initially if filters are empty
-      if (!isFeatureEnabled('ENABLE_NOTE_FILTERS')) {
-        loadNotes(filters);
-      }
+      loadNotes(filters);
     } catch (e) {
       console.error('Error parsing user data', e);
       router.push('/login');
     }
-  }, [router]);
+  }, [router, loadNotes, filters]);
 
-  const loadNotes = async (currentFilters: NoteFiltersParams) => {
-    try {
-      setLoading(true);
-      const data = await notesService.getNotes(currentFilters);
-      setNotes(data);
-    } catch (error) {
-      console.error('Error loading notes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFiltersChange = useCallback((newFilters: NoteFiltersParams) => {
-    setFilters(newFilters);
-    loadNotes(newFilters);
-  }, []);
+  const handleFiltersChange = useCallback(
+    (newFilters: NoteFiltersParams) => {
+      setFilters(newFilters);
+      loadNotes(newFilters);
+    },
+    [loadNotes]
+  );
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refresh_token');
-    router.push('/login');
+    apiClient.logout();
   };
 
   const handleNoteCreated = (newNote: Note) => {
@@ -120,11 +115,21 @@ function NotesContent() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans transition-colors duration-200">
         {/* Navbar */}
         <nav className="bg-white dark:bg-gray-900 px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm dark:shadow-gray-800/50 dark:border-b dark:border-gray-800 transition-colors duration-200">
-            <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 tracking-tight">OrganizaT</h1>
+            <Link href="/home" className="hover:opacity-80 transition-opacity">
+                <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 tracking-tight">OrganizaT</h1>
+            </Link>
             <div className="flex items-center gap-2">
                 <ThemeToggle />
                 <Link
                     href="/home"
+                    className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-3 py-2 rounded-xl text-sm font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                    title="Ir al Inicio"
+                >
+                    <Home className="w-4 h-4" />
+                    <span className="hidden sm:inline">Inicio</span>
+                </Link>
+                <Link
+                    href="/tasks"
                     className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-2 rounded-xl text-sm font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center gap-2"
                     title="Mis Tareas"
                 >

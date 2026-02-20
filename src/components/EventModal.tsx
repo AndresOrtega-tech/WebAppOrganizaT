@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { CalendarDays, Loader2, MapPin, X } from 'lucide-react';
 import DateTimePicker from '@/components/DateTimePicker';
 import { CreateEventRequest, Event, eventsService, Reminder, ReminderData } from '@/services/events.service';
-import { isFeatureEnabled } from '@/config/features';
 import AiReformulateButton from './AiReformulateButton';
 import { useAiReformulation } from '@/hooks/useAiReformulation';
 
@@ -70,7 +68,6 @@ const mapReminders = (startTime: string, remindersData?: ReminderData[]) => {
 };
 
 export default function EventModal({ isOpen, onClose, onEventSaved, initialData }: EventModalProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);

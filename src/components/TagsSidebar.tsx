@@ -1,14 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Tag, tagsService } from '@/services/tags.service';
 import { Tag as TagIcon, Loader2, Plus, Pencil } from 'lucide-react';
 import TagModal from './TagModal';
 import { isFeatureEnabled } from '@/config/features';
 
 export default function TagsSidebar() {
-  const router = useRouter();
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

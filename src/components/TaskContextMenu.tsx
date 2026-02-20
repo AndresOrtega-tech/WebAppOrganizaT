@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { CheckCircle, Circle, Tag as TagIcon, Loader2, X } from 'lucide-react';
 import { Task, taskService } from '@/services/task.service';
 import { Tag, tagsService } from '@/services/tags.service';

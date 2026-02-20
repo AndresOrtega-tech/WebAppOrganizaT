@@ -88,14 +88,14 @@ export default function TaskCard({
               <ReactMarkdown 
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  p: ({node, ...props}) => <p className="mb-0" {...props} />,
-                  ul: ({node, ...props}) => <ul className="list-disc list-inside ml-1" {...props} />,
-                  ol: ({node, ...props}) => <ol className="list-decimal list-inside ml-1" {...props} />,
-                  li: ({node, ...props}) => <li className="marker:text-gray-400" {...props} />,
-                  h1: ({node, ...props}) => <strong className="font-bold" {...props} />,
-                  h2: ({node, ...props}) => <strong className="font-bold" {...props} />,
-                  h3: ({node, ...props}) => <strong className="font-bold" {...props} />,
-                  strong: ({node, ...props}) => <strong className="font-bold text-gray-900 dark:text-white" {...props} />,
+                  p: ({node: _node, ...props}) => <p className="mb-0" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  ul: ({node: _node, ...props}) => <ul className="list-disc list-inside ml-1" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  ol: ({node: _node, ...props}) => <ol className="list-decimal list-inside ml-1" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  li: ({node: _node, ...props}) => <li className="marker:text-gray-400" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  h1: ({node: _node, ...props}) => <strong className="font-bold" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  h2: ({node: _node, ...props}) => <strong className="font-bold" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  h3: ({node: _node, ...props}) => <strong className="font-bold" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
+                  strong: ({node: _node, ...props}) => <strong className="font-bold text-gray-900 dark:text-white" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
                 }}
               >
                 {task.description}
@@ -136,7 +136,7 @@ export default function TaskCard({
       </div>
   );
 
-  const card = isFeatureEnabled('ENABLE_TASK_DETAILS') ? (
+  const card = isFeatureEnabled('ENABLE_TASK_DETAIL') ? (
     <Link href={`/tasks/${task.id}`} className="block group">
       {content}
     </Link>

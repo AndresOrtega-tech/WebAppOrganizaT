@@ -15,20 +15,24 @@ export default function NoteFilters({ onFiltersChange, initialFilters = {}, clas
   const [isOpen, setIsOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
 
-  useEffect(() => {
-    loadTags();
-  }, []);
-
-  useEffect(() => {
-    onFiltersChange(filters);
-  }, [filters, onFiltersChange]);
-
   const loadTags = async () => {
     try {
       const data = await tagsService.getTags();
       setTags(data);
     } catch (error) {
       console.error('Error loading tags for filters:', error);
+    }
+  };
+
+  useEffect(() => {
+    onFiltersChange(filters);
+  }, [filters, onFiltersChange]);
+
+  const handleToggleOpen = () => {
+    const nextOpen = !isOpen;
+    setIsOpen(nextOpen);
+    if (nextOpen && tags.length === 0) {
+      loadTags();
     }
   };
 
@@ -83,7 +87,7 @@ export default function NoteFilters({ onFiltersChange, initialFilters = {}, clas
     <div className={`bg-white dark:bg-gray-900 rounded-3xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 ${className}`}>
       <div className="flex items-center justify-between mb-4">
         <button 
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleToggleOpen}
           className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
         >
           <Filter className="w-4 h-4" />
