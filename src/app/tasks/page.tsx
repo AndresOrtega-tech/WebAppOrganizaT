@@ -23,6 +23,7 @@ export default function TasksPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // UI State
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
@@ -125,6 +126,7 @@ export default function TasksPage() {
 
   const handleTaskComplete = async (taskId: string) => {
     try {
+      setErrorMessage(null);
       const task = tasks.find(t => t.id === taskId);
       if (task) {
         await taskService.updateTask(taskId, { is_completed: !task.is_completed });
@@ -132,7 +134,7 @@ export default function TasksPage() {
       }
     } catch (error) {
       console.error('Error updating task:', error);
-      alert('Error al actualizar el estado de la tarea');
+      setErrorMessage('Error al actualizar el estado de la tarea');
     }
   };
 
@@ -151,7 +153,7 @@ export default function TasksPage() {
         {/* Main Content */}
         <main className="flex-1 p-4 md:p-8 transition-all duration-300">
           <div className="max-w-7xl mx-auto space-y-8">
-              <HomeHeader 
+            <HomeHeader 
                 userName={user?.full_name || 'Usuario'}
                 pendingTasksCount={tasks.filter(t => !t.is_completed).length}
                 completedTasksCount={tasks.filter(t => t.is_completed).length}
@@ -160,6 +162,12 @@ export default function TasksPage() {
                 isSidebarOpen={isSidebarOpen}
                 createButtonLabel="Nueva Tarea"
               />
+
+            {errorMessage && (
+              <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+                {errorMessage}
+              </div>
+            )}
 
             {/* Tasks Section */}
             <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 border border-gray-100 dark:border-gray-800 min-h-[400px]">
