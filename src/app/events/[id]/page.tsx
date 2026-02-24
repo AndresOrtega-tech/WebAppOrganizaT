@@ -1,56 +1,56 @@
 'use client';
 
- import { useEffect, useState } from 'react';
- import { useParams, useRouter } from 'next/navigation';
- import Link from 'next/link';
- import { ArrowLeft, CalendarDays, MapPin, Bell, Loader2, Pencil, Trash2 } from 'lucide-react';
- import ThemeToggle from '@/components/ThemeToggle';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft, CalendarDays, MapPin, Bell, Loader2, Pencil, Trash2 } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 import EventModal from '@/components/EventModal';
 import EventTagsModal from '@/components/EventDetail/EventTagsModal';
- import ConfirmationModal from '@/components/ConfirmationModal';
- import LinkItemModal from '@/components/LinkItemModal';
- import LinkedItemsList from '@/components/LinkedItemsList';
- import { isFeatureEnabled } from '@/config/features';
- import { Event, eventsService } from '@/services/events.service';
- import { Task, taskService } from '@/services/task.service';
- import { Note, notesService } from '@/services/notes.service';
+import ConfirmationModal from '@/components/ConfirmationModal';
+import LinkItemModal from '@/components/LinkItemModal';
+import LinkedItemsList from '@/components/LinkedItemsList';
 
- const formatDateTime = (dateString: string | null) => {
-   if (!dateString) return '';
-   const date = new Date(dateString);
-   return date.toLocaleDateString('es-MX', { 
-     weekday: 'long', 
-     year: 'numeric', 
-     month: 'long', 
-     day: 'numeric',
-     hour: '2-digit',
-     minute: '2-digit'
-   });
- };
+import { Event, eventsService } from '@/services/events.service';
+import { Task, taskService } from '@/services/task.service';
+import { Note, notesService } from '@/services/notes.service';
 
- const formatDay = (dateString: string | null) => {
-   if (!dateString) return '';
-   const date = new Date(dateString);
-   return date.toLocaleDateString('es-MX', { 
-     weekday: 'long', 
-     year: 'numeric', 
-     month: 'long', 
-     day: 'numeric'
-   });
- };
+const formatDateTime = (dateString: string | null) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-MX', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 
- export default function EventDetailPage() {
-   const router = useRouter();
-   const params = useParams();
-   const id = params?.id as string;
-   const [event, setEvent] = useState<Event | null>(null);
-   const [loading, setLoading] = useState(true);
-   const [error, setError] = useState<string | null>(null);
- const [isEditModalOpen, setIsEditModalOpen] = useState(false);
- const [showDeleteModal, setShowDeleteModal] = useState(false);
- const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
- const [isDeleting, setIsDeleting] = useState(false);
- const [isSavingTags, setIsSavingTags] = useState(false);
+const formatDay = (dateString: string | null) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-MX', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+export default function EventDetailPage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = params?.id as string;
+  const [event, setEvent] = useState<Event | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSavingTags, setIsSavingTags] = useState(false);
   const [isLinkTaskModalOpen, setIsLinkTaskModalOpen] = useState(false);
   const [isLinkNoteModalOpen, setIsLinkNoteModalOpen] = useState(false);
   const [availableTasks, setAvailableTasks] = useState<Task[]>([]);
@@ -62,11 +62,7 @@ import EventTagsModal from '@/components/EventDetail/EventTagsModal';
   const [taskToUnlink, setTaskToUnlink] = useState<string | null>(null);
   const [noteToUnlink, setNoteToUnlink] = useState<string | null>(null);
 
-   useEffect(() => {
-    if (!isFeatureEnabled('ENABLE_EVENT_DETAIL')) {
-      router.push('/events');
-      return;
-    }
+  useEffect(() => {
 
     loadEvent(id);
   }, [id, router]);
@@ -264,146 +260,142 @@ import EventTagsModal from '@/components/EventDetail/EventTagsModal';
   };
 
 
-   if (loading) {
-     return (
-       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950">
-         <Loader2 className="w-8 h-8 animate-spin text-purple-600 dark:text-purple-400 mb-2" />
-         <div className="text-purple-600 dark:text-purple-400 font-medium animate-pulse">Cargando evento...</div>
-       </div>
-     );
-   }
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-600 dark:text-purple-400 mb-2" />
+        <div className="text-purple-600 dark:text-purple-400 font-medium animate-pulse">Cargando evento...</div>
+      </div>
+    );
+  }
 
-   if (error || !event) {
-     return (
-       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 px-6">
-         <div className="text-red-500 font-medium mb-4">{error || 'Evento no encontrado'}</div>
-         <Link 
-           href="/events" 
-           className="text-purple-600 dark:text-purple-400 font-bold hover:text-purple-700 dark:hover:text-purple-300 flex items-center"
-         >
-           <ArrowLeft className="w-4 h-4 mr-2" /> Volver a Eventos
-         </Link>
-       </div>
-     );
-   }
+  if (error || !event) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 px-6">
+        <div className="text-red-500 font-medium mb-4">{error || 'Evento no encontrado'}</div>
+        <Link
+          href="/events"
+          className="text-purple-600 dark:text-purple-400 font-bold hover:text-purple-700 dark:hover:text-purple-300 flex items-center"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" /> Volver a Eventos
+        </Link>
+      </div>
+    );
+  }
 
-   const isLinkingEnabled = isFeatureEnabled('ENABLE_EVENT_LINKING');
+  const isLinkingEnabled = true;
 
-   return (
-     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans">
-       <nav className="bg-white dark:bg-gray-900 px-6 py-4 shadow-sm sticky top-0 z-10 border-b border-transparent dark:border-gray-800 transition-colors">
-         <div className="max-w-2xl mx-auto flex items-center justify-between">
-           <div className="flex items-center flex-1 min-w-0">
-             <Link href="/events" className="p-2 -ml-2 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0">
-               <ArrowLeft className="w-6 h-6" />
-             </Link>
-             <h1 className="ml-4 text-xl font-bold text-gray-900 dark:text-white truncate">Detalle de Evento</h1>
-           </div>
-           <div className="flex gap-2 items-center">
-             <ThemeToggle />
-             {isFeatureEnabled('ENABLE_EVENT_EDIT') && (
-               <button
-                 onClick={() => setIsEditModalOpen(true)}
-                 className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-full transition-colors"
-                 title="Editar evento"
-               >
-                 <Pencil className="w-5 h-5" />
-               </button>
-             )}
-             {isFeatureEnabled('ENABLE_EVENT_DELETION') && (
-               <button
-                 onClick={() => setShowDeleteModal(true)}
-                 className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-colors"
-                 title="Eliminar evento"
-               >
-                 <Trash2 className="w-5 h-5" />
-               </button>
-             )}
-           </div>
-         </div>
-       </nav>
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans">
+      <nav className="bg-white dark:bg-gray-900 px-6 py-4 shadow-sm sticky top-0 z-10 border-b border-transparent dark:border-gray-800 transition-colors">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <div className="flex items-center flex-1 min-w-0">
+            <Link href="/events" className="p-2 -ml-2 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0">
+              <ArrowLeft className="w-6 h-6" />
+            </Link>
+            <h1 className="ml-4 text-xl font-bold text-gray-900 dark:text-white truncate">Detalle de Evento</h1>
+          </div>
+          <div className="flex gap-2 items-center">
+            <ThemeToggle />
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-full transition-colors"
+              title="Editar evento"
+            >
+              <Pencil className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-colors"
+              title="Eliminar evento"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </nav>
 
-       <main className="max-w-2xl mx-auto px-6 py-8">
-         <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
-           <div className="p-6 space-y-8">
-             <div className="space-y-3">
-               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{event.title}</h2>
-               <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                 {event.description || 'Sin descripción'}
-               </p>
-               {event.tags && event.tags.length > 0 && (
-                 <div className="flex flex-wrap items-center gap-2">
-                   <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Etiquetas</span>
-                   {event.tags.map(tag => (
-                     <span
-                       key={tag.id}
-                       className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-gray-200 dark:border-gray-700"
-                       style={{ backgroundColor: `${tag.color}1A`, color: tag.color }}
-                     >
-                       {tag.name}
-                     </span>
-                   ))}
-                 </div>
-               )}
-             </div>
+      <main className="max-w-2xl mx-auto px-6 py-8">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+          <div className="p-6 space-y-8">
+            <div className="space-y-3">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{event.title}</h2>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                {event.description || 'Sin descripción'}
+              </p>
+              {event.tags && event.tags.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Etiquetas</span>
+                  {event.tags.map(tag => (
+                    <span
+                      key={tag.id}
+                      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-gray-200 dark:border-gray-700"
+                      style={{ backgroundColor: `${tag.color}1A`, color: tag.color }}
+                    >
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
 
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-               <div className="flex items-start gap-3">
-                 <div className="p-2.5 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400">
-                   <CalendarDays className="w-5 h-5" />
-                 </div>
-                 <div>
-                   <p className="text-sm font-bold text-gray-900 dark:text-gray-200">
-                     {event.is_all_day ? 'Día' : 'Inicio'}
-                   </p>
-                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                     {event.is_all_day ? formatDay(event.start_time) : formatDateTime(event.start_time)}
-                   </p>
-                 </div>
-               </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400">
+                  <CalendarDays className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-200">
+                    {event.is_all_day ? 'Día' : 'Inicio'}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    {event.is_all_day ? formatDay(event.start_time) : formatDateTime(event.start_time)}
+                  </p>
+                </div>
+              </div>
 
-               {!event.is_all_day && (
-                 <div className="flex items-start gap-3">
-                   <div className="p-2.5 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400">
-                     <CalendarDays className="w-5 h-5" />
-                   </div>
-                   <div>
-                     <p className="text-sm font-bold text-gray-900 dark:text-gray-200">Fin</p>
-                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{formatDateTime(event.end_time)}</p>
-                   </div>
-                 </div>
-               )}
+              {!event.is_all_day && (
+                <div className="flex items-start gap-3">
+                  <div className="p-2.5 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400">
+                    <CalendarDays className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-200">Fin</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{formatDateTime(event.end_time)}</p>
+                  </div>
+                </div>
+              )}
 
-               <div className="flex items-start gap-3">
-                 <div className="p-2.5 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400">
-                   <MapPin className="w-5 h-5" />
-                 </div>
-                 <div>
-                   <p className="text-sm font-bold text-gray-900 dark:text-gray-200">Ubicación</p>
-                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{event.location || 'Sin ubicación'}</p>
-                 </div>
-               </div>
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400">
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-200">Ubicación</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{event.location || 'Sin ubicación'}</p>
+                </div>
+              </div>
 
-               <div className="flex items-start gap-3">
-                 <div className="p-2.5 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400">
-                   <Bell className="w-5 h-5" />
-                 </div>
-                 <div>
-                   <p className="text-sm font-bold text-gray-900 dark:text-gray-200">Recordatorios</p>
-                   {event.reminders_data && event.reminders_data.length > 0 ? (
-                     <div className="flex flex-col gap-1 mt-0.5">
-                       {event.reminders_data.map((r) => (
-                         <p key={r.id} className="text-sm text-gray-500 dark:text-gray-400">
-                           {formatDateTime(r.remind_at)}
-                         </p>
-                       ))}
-                     </div>
-                   ) : (
-                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Sin recordatorios</p>
-                   )}
-                 </div>
-               </div>
-             </div>
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400">
+                  <Bell className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-200">Recordatorios</p>
+                  {event.reminders_data && event.reminders_data.length > 0 ? (
+                    <div className="flex flex-col gap-1 mt-0.5">
+                      {event.reminders_data.map((r) => (
+                        <p key={r.id} className="text-sm text-gray-500 dark:text-gray-400">
+                          {formatDateTime(r.remind_at)}
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Sin recordatorios</p>
+                  )}
+                </div>
+              </div>
+            </div>
 
             {isLinkingEnabled && (
               <div className="pt-6 border-t border-gray-100 dark:border-gray-800 space-y-6">
@@ -425,9 +417,9 @@ import EventTagsModal from '@/components/EventDetail/EventTagsModal';
                 />
               </div>
             )}
-           </div>
-         </div>
-       </main>
+          </div>
+        </div>
+      </main>
 
       <EventModal
         isOpen={isEditModalOpen}
@@ -492,6 +484,6 @@ import EventTagsModal from '@/components/EventDetail/EventTagsModal';
         message="¿Estás seguro de que quieres desvincular esta nota? La nota no se eliminará."
         confirmText="Desvincular"
       />
-     </div>
-   );
- }
+    </div>
+  );
+}

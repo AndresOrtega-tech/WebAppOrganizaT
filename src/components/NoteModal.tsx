@@ -3,7 +3,7 @@ import { X, Loader2, StickyNote, Archive, RotateCcw } from 'lucide-react';
 import { Note, notesService } from '@/services/notes.service';
 import { useAiReformulation } from '@/hooks/useAiReformulation';
 import AiReformulateButton from '@/components/AiReformulateButton';
-import { isFeatureEnabled } from '@/config/features';
+
 
 interface NoteModalProps {
   isOpen: boolean;
@@ -46,7 +46,7 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     if (formData.content.length > 800) {
       setError('El contenido excede los 800 caracteres. Por favor, reformúlalo con IA.');
       return;
@@ -74,7 +74,7 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
 
   const handleToggleArchive = async () => {
     if (!initialData) return;
-    
+
     try {
       setLoading(true);
 
@@ -94,7 +94,7 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div 
+      <div
         className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-transparent dark:border-gray-800 transition-colors"
         onClick={(e) => e.stopPropagation()}
       >
@@ -108,7 +108,7 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
               {isEditMode ? 'Editar Nota' : 'Nueva Nota'}
             </h2>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all"
           >
@@ -150,13 +150,11 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
                 <span className={`text-xs font-medium ${formData.content.length > 800 ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
                   {formData.content.length}/800
                 </span>
-                {isFeatureEnabled('ENABLE_NOTE_AI_REFORMULATION') && (
-                  <AiReformulateButton
-                    onClick={handleReformulate}
-                    isLoading={isReformulating}
-                    hasText={formData.content.length > 0}
-                  />
-                )}
+                <AiReformulateButton
+                  onClick={handleReformulate}
+                  isLoading={isReformulating}
+                  hasText={formData.content.length > 0}
+                />
               </div>
             </div>
             <textarea
@@ -176,11 +174,10 @@ export default function NoteModal({ isOpen, onClose, onNoteSaved, initialData }:
                   type="button"
                   onClick={handleToggleArchive}
                   disabled={loading}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-colors ${
-                    initialData.is_archived
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-colors ${initialData.is_archived
                       ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50'
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
+                    }`}
                   title={initialData.is_archived ? "Desarchivar nota" : "Archivar nota"}
                 >
                   {initialData.is_archived ? (

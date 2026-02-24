@@ -10,7 +10,7 @@ import TaskHeader from '@/components/TaskDetail/TaskHeader';
 import TaskInfo from '@/components/TaskDetail/TaskInfo';
 import TaskTagsModal from '@/components/TaskDetail/TaskTagsModal';
 import LinkItemModal from '@/components/LinkItemModal';
-import { isFeatureEnabled } from '@/config/features';
+
 import { Event, eventsService } from '@/services/events.service';
 import { taskService } from '@/services/task.service';
 import HomeSidebar from '@/components/Home/HomeSidebar';
@@ -55,8 +55,8 @@ export default function TaskDetailPage() {
     isCreatingNote
   } = useTaskDetail(id);
 
-  const isLinkingEnabled = isFeatureEnabled('ENABLE_TASK_NOTE_LINKING');
-  const isEventLinkingEnabled = isFeatureEnabled('ENABLE_EVENT_LINKING');
+  const isLinkingEnabled = true;
+  const isEventLinkingEnabled = true;
   const [events, setEvents] = useState<Event[]>([]);
   const [isLinkEventModalOpen, setIsLinkEventModalOpen] = useState(false);
   const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
@@ -156,16 +156,9 @@ export default function TaskDetailPage() {
   };
 
   useEffect(() => {
-    if (!isFeatureEnabled('ENABLE_TASK_DETAIL')) {
-      router.push('/tasks');
-      return;
-    }
-  }, [router]);
-
-  useEffect(() => {
-    if (!task || !isEventLinkingEnabled) return;
+    if (!task) return;
     loadEvents();
-  }, [task, isEventLinkingEnabled]);
+  }, [task]);
 
   const loadEvents = async () => {
     try {
@@ -270,8 +263,8 @@ export default function TaskDetailPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 px-6">
         <div className="text-red-500 font-medium mb-4">{error || 'Tarea no encontrada'}</div>
-        <Link 
-          href={backHref} 
+        <Link
+          href={backHref}
           className="text-indigo-600 dark:text-indigo-400 font-bold hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center"
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Volver al inicio
@@ -293,13 +286,13 @@ export default function TaskDetailPage() {
 
         <main className="flex-1 p-4 md:p-8 transition-all duration-300">
           <div className="max-w-7xl mx-auto space-y-6">
-            <TaskHeader 
+            <TaskHeader
               onBack={handleBack}
               onDelete={() => setShowDeleteModal(true)}
               onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)}
             />
 
-            <TaskInfo 
+            <TaskInfo
               task={task}
               editForm={editForm}
               setEditForm={setEditForm}

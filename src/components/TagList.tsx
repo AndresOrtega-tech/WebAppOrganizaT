@@ -1,7 +1,7 @@
 import { Tag as TagIcon, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Tag } from '@/services/task.service';
-import { isFeatureEnabled } from '@/config/features';
+
 
 interface TagListProps {
   tags: Tag[];
@@ -25,17 +25,17 @@ export default function TagList({ tags, onRemoveTag, actions }: TagListProps) {
       </div>
       <div className="flex flex-wrap gap-2">
         {tags.map((tag) => (
-          <span 
-            key={tag.id} 
+          <span
+            key={tag.id}
             className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold gap-1 group transition-all"
-            style={{ 
-              backgroundColor: tag.color ? `${tag.color}20` : '#f3f4f6', 
+            style={{
+              backgroundColor: tag.color ? `${tag.color}20` : '#f3f4f6',
               color: tag.color || '#374151',
               border: `1px solid ${tag.color ? `${tag.color}40` : '#e5e7eb'}`
             }}
           >
             {tag.name}
-            {onRemoveTag && isFeatureEnabled('ENABLE_TASK_TAGS') && (
+            {onRemoveTag && (
               <button
                 onClick={(e) => {
                   e.preventDefault();

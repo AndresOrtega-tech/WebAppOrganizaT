@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { CalendarDays, MapPin, Bell } from 'lucide-react';
 import { Event } from '@/services/events.service';
-import { isFeatureEnabled } from '@/config/features';
+
 
 interface EventCardProps {
   event: Event;
@@ -31,7 +31,7 @@ const formatDay = (dateString: string) => {
 
 export default function EventCard({ event }: EventCardProps) {
   const CardContent = (
-    <div className={`bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm dark:shadow-gray-800/50 border border-gray-100 dark:border-gray-800 transition-all duration-200 flex flex-col gap-4 h-full ${isFeatureEnabled('ENABLE_EVENT_DETAIL') ? 'hover:shadow-md dark:hover:shadow-gray-700 cursor-pointer' : ''}`}>
+    <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm dark:shadow-gray-800/50 border border-gray-100 dark:border-gray-800 transition-all duration-200 flex flex-col gap-4 h-full hover:shadow-md dark:hover:shadow-gray-700 cursor-pointer">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 w-full">
           <h4 className="text-base font-bold text-gray-900 dark:text-white truncate">
@@ -84,13 +84,9 @@ export default function EventCard({ event }: EventCardProps) {
     </div>
   );
 
-  if (isFeatureEnabled('ENABLE_EVENT_DETAIL')) {
-    return (
-      <Link href={`/events/${event.id}`} className="block h-full">
-        {CardContent}
-      </Link>
-    );
-  }
-
-  return CardContent;
+  return (
+    <Link href={`/events/${event.id}`} className="block h-full">
+      {CardContent}
+    </Link>
+  );
 }

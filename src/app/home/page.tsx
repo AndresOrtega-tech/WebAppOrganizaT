@@ -8,7 +8,7 @@ import { Note, notesService } from '@/services/notes.service';
 import { Event, eventsService } from '@/services/events.service';
 import { Tag, tagsService } from '@/services/tags.service';
 import { apiClient } from '@/services/api.client';
-import { isFeatureEnabled } from '@/config/features';
+
 
 import HomeSidebar from '@/components/Home/HomeSidebar';
 import HomeHeader from '@/components/Home/HomeHeader';
@@ -51,7 +51,7 @@ const sortDashboardTasks = (tasks: Task[]): Task[] => {
 
 export default function HomePage() {
   const router = useRouter();
-  
+
   // State
   const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -75,7 +75,7 @@ export default function HomePage() {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem('sidebar_open', String(isSidebarOpen));
   }, [isSidebarOpen]);
-  
+
   // Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createModalTab, setCreateModalTab] = useState<'task' | 'note' | 'event' | 'tag'>('task');
@@ -108,25 +108,21 @@ export default function HomePage() {
       setTasks(tasksResult.tasks);
       setTags(tagsData);
 
-      if (isFeatureEnabled('ENABLE_NOTES_VIEW')) {
-        const notesData = await notesService.getNotes();
-        setNotes(notesData.slice(0, 3)); // Only recent notes
-      }
+      const notesData = await notesService.getNotes();
+      setNotes(notesData.slice(0, 3)); // Only recent notes
 
-      if (isFeatureEnabled('ENABLE_EVENTS_VIEW')) {
-        const todayLocal = new Date().toLocaleDateString('sv'); // YYYY-MM-DD (local)
-        let eventsData = await eventsService.getEvents({ start_date: todayLocal });
-        if (!Array.isArray(eventsData) || eventsData.length === 0) {
-          // Fallback: fetch all and filter by local date to avoid backend TZ mismatches
-          const allEvents = await eventsService.getEvents();
-          eventsData = allEvents.filter(e => {
-            if (!e.start_time) return false;
-            const localDate = new Date(e.start_time).toLocaleDateString('sv');
-            return localDate === todayLocal;
-          });
-        }
-        setEvents(eventsData);
+      const todayLocal = new Date().toLocaleDateString('sv'); // YYYY-MM-DD (local)
+      let eventsData = await eventsService.getEvents({ start_date: todayLocal });
+      if (!Array.isArray(eventsData) || eventsData.length === 0) {
+        // Fallback: fetch all and filter by local date to avoid backend TZ mismatches
+        const allEvents = await eventsService.getEvents();
+        eventsData = allEvents.filter(e => {
+          if (!e.start_time) return false;
+          const localDate = new Date(e.start_time).toLocaleDateString('sv');
+          return localDate === todayLocal;
+        });
       }
+      setEvents(eventsData);
 
     } catch (error) {
       console.error('Error loading home data:', error);
@@ -161,17 +157,16 @@ export default function HomePage() {
     setIsCreateModalOpen(true);
   };
 
-  const pendingWeekCount = tasks.filter(task => !task.is_completed).length;
-  const completedWeekCount = tasks.filter(task => task.is_completed).length;
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black transition-colors">
       <div className="flex">
         {/* Sidebar */}
-        <HomeSidebar 
-          tags={tags} 
-          user={user} 
-          onLogout={handleLogout} 
+        <HomeSidebar
+          tags={tags}
+          user={user}
+          onLogout={handleLogout}
           isOpen={isSidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
@@ -179,10 +174,8 @@ export default function HomePage() {
         {/* Main Content */}
         <main className="flex-1 p-4 md:p-8 transition-all duration-300">
           <div className="max-w-7xl mx-auto">
-            <HomeHeader 
+            <HomeHeader
               userName={user?.full_name || 'Usuario'}
-              pendingTasksCount={pendingWeekCount}
-              completedTasksCount={completedWeekCount}
               onNewItemClick={handleCreateClick}
               onMenuClick={() => setSidebarOpen(!isSidebarOpen)}
               isSidebarOpen={isSidebarOpen}
@@ -193,8 +186,8 @@ export default function HomePage() {
               <div className="lg:col-span-2 space-y-6">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Tareas</h2>
-                  <TaskList 
-                    tasks={tasks} 
+                  <TaskList
+                    tasks={tasks}
                     onComplete={handleTaskComplete}
                     origin="home"
                   />
@@ -203,20 +196,16 @@ export default function HomePage() {
 
               {/* Right Column: Notes & Events */}
               <div className="space-y-8">
-                {isFeatureEnabled('ENABLE_NOTES_VIEW') && (
-                  <RecentNotes notes={notes} />
-                )}
-                
-                {isFeatureEnabled('ENABLE_EVENTS_VIEW') && (
-                  <TodayEvents events={events} />
-                )}
+                <RecentNotes notes={notes} />
+
+                <TodayEvents events={events} />
               </div>
             </div>
           </div>
         </main>
       </div>
 
-      <CreateItemModal 
+      <CreateItemModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onCreated={() => {

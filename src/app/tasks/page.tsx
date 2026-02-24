@@ -14,7 +14,7 @@ import CreateItemModal from '@/components/CreateItemModal';
 
 export default function TasksPage() {
   const router = useRouter();
-  
+
   // State
   const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -145,10 +145,10 @@ export default function TasksPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-black transition-colors">
       <div className="flex">
         {/* Sidebar */}
-        <HomeSidebar 
-          tags={tags} 
-          user={user} 
-          onLogout={handleLogout} 
+        <HomeSidebar
+          tags={tags}
+          user={user}
+          onLogout={handleLogout}
           isOpen={isSidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
@@ -156,15 +156,13 @@ export default function TasksPage() {
         {/* Main Content */}
         <main className="flex-1 p-4 md:p-8 transition-all duration-300">
           <div className="max-w-7xl mx-auto space-y-8">
-            <HomeHeader 
-                userName={user?.full_name || 'Usuario'}
-                pendingTasksCount={tasks.filter(t => !t.is_completed).length}
-                completedTasksCount={tasks.filter(t => t.is_completed).length}
-                onNewItemClick={handleCreateClick}
-                onMenuClick={() => setSidebarOpen(!isSidebarOpen)}
-                isSidebarOpen={isSidebarOpen}
-                createButtonLabel="Nueva Tarea"
-              />
+            <HomeHeader
+              userName={user?.full_name || 'Usuario'}
+              onNewItemClick={handleCreateClick}
+              onMenuClick={() => setSidebarOpen(!isSidebarOpen)}
+              isSidebarOpen={isSidebarOpen}
+              createButtonLabel="Nueva Tarea"
+            />
 
             {errorMessage && (
               <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">
@@ -179,29 +177,27 @@ export default function TasksPage() {
                 <div className="flex gap-2 mb-4">
                   <button
                     onClick={() => setCurrentTab('pending')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      currentTab === 'pending'
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${currentTab === 'pending'
                         ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
                         : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
+                      }`}
                   >
                     Pendientes
                   </button>
                   <button
                     onClick={() => setCurrentTab('completed')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      currentTab === 'completed'
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${currentTab === 'completed'
                         ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
                         : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
+                      }`}
                   >
                     Completadas
                   </button>
                 </div>
               </div>
 
-              <TaskList 
-                tasks={tasks} 
+              <TaskList
+                tasks={tasks}
                 onComplete={handleTaskComplete}
                 origin="tasks"
               />
@@ -223,7 +219,7 @@ export default function TasksPage() {
         </main>
       </div>
 
-      <CreateItemModal 
+      <CreateItemModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onCreated={() => {

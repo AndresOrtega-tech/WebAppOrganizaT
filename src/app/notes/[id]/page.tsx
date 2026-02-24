@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Note, notesService } from '@/services/notes.service';
-import { isFeatureEnabled } from '@/config/features';
+
 import NoteModal from '@/components/NoteModal';
 import NoteHeader from '@/components/NoteDetail/NoteHeader';
 import NoteInfo from '@/components/NoteDetail/NoteInfo';
@@ -43,16 +43,12 @@ export default function NoteDetailPage() {
   const [eventsError, setEventsError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isFeatureEnabled('ENABLE_NOTE_DETAIL')) {
-      router.push('/notes');
-      return;
-    }
 
     loadNote(id);
   }, [id, router]);
 
   useEffect(() => {
-    if (!note || !isFeatureEnabled('ENABLE_EVENT_LINKING')) return;
+    if (!note) return;
     loadEvents();
   }, [note]);
 
@@ -107,7 +103,7 @@ export default function NoteDetailPage() {
           await notesService.removeTagFromNote(note.id, tagId);
         }
       }
-      
+
       // Reload note to get updated tags
       await loadNote(note.id);
       setIsTagsModalOpen(false);
@@ -121,7 +117,7 @@ export default function NoteDetailPage() {
 
   const confirmDelete = async () => {
     if (!note) return;
-    
+
     try {
       setIsDeleting(true);
 
@@ -291,8 +287,8 @@ export default function NoteDetailPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 px-6">
         <div className="text-red-500 font-medium mb-4">{error || 'Nota no encontrada'}</div>
-        <Link 
-          href={backHref} 
+        <Link
+          href={backHref}
           className="text-indigo-600 dark:text-indigo-400 font-bold hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center"
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Volver a Notas
@@ -301,20 +297,20 @@ export default function NoteDetailPage() {
     );
   }
 
-  const isLinkingEnabled = isFeatureEnabled('ENABLE_TASK_NOTE_LINKING');
-  const isEventLinkingEnabled = isFeatureEnabled('ENABLE_EVENT_LINKING');
+  const isLinkingEnabled = true;
+  const isEventLinkingEnabled = true;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans">
-      <NoteHeader 
+      <NoteHeader
         backHref={backHref}
-        onEdit={() => setIsEditModalOpen(true)} 
+        onEdit={() => setIsEditModalOpen(true)}
         onManageTags={() => setIsTagsModalOpen(true)}
         onDelete={() => setShowDeleteModal(true)}
       />
 
-      <NoteInfo 
-        note={note} 
+      <NoteInfo
+        note={note}
         onRemoveTag={handleRemoveTag}
         onLinkTask={openLinkModal}
         onUnlinkTask={handleUnlinkTask}
