@@ -62,6 +62,7 @@ export default function TasksPage() {
   // Load Data
   const loadTasks = useCallback(async (tab: 'pending' | 'completed') => {
     try {
+      setErrorMessage(null);
       const result = await taskService.getTasks({
         view: 'tasks',
         limit: 5,
@@ -80,6 +81,7 @@ export default function TasksPage() {
 
     try {
       setIsLoadingMore(true);
+      setErrorMessage(null);
 
       const result = await taskService.getTasks({
         view: 'tasks',
@@ -120,6 +122,7 @@ export default function TasksPage() {
   };
 
   const handleCreateClick = (tab: 'task' | 'note' | 'event' | 'tag' = 'task') => {
+    setErrorMessage(null);
     setCreateModalTab(tab);
     setIsCreateModalOpen(true);
   };
