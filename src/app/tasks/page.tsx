@@ -132,6 +132,7 @@ export default function TasksPage() {
       }
     } catch (error) {
       console.error('Error updating task:', error);
+      alert('Error al actualizar el estado de la tarea');
     }
   };
 
