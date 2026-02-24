@@ -1,4 +1,12 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-organiza-tb.vercel.app/api';
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.BACKEND_URL ||
+  'https://api-organiza-tb.vercel.app/api';
+
+export const TASKS_API_BASE_URL =
+  process.env.NEXT_PUBLIC_TASKS_API_URL ||
+  process.env.DEV_URL ||
+  API_BASE_URL;
 
 export interface LoginRequest {
   email: string;

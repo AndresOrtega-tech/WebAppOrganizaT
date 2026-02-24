@@ -10,8 +10,6 @@ import { apiClient } from '@/services/api.client';
 import HomeSidebar from '@/components/Home/HomeSidebar';
 import HomeHeader from '@/components/Home/HomeHeader';
 import TaskList from '@/components/Home/TaskList';
-import TasksFilterBar from '@/components/Home/TasksFilterBar';
-import TaskFilters from '@/components/TaskFilters';
 import CreateItemModal from '@/components/CreateItemModal';
 
 export default function TasksPage() {
@@ -21,15 +19,12 @@ export default function TasksPage() {
   const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
-  
-  const DEFAULT_FILTERS: TaskFiltersParams = {
-    sort_by: 'due_date',
-    order: 'asc',
-    show_overdue: true,
-    view: 'tasks',
-  };
-
-  const [filters, setFilters] = useState<TaskFiltersParams>(DEFAULT_FILTERS);
+  const [currentTab, setCurrentTab] = useState<'all' | 'pending' | 'completed'>('pending');
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
 
   // UI State
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
@@ -66,14 +61,55 @@ export default function TasksPage() {
   }, []);
 
   // Load Data
-  const loadTasks = useCallback(async (currentFilters: TaskFiltersParams) => {
+  const loadTasks = useCallback(async (tab: 'all' | 'pending' | 'completed') => {
     try {
-      const data = await taskService.getTasks(currentFilters);
-      setTasks(data);
+      const baseFilters: TaskFiltersParams = {
+        view: 'tasks',
+        limit: 5,
+      };
+
+      const filters: TaskFiltersParams =
+        tab === 'all'
+          ? baseFilters
+          : { ...baseFilters, tab };
+
+      const result = await taskService.getTasks(filters);
+      setTasks(result.tasks);
+      setNextCursor(result.next_cursor ?? null);
+      setHasMore(Boolean(result.has_more));
     } catch (error) {
       console.error('Error loading tasks:', error);
     }
   }, []);
+
+  const loadMoreTasks = useCallback(async () => {
+    if (!hasMore || !nextCursor) return;
+
+    try {
+      setIsLoadingMore(true);
+
+      const baseFilters: TaskFiltersParams = {
+        view: 'tasks',
+        limit: 5,
+        cursor: nextCursor,
+      };
+
+      const filters: TaskFiltersParams =
+        currentTab === 'all'
+          ? baseFilters
+          : { ...baseFilters, tab: currentTab };
+
+      const result = await taskService.getTasks(filters);
+
+      setTasks(prev => [...prev, ...result.tasks]);
+      setNextCursor(result.next_cursor ?? null);
+      setHasMore(Boolean(result.has_more));
+    } catch (error) {
+      console.error('Error loading more tasks:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [currentTab, hasMore, nextCursor]);
 
   const loadTags = useCallback(async () => {
     try {
@@ -84,11 +120,37 @@ export default function TasksPage() {
     }
   }, []);
 
+  const loadCounts = useCallback(async () => {
+    try {
+      const [pendingResult, completedResult] = await Promise.all([
+        taskService.getTasks({
+          view: 'tasks',
+          tab: 'pending',
+          limit: 50,
+        }),
+        taskService.getTasks({
+          view: 'tasks',
+          tab: 'completed',
+          limit: 50,
+        }),
+      ]);
+
+      setPendingCount(pendingResult.tasks.length);
+      setCompletedCount(completedResult.tasks.length);
+    } catch (error) {
+      console.error('Error loading task counts:', error);
+    }
+  }, []);
+
   useEffect(() => {
     void (async () => {
-      await Promise.all([loadTasks(filters), loadTags()]);
+      await Promise.all([loadTasks(currentTab), loadTags()]);
     })();
-  }, [filters, loadTasks, loadTags]);
+  }, [currentTab, loadTasks, loadTags]);
+
+  useEffect(() => {
+    void loadCounts();
+  }, [loadCounts]);
 
   // Handlers
   const handleLogout = () => {
@@ -106,34 +168,12 @@ export default function TasksPage() {
       const task = tasks.find(t => t.id === taskId);
       if (task) {
         await taskService.updateTask(taskId, { is_completed: !task.is_completed });
-        loadTasks(filters);
+        await Promise.all([loadTasks(currentTab), loadCounts()]);
       }
     } catch (error) {
       console.error('Error updating task:', error);
     }
   };
-
-  const handleFiltersChange = (newFilters: TaskFiltersParams) => {
-    setFilters({
-      ...newFilters,
-      view: 'tasks',
-    });
-  };
-
-  const handleClearFilters = () => {
-    setFilters(DEFAULT_FILTERS);
-  };
-
-  const activeFiltersCount = [
-    filters.is_completed !== DEFAULT_FILTERS.is_completed,
-    filters.tag_ids && filters.tag_ids.length > 0,
-    filters.sort_by !== DEFAULT_FILTERS.sort_by,
-    filters.due_date !== undefined
-  ].filter(Boolean).length;
-
-  // Stats
-  const pendingCount = tasks.filter(t => !t.is_completed).length;
-  const completedCount = tasks.filter(t => t.is_completed).length;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black transition-colors">
@@ -164,25 +204,28 @@ export default function TasksPage() {
             <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 border border-gray-100 dark:border-gray-800 min-h-[400px]">
               <div className="mb-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Próximas Tareas</h2>
-                
-                <TasksFilterBar 
-                  activeFiltersCount={activeFiltersCount}
-                  onOpenFilters={() => setIsFiltersOpen(!isFiltersOpen)}
-                  onClearFilters={handleClearFilters}
-                  hasActiveFilters={activeFiltersCount > 0}
-                />
-
-                {isFiltersOpen && (
-                  <div className="mb-6 animate-in fade-in slide-in-from-top-2">
-                    <TaskFilters 
-                      onFiltersChange={handleFiltersChange}
-                      initialFilters={filters}
-                      isOpen={true}
-                      hideHeader={true}
-                      className="!bg-gray-50 dark:!bg-gray-800/50 !border-gray-200 dark:!border-gray-700"
-                    />
-                  </div>
-                )}
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => setCurrentTab('pending')}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      currentTab === 'pending'
+                        ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                        : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    Pendientes
+                  </button>
+                  <button
+                    onClick={() => setCurrentTab('completed')}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      currentTab === 'completed'
+                        ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                        : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    Completadas
+                  </button>
+                </div>
               </div>
 
               <TaskList 
@@ -190,6 +233,19 @@ export default function TasksPage() {
                 onComplete={handleTaskComplete}
                 origin="tasks"
               />
+
+              {hasMore && (
+                <div className="mt-6 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={loadMoreTasks}
+                    disabled={isLoadingMore}
+                    className="px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isLoadingMore ? 'Cargando más...' : 'Cargar más'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </main>
@@ -199,8 +255,9 @@ export default function TasksPage() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onCreated={() => {
-          loadTasks(filters);
+          loadTasks(currentTab);
           loadTags();
+          loadCounts();
           setIsCreateModalOpen(false);
         }}
         initialTab={createModalTab}

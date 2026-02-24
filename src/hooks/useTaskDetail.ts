@@ -54,8 +54,15 @@ export const useTaskDetail = (taskId: string) => {
   const loadTask = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      const data = await taskService.getTaskById(id);
-      setTask(data);
+      const [taskData, relations] = await Promise.all([
+        taskService.getTaskById(id),
+        taskService.getTaskRelations(id),
+      ]);
+      setTask({
+        ...taskData,
+        tags: relations.tags,
+        notes: relations.notes,
+      });
     } catch (err) {
       console.error('Error loading task:', err);
       setError('No se pudo cargar la tarea.');

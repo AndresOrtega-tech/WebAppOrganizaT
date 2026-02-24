@@ -1,4 +1,4 @@
-import { apiClient } from './api.client';
+import { tasksApiClient } from './api.client';
 import { Note } from './notes.service';
 
 export interface Tag {
@@ -64,6 +64,14 @@ export interface TaskFilters {
   priority?: TaskPriority;
   view?: 'home' | 'tasks';
   cursor?: string;
+  tab?: 'pending' | 'completed';
+  limit?: number;
+}
+
+export interface PaginatedTasks {
+  tasks: Task[];
+  next_cursor?: string | null;
+  has_more?: boolean;
 }
 
 type TaskApiResponse = Omit<Task, 'tags' | 'notes' | 'reminders_data'> & {
@@ -85,7 +93,7 @@ const mapTaskResponse = (data: TaskApiResponse): Task => {
 };
 
 export const taskService = {
-  async getTasks(filters?: TaskFilters): Promise<Task[]> {
+  async getTasks(filters?: TaskFilters): Promise<PaginatedTasks> {
     const params = new URLSearchParams();
     
     // Add select to fetch relations
@@ -128,19 +136,36 @@ export const taskService = {
       if (filters.cursor) {
         params.append('cursor', filters.cursor);
       }
+      if (filters.tab) {
+        params.append('tab', filters.tab);
+      }
+      if (filters.limit !== undefined) {
+        params.append('limit', String(filters.limit));
+      }
     }
 
     const queryString = params.toString();
     const url = `/tasks/${queryString ? `?${queryString}` : ''}`;
 
-    const data = await apiClient.get<unknown>(url);
+    const data = await tasksApiClient.get<unknown>(url);
 
     let rawTasks: TaskApiResponse[] = [];
+    let nextCursor: string | null | undefined = undefined;
+    let hasMore: boolean | undefined = undefined;
 
     if (Array.isArray(data)) {
       rawTasks = data as TaskApiResponse[];
-    } else if (data && typeof data === 'object' && 'data' in data && Array.isArray((data as { data?: unknown }).data)) {
-      rawTasks = (data as { data: TaskApiResponse[] }).data;
+    } else if (data && typeof data === 'object') {
+      const obj = data as { data?: unknown; next_cursor?: string | null; has_more?: boolean };
+      if (Array.isArray(obj.data)) {
+        rawTasks = obj.data as TaskApiResponse[];
+      }
+      if (obj.next_cursor !== undefined) {
+        nextCursor = obj.next_cursor;
+      }
+      if (obj.has_more !== undefined) {
+        hasMore = obj.has_more;
+      }
     }
 
     let tasks = rawTasks.map(mapTaskResponse);
@@ -179,7 +204,11 @@ export const taskService = {
       });
     }
 
-    return tasks;
+    return {
+      tasks,
+      next_cursor: nextCursor,
+      has_more: hasMore,
+    };
   },
 
   async getTaskById(id: string): Promise<Task> {
@@ -187,37 +216,55 @@ export const taskService = {
     params.append('select', '*,task_tags(tags(*)),task_notes(notes(id,title,content)),reminders_data(*)');
     const queryString = params.toString();
 
-    const data = await apiClient.get(`/tasks/${id}?${queryString}`);
+    const data = await tasksApiClient.get(`/tasks/${id}?${queryString}`);
     return mapTaskResponse(data as TaskApiResponse);
   },
 
   async createTask(taskData: CreateTaskDTO): Promise<Task> {
-    const data = await apiClient.post('/tasks/', taskData);
+    const data = await tasksApiClient.post('/tasks/', taskData);
     return mapTaskResponse(data as TaskApiResponse);
   },
 
   async updateTask(id: string, taskData: Partial<Task>): Promise<Task> {
-    const data = await apiClient.patch(`/tasks/${id}`, taskData);
+    const data = await tasksApiClient.patch(`/tasks/${id}`, taskData);
     return mapTaskResponse(data as TaskApiResponse);
   },
 
   async deleteTask(id: string): Promise<void> {
-    await apiClient.delete(`/tasks/${id}`);
+    await tasksApiClient.delete(`/tasks/${id}`);
   },
 
   async assignTagsToTask(taskId: string, tagIds: string[]): Promise<void> {
-    await apiClient.post('/tasks/tags', { task_id: taskId, tag_ids: tagIds });
+    for (const tagId of tagIds) {
+      await tasksApiClient.post(`/tasks/${taskId}/tags`, { tag_id: tagId });
+    }
   },
 
   async removeTagFromTask(taskId: string, tagId: string): Promise<void> {
-    await apiClient.delete(`/tasks/${taskId}/tags/${tagId}`);
+    await tasksApiClient.delete(`/tasks/${taskId}/tags/${tagId}`);
   },
 
   async linkNoteToTask(taskId: string, noteId: string): Promise<void> {
-    await apiClient.post('/tasks/notes', { task_id: taskId, note_id: noteId });
+    await tasksApiClient.post('/relations/task-note', { task_id: taskId, note_id: noteId });
   },
 
   async unlinkNoteFromTask(taskId: string, noteId: string): Promise<void> {
-    await apiClient.delete(`/tasks/${taskId}/notes/${noteId}`);
+    await tasksApiClient.deleteWithBody('/relations/task-note', {
+      task_id: taskId,
+      note_id: noteId,
+    });
+  },
+
+  async getTaskRelations(taskId: string): Promise<{
+    tags: Tag[];
+    notes: Note[];
+    events: Array<{ id: string; title: string; description?: string | null }>;
+  }> {
+    const data = await tasksApiClient.get(`/tasks/${taskId}/related`);
+    return data as {
+      tags: Tag[];
+      notes: Note[];
+      events: Array<{ id: string; title: string; description?: string | null }>;
+    };
   },
 };

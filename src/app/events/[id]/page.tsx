@@ -139,7 +139,7 @@ import EventTagsModal from '@/components/EventDetail/EventTagsModal';
     setIsLinkTaskModalOpen(true);
     setIsLoadingTasks(true);
     try {
-      const tasks = await taskService.getTasks();
+      const { tasks } = await taskService.getTasks();
       const linkedTaskIds = event?.tasks?.map(t => t.id) || [];
       const available = tasks.filter(t => !linkedTaskIds.includes(t.id));
       setAvailableTasks(available);

@@ -156,7 +156,7 @@ export default function NoteDetailPage() {
     setIsLinkModalOpen(true);
     setIsLoadingTasks(true);
     try {
-      const tasks = await taskService.getTasks();
+      const { tasks } = await taskService.getTasks();
       // Filter out already linked tasks
       const linkedTaskIds = note?.tasks?.map(t => t.id) || [];
       const available = tasks.filter(t => !linkedTaskIds.includes(t.id));

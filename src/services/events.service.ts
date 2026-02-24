@@ -1,4 +1,4 @@
-import { apiClient } from './api.client';
+import { apiClient, tasksApiClient } from './api.client';
 import type { Task, Tag } from './task.service';
 import type { Note } from './notes.service';
 
@@ -76,19 +76,31 @@ export const eventsService = {
   },
 
   async linkTaskToEvent(eventId: string, taskId: string): Promise<void> {
-    await apiClient.post('/events/tasks', { event_id: eventId, task_id: taskId });
+    await tasksApiClient.post('/relations/task-event', {
+      task_id: taskId,
+      event_id: eventId,
+    });
   },
 
   async unlinkTaskFromEvent(eventId: string, taskId: string): Promise<void> {
-    await apiClient.delete(`/events/${eventId}/tasks/${taskId}`);
+    await tasksApiClient.deleteWithBody('/relations/task-event', {
+      task_id: taskId,
+      event_id: eventId,
+    });
   },
 
   async linkNoteToEvent(eventId: string, noteId: string): Promise<void> {
-    await apiClient.post('/events/notes', { event_id: eventId, note_id: noteId });
+    await tasksApiClient.post('/relations/note-event', {
+      note_id: noteId,
+      event_id: eventId,
+    });
   },
 
   async unlinkNoteFromEvent(eventId: string, noteId: string): Promise<void> {
-    await apiClient.delete(`/events/${eventId}/notes/${noteId}`);
+    await tasksApiClient.deleteWithBody('/relations/note-event', {
+      note_id: noteId,
+      event_id: eventId,
+    });
   },
 
   async getEventById(eventId: string): Promise<Event> {

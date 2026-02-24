@@ -22,23 +22,34 @@ export default function TaskList({ tasks, onComplete, origin }: TaskListProps) {
     if (!dateString) return null;
     const date = new Date(dateString);
     const now = new Date();
-    
-    const isToday = date.getDate() === now.getDate() &&
-                    date.getMonth() === now.getMonth() &&
-                    date.getFullYear() === now.getFullYear();
 
-    if (isToday) return 'Hoy';
-    
-    // Tomorrow
+    const isToday =
+      date.getDate() === now.getDate() &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear();
+
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    if (date.getDate() === tomorrow.getDate() &&
-        date.getMonth() === tomorrow.getMonth() &&
-        date.getFullYear() === tomorrow.getFullYear()) {
-      return 'Mañana';
+    const isTomorrow =
+      date.getDate() === tomorrow.getDate() &&
+      date.getMonth() === tomorrow.getMonth() &&
+      date.getFullYear() === tomorrow.getFullYear();
+
+    const dayMonth = date.toLocaleDateString('es-MX', {
+      day: 'numeric',
+      month: 'long',
+    });
+
+    if (isToday) {
+      return `Hoy · ${dayMonth}`;
     }
 
-    return date.toLocaleDateString('es-MX', { weekday: 'long' });
+    if (isTomorrow) {
+      return `Mañana · ${dayMonth}`;
+    }
+
+    const weekday = date.toLocaleDateString('es-MX', { weekday: 'long' });
+    return `${weekday} · ${dayMonth}`;
   };
 
   return (
@@ -53,6 +64,10 @@ export default function TaskList({ tasks, onComplete, origin }: TaskListProps) {
           tasks.map(task => {
             const dateText = formatDate(task.due_date);
             const isCompleted = task.is_completed;
+            const isOverdue =
+              !task.is_completed &&
+              task.due_date &&
+              task.due_date < new Date().toLocaleDateString('sv');
 
             return (
               <div 
@@ -96,7 +111,13 @@ export default function TaskList({ tasks, onComplete, origin }: TaskListProps) {
                   
                   <div className="flex flex-wrap items-center gap-3 mt-3">
                     {dateText && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-md">
+                      <span
+                        className={`flex items-center gap-1 text-[10px] font-bold uppercase bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-md ${
+                          isOverdue
+                            ? 'text-red-500 dark:text-red-400'
+                            : 'text-gray-400'
+                        }`}
+                      >
                         <Clock className="w-3 h-3" />
                         {dateText}
                       </span>

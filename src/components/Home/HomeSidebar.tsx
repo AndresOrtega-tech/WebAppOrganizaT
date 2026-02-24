@@ -39,12 +39,9 @@ export default function HomeSidebar({ tags, user, onLogout, isOpen, onClose }: H
       const in7Local = in7.toLocaleDateString('sv');
 
       if (href === '/home') {
-        // Warm common home queries
+        // Warm home tasks using backend view=home rules
         void taskService.getTasks({
-          is_completed: false,
-          start_date: todayLocal,
-          end_date: in7Local,
-          date_field: 'due_date',
+          view: 'home',
         });
         if (isFeatureEnabled('ENABLE_NOTES_VIEW')) {
           void notesService.getNotes();
@@ -53,7 +50,9 @@ export default function HomeSidebar({ tags, user, onLogout, isOpen, onClose }: H
           void eventsService.getEvents({ start_date: todayLocal });
         }
       } else if (href === '/tasks') {
-        void taskService.getTasks({ is_completed: false, sort_by: 'due_date', order: 'asc' });
+        void taskService.getTasks({
+          view: 'tasks',
+        });
       } else if (href === '/notes') {
         void notesService.getNotes();
       } else if (href === '/events') {

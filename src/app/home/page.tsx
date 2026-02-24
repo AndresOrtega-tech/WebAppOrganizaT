@@ -96,15 +96,16 @@ export default function HomePage() {
   // Load Data
   const loadData = useCallback(async () => {
     try {
-      const [tasksData, tagsData] = await Promise.all([
+      const [tasksResult, tagsData] = await Promise.all([
         taskService.getTasks({
           view: 'home',
+          limit: 50,
         }),
         tagsService.getTags(),
       ]);
 
-      const sortedTasks = sortDashboardTasks(tasksData);
-      setTasks(sortedTasks);
+      // Con view='home' delegamos la priorización y orden al backend
+      setTasks(tasksResult.tasks);
       setTags(tagsData);
 
       if (isFeatureEnabled('ENABLE_NOTES_VIEW')) {
