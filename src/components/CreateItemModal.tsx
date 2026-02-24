@@ -136,7 +136,7 @@ export default function CreateItemModal({
           }
         } else if (activeTab === 'note') {
            // Search Tasks & Events
-           const tasks = await taskService.getTasks();
+           const { tasks } = await taskService.getTasks();
            const matchedTasks = tasks
              .filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
              .map(t => ({ id: t.id, title: t.title, type: 'task' as const }));
@@ -151,7 +151,7 @@ export default function CreateItemModal({
            }
         } else if (activeTab === 'event') {
            // Search Tasks & Notes
-           const tasks = await taskService.getTasks();
+           const { tasks } = await taskService.getTasks();
            const matchedTasks = tasks
              .filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
              .map(t => ({ id: t.id, title: t.title, type: 'task' as const }));
