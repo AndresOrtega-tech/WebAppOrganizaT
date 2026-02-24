@@ -19,12 +19,10 @@ export default function TasksPage() {
   const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
-  const [currentTab, setCurrentTab] = useState<'all' | 'pending' | 'completed'>('pending');
+  const [currentTab, setCurrentTab] = useState<'pending' | 'completed'>('pending');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [completedCount, setCompletedCount] = useState(0);
 
   // UI State
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
@@ -61,19 +59,13 @@ export default function TasksPage() {
   }, []);
 
   // Load Data
-  const loadTasks = useCallback(async (tab: 'all' | 'pending' | 'completed') => {
+  const loadTasks = useCallback(async (tab: 'pending' | 'completed') => {
     try {
-      const baseFilters: TaskFiltersParams = {
+      const result = await taskService.getTasks({
         view: 'tasks',
         limit: 5,
-      };
-
-      const filters: TaskFiltersParams =
-        tab === 'all'
-          ? baseFilters
-          : { ...baseFilters, tab };
-
-      const result = await taskService.getTasks(filters);
+        tab,
+      });
       setTasks(result.tasks);
       setNextCursor(result.next_cursor ?? null);
       setHasMore(Boolean(result.has_more));
@@ -88,18 +80,12 @@ export default function TasksPage() {
     try {
       setIsLoadingMore(true);
 
-      const baseFilters: TaskFiltersParams = {
+      const result = await taskService.getTasks({
         view: 'tasks',
         limit: 5,
         cursor: nextCursor,
-      };
-
-      const filters: TaskFiltersParams =
-        currentTab === 'all'
-          ? baseFilters
-          : { ...baseFilters, tab: currentTab };
-
-      const result = await taskService.getTasks(filters);
+        tab: currentTab,
+      });
 
       setTasks(prev => [...prev, ...result.tasks]);
       setNextCursor(result.next_cursor ?? null);
@@ -120,37 +106,11 @@ export default function TasksPage() {
     }
   }, []);
 
-  const loadCounts = useCallback(async () => {
-    try {
-      const [pendingResult, completedResult] = await Promise.all([
-        taskService.getTasks({
-          view: 'tasks',
-          tab: 'pending',
-          limit: 50,
-        }),
-        taskService.getTasks({
-          view: 'tasks',
-          tab: 'completed',
-          limit: 50,
-        }),
-      ]);
-
-      setPendingCount(pendingResult.tasks.length);
-      setCompletedCount(completedResult.tasks.length);
-    } catch (error) {
-      console.error('Error loading task counts:', error);
-    }
-  }, []);
-
   useEffect(() => {
     void (async () => {
       await Promise.all([loadTasks(currentTab), loadTags()]);
     })();
   }, [currentTab, loadTasks, loadTags]);
-
-  useEffect(() => {
-    void loadCounts();
-  }, [loadCounts]);
 
   // Handlers
   const handleLogout = () => {
@@ -168,7 +128,7 @@ export default function TasksPage() {
       const task = tasks.find(t => t.id === taskId);
       if (task) {
         await taskService.updateTask(taskId, { is_completed: !task.is_completed });
-        await Promise.all([loadTasks(currentTab), loadCounts()]);
+        await loadTasks(currentTab);
       }
     } catch (error) {
       console.error('Error updating task:', error);
@@ -190,15 +150,15 @@ export default function TasksPage() {
         {/* Main Content */}
         <main className="flex-1 p-4 md:p-8 transition-all duration-300">
           <div className="max-w-7xl mx-auto space-y-8">
-            <HomeHeader 
-              userName={user?.full_name || 'Usuario'}
-              pendingTasksCount={pendingCount}
-              completedTasksCount={completedCount}
-              onNewItemClick={handleCreateClick}
-              onMenuClick={() => setSidebarOpen(!isSidebarOpen)}
-              isSidebarOpen={isSidebarOpen}
-              createButtonLabel="Nueva Tarea"
-            />
+              <HomeHeader 
+                userName={user?.full_name || 'Usuario'}
+                pendingTasksCount={tasks.filter(t => !t.is_completed).length}
+                completedTasksCount={tasks.filter(t => t.is_completed).length}
+                onNewItemClick={handleCreateClick}
+                onMenuClick={() => setSidebarOpen(!isSidebarOpen)}
+                isSidebarOpen={isSidebarOpen}
+                createButtonLabel="Nueva Tarea"
+              />
 
             {/* Tasks Section */}
             <div className="bg-white dark:bg-[#111827] rounded-3xl p-6 border border-gray-100 dark:border-gray-800 min-h-[400px]">
@@ -257,7 +217,6 @@ export default function TasksPage() {
         onCreated={() => {
           loadTasks(currentTab);
           loadTags();
-          loadCounts();
           setIsCreateModalOpen(false);
         }}
         initialTab={createModalTab}
