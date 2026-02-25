@@ -89,11 +89,10 @@ export default function EventTagsModal({
                     key={tag.id}
                     type="button"
                     onClick={() => toggleTag(tag.id)}
-                    className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                      isSelected
+                    className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isSelected
                         ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-300'
                         : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
@@ -141,4 +140,3 @@ export default function EventTagsModal({
     </div>
   );
 }
-

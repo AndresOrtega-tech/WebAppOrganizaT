@@ -3,7 +3,6 @@ import { Task } from '@/services/task.service';
 import {
   Circle,
   CheckCircle2,
-  Clock,
   Tag as TagIcon
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';

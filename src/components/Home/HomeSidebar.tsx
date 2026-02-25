@@ -63,7 +63,6 @@ export default function HomeSidebar({ tags, user, onLogout, isOpen, onClose }: H
     { name: 'Tareas', href: '/tasks', icon: CheckSquare, enabled: true },
     { name: 'Notas', href: '/notes', icon: StickyNote, enabled: true },
     { name: 'Eventos', href: '/events', icon: CalendarDays, enabled: true },
-    { name: 'Etiquetas', href: '/tags', icon: TagIcon, enabled: true },
   ];
 
   return (

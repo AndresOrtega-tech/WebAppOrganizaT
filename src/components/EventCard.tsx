@@ -81,6 +81,24 @@ export default function EventCard({ event }: EventCardProps) {
           <span>{event.has_reminder ? `${event.reminders_data.length} recordatorios` : 'Sin recordatorios'}</span>
         </div>
       </div>
+
+      {event.tags && event.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-3 border-t border-gray-100 dark:border-gray-800 pt-3">
+          {event.tags.map((tag) => (
+            <span
+              key={tag.id}
+              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold"
+              style={{
+                backgroundColor: `${tag.color}15`,
+                color: tag.color,
+                border: `1px solid ${tag.color}30`
+              }}
+            >
+              {tag.name}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 
