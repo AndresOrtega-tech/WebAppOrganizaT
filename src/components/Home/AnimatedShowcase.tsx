@@ -133,8 +133,8 @@ export default function AnimatedShowcase() {
                                     <div className="flex gap-2">
                                         <motion.div
                                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 ${step === 3 ? 'bg-indigo-600 text-white shadow-md scale-95'
-                                                    : step >= 4 ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-400 dark:text-indigo-400/50 cursor-not-allowed'
-                                                        : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 shadow-sm'
+                                                : step >= 4 ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-400 dark:text-indigo-400/50 cursor-not-allowed'
+                                                    : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 shadow-sm'
                                                 } flex items-center gap-1.5`}
                                         >
                                             <Sparkles className="w-3.5 h-3.5" />
@@ -144,8 +144,8 @@ export default function AnimatedShowcase() {
 
                                         <motion.div
                                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 ${step === 5 ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900 scale-95 shadow-md'
-                                                    : step >= 6 ? 'bg-green-500 text-white border-transparent'
-                                                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm'
+                                                : step >= 6 ? 'bg-green-500 text-white border-transparent'
+                                                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm'
                                                 } flex items-center gap-1.5`}
                                         >
                                             {step >= 6 ? <CheckSquare className="w-3.5 h-3.5" /> : <LinkIcon className="w-3.5 h-3.5" />}
