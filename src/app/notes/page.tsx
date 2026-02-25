@@ -157,6 +157,7 @@ function NotesContent() {
               onMenuClick={() => setSidebarOpen(!isSidebarOpen)}
               isSidebarOpen={isSidebarOpen}
               createButtonLabel="Nueva Nota"
+              defaultTab="note"
             />
 
             {errorMessage && (
@@ -173,8 +174,8 @@ function NotesContent() {
                   <button
                     onClick={() => setCurrentTab('active')}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${currentTab === 'active'
-                        ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                        : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                      : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                   >
                     Activas
@@ -182,8 +183,8 @@ function NotesContent() {
                   <button
                     onClick={() => setCurrentTab('archived')}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${currentTab === 'archived'
-                        ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
-                        : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                      : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                   >
                     Archivadas

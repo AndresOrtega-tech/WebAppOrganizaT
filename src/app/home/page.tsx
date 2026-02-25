@@ -147,6 +147,7 @@ export default function HomePage() {
               onNewItemClick={handleCreateClick}
               onMenuClick={() => setSidebarOpen(!isSidebarOpen)}
               isSidebarOpen={isSidebarOpen}
+              defaultTab="task"
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

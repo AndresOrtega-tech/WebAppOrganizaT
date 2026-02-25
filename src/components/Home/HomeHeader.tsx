@@ -2,11 +2,11 @@ import { Search, Plus, Menu } from 'lucide-react';
 
 interface HomeHeaderProps {
   userName: string;
-
   onNewItemClick: (type: 'task' | 'note' | 'event') => void;
   onMenuClick: () => void;
   isSidebarOpen: boolean;
   createButtonLabel?: string;
+  defaultTab?: 'task' | 'note' | 'event';
 }
 
 export default function HomeHeader({
@@ -15,7 +15,8 @@ export default function HomeHeader({
   onNewItemClick,
   onMenuClick,
   isSidebarOpen,
-  createButtonLabel = 'Nuevo'
+  createButtonLabel = 'Nuevo',
+  defaultTab = 'task'
 }: HomeHeaderProps) {
   const firstName = userName.split(' ')[0];
 
@@ -63,7 +64,7 @@ export default function HomeHeader({
         </div>
 
         <button
-          onClick={() => onNewItemClick('task')}
+          onClick={() => onNewItemClick(defaultTab)}
           className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors whitespace-nowrap"
         >
           <Plus className="w-4 h-4" />

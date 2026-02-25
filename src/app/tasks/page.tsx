@@ -161,6 +161,7 @@ export default function TasksPage() {
               onMenuClick={() => setSidebarOpen(!isSidebarOpen)}
               isSidebarOpen={isSidebarOpen}
               createButtonLabel="Nueva Tarea"
+              defaultTab="task"
             />
 
             {errorMessage && (

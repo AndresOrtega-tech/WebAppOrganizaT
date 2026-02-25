@@ -276,6 +276,25 @@ export default function CreateItemModal({
         }
       } else if (activeTab === 'note') {
         const newNote = await notesService.createNote(noteForm);
+
+        // Auto-generate summary synchronously to prevent race conditions on quick navigation
+        if (noteForm.content && noteForm.content.length > 500) {
+          try {
+            const res = await fetch('/api/ai/summarize', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: noteForm.content })
+            });
+            const data = await res.json();
+            if (data.summary) {
+              await notesService.updateNoteSummary(newNote.id, data.summary);
+            }
+          } catch (aiError) {
+            console.error('Error auto-generating summary during creation:', aiError);
+            // Non-blocking error: we don't throw to allow note creation to succeed anyway
+          }
+        }
+
         // Link tags
         if (selectedTagIds.length > 0) {
           await notesService.assignTagsToNote(newNote.id, selectedTagIds);
@@ -359,8 +378,8 @@ export default function CreateItemModal({
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as TabType)}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === tab.id
-                    ? `border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/10`
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                  ? `border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/10`
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                   }`}
               >
                 <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? '' : tab.color}`} />
@@ -712,8 +731,8 @@ export default function CreateItemModal({
                       type="button"
                       onClick={() => setTagForm({ ...tagForm, color })}
                       className={`w-8 h-8 rounded-full transition-all flex items-center justify-center ${tagForm.color === color
-                          ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-indigo-400 dark:ring-offset-gray-900 scale-110'
-                          : 'hover:scale-110 hover:shadow-sm'
+                        ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-indigo-400 dark:ring-offset-gray-900 scale-110'
+                        : 'hover:scale-110 hover:shadow-sm'
                         }`}
                       style={{ backgroundColor: color }}
                     >
@@ -725,8 +744,8 @@ export default function CreateItemModal({
 
                   {/* Custom Color Button */}
                   <label className={`w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 cursor-pointer transition-all flex items-center justify-center ${!COLORS.includes(tagForm.color)
-                      ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-indigo-400 dark:ring-offset-gray-900 scale-110'
-                      : 'hover:scale-110 hover:shadow-sm'
+                    ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-indigo-400 dark:ring-offset-gray-900 scale-110'
+                    : 'hover:scale-110 hover:shadow-sm'
                     }`}>
                     <input
                       type="color"
