@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { 
-  X, CheckSquare, StickyNote, Calendar, Tag as TagIcon, 
-  Plus, Loader2, Link as LinkIcon, Check, Bell 
+import {
+  X, CheckSquare, StickyNote, Calendar, Tag as TagIcon,
+  Plus, Loader2, Link as LinkIcon, Check, Bell
 } from 'lucide-react';
-import { isFeatureEnabled } from '@/config/features';
+
 import { taskService, CreateTaskDTO, TaskPriority } from '@/services/task.service';
 import { notesService, CreateNoteRequest } from '@/services/notes.service';
 import { eventsService, CreateEventRequest } from '@/services/events.service';
@@ -35,21 +35,21 @@ const COLORS = [
   '#64748B', // slate-500
 ];
 
-export default function CreateItemModal({  
-  isOpen, 
-  onClose, 
-  onCreated, 
+export default function CreateItemModal({
+  isOpen,
+  onClose,
+  onCreated,
   initialTab = 'task',
   disableTabs = false
 }: CreateItemModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Tags State
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  
+
   // Forms State
   const [taskForm, setTaskForm] = useState<CreateTaskDTO>({
     title: '',
@@ -120,50 +120,42 @@ export default function CreateItemModal({
 
         if (activeTab === 'task') {
           // Search Notes & Events
-          if (isFeatureEnabled('ENABLE_NOTES_VIEW')) {
-             const notes = await notesService.getNotes();
-             const matchedNotes = notes
-               .filter(n => n.title.toLowerCase().includes(searchQuery.toLowerCase()))
-               .map(n => ({ id: n.id, title: n.title, type: 'note' as const }));
-             results = [...results, ...matchedNotes];
-          }
-          if (isFeatureEnabled('ENABLE_EVENTS_VIEW')) {
-             const events = await eventsService.getEvents();
-             const matchedEvents = events
-               .filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()))
-               .map(e => ({ id: e.id, title: e.title, type: 'event' as const }));
-             results = [...results, ...matchedEvents];
-          }
+          const notes = await notesService.getNotes();
+          const matchedNotes = notes
+            .filter(n => n.title.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map(n => ({ id: n.id, title: n.title, type: 'note' as const }));
+          results = [...results, ...matchedNotes];
+          const events = await eventsService.getEvents();
+          const matchedEvents = events
+            .filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map(e => ({ id: e.id, title: e.title, type: 'event' as const }));
+          results = [...results, ...matchedEvents];
         } else if (activeTab === 'note') {
-           // Search Tasks & Events
-           const tasks = await taskService.getTasks();
-           const matchedTasks = tasks
-             .filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
-             .map(t => ({ id: t.id, title: t.title, type: 'task' as const }));
-           results = [...results, ...matchedTasks];
+          // Search Tasks & Events
+          const { tasks } = await taskService.getTasks();
+          const matchedTasks = tasks
+            .filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map(t => ({ id: t.id, title: t.title, type: 'task' as const }));
+          results = [...results, ...matchedTasks];
 
-           if (isFeatureEnabled('ENABLE_EVENTS_VIEW')) {
-             const events = await eventsService.getEvents();
-             const matchedEvents = events
-               .filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()))
-               .map(e => ({ id: e.id, title: e.title, type: 'event' as const }));
-             results = [...results, ...matchedEvents];
-           }
+          const events = await eventsService.getEvents();
+          const matchedEvents = events
+            .filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map(e => ({ id: e.id, title: e.title, type: 'event' as const }));
+          results = [...results, ...matchedEvents];
         } else if (activeTab === 'event') {
-           // Search Tasks & Notes
-           const tasks = await taskService.getTasks();
-           const matchedTasks = tasks
-             .filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
-             .map(t => ({ id: t.id, title: t.title, type: 'task' as const }));
-           results = [...results, ...matchedTasks];
+          // Search Tasks & Notes
+          const { tasks } = await taskService.getTasks();
+          const matchedTasks = tasks
+            .filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map(t => ({ id: t.id, title: t.title, type: 'task' as const }));
+          results = [...results, ...matchedTasks];
 
-           if (isFeatureEnabled('ENABLE_NOTES_VIEW')) {
-             const notes = await notesService.getNotes();
-             const matchedNotes = notes
-               .filter(n => n.title.toLowerCase().includes(searchQuery.toLowerCase()))
-               .map(n => ({ id: n.id, title: n.title, type: 'note' as const }));
-             results = [...results, ...matchedNotes];
-           }
+          const notes = await notesService.getNotes();
+          const matchedNotes = notes
+            .filter(n => n.title.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map(n => ({ id: n.id, title: n.title, type: 'note' as const }));
+          results = [...results, ...matchedNotes];
         }
 
         // Filter out already linked items
@@ -284,6 +276,25 @@ export default function CreateItemModal({
         }
       } else if (activeTab === 'note') {
         const newNote = await notesService.createNote(noteForm);
+
+        // Auto-generate summary synchronously to prevent race conditions on quick navigation
+        if (noteForm.content && noteForm.content.length > 500) {
+          try {
+            const res = await fetch('/api/ai/summarize', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: noteForm.content })
+            });
+            const data = await res.json();
+            if (data.summary) {
+              await notesService.updateNoteSummary(newNote.id, data.summary);
+            }
+          } catch (aiError) {
+            console.error('Error auto-generating summary during creation:', aiError);
+            // Non-blocking error: we don't throw to allow note creation to succeed anyway
+          }
+        }
+
         // Link tags
         if (selectedTagIds.length > 0) {
           await notesService.assignTagsToNote(newNote.id, selectedTagIds);
@@ -330,7 +341,7 @@ export default function CreateItemModal({
   };
 
   const toggleTagSelection = (tagId: string) => {
-    setSelectedTagIds(prev => 
+    setSelectedTagIds(prev =>
       prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
     );
   };
@@ -340,7 +351,7 @@ export default function CreateItemModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
-        
+
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -366,11 +377,10 @@ export default function CreateItemModal({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as TabType)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors border-b-2 ${
-                  activeTab === tab.id 
-                    ? `border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/10` 
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === tab.id
+                  ? `border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/10`
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                  }`}
               >
                 <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? '' : tab.color}`} />
                 {tab.label}
@@ -382,9 +392,9 @@ export default function CreateItemModal({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {error && (
-             <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl">
-               {error}
-             </div>
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl">
+              {error}
+            </div>
           )}
 
           {/* TASK FORM */}
@@ -393,8 +403,8 @@ export default function CreateItemModal({
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={taskForm.title}
                     onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -412,13 +422,13 @@ export default function CreateItemModal({
                     >
                       <Calendar className="w-4 h-4 text-gray-400" />
                       <span className="truncate">
-                        {taskForm.due_date 
-                          ? new Date(taskForm.due_date).toLocaleDateString() 
+                        {taskForm.due_date
+                          ? new Date(taskForm.due_date).toLocaleDateString()
                           : 'Sin fecha'}
                       </span>
                     </button>
                     {showDatePicker && (
-                      <DateTimePicker 
+                      <DateTimePicker
                         isOpen={true}
                         initialDate={taskForm.due_date}
                         onSave={(dateStr) => {
@@ -471,7 +481,7 @@ export default function CreateItemModal({
                       <Plus className="w-5 h-5" />
                     </button>
                   </div>
-                  
+
                   {/* List of reminders */}
                   {taskForm.reminders && taskForm.reminders.length > 0 && (
                     <div className="flex flex-wrap gap-2">
@@ -479,10 +489,10 @@ export default function CreateItemModal({
                         <span key={idx} className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800">
                           <Bell className="w-3 h-3" />
                           {reminder.value} {
-                            reminder.unit === 'minutes' ? 'min' : 
-                            reminder.unit === 'hours' ? 'hrs' : 'días'
+                            reminder.unit === 'minutes' ? 'min' :
+                              reminder.unit === 'hours' ? 'hrs' : 'días'
                           }
-                          <button 
+                          <button
                             onClick={() => removeReminder('task', idx)}
                             className="ml-1 hover:text-red-500"
                           >
@@ -497,15 +507,13 @@ export default function CreateItemModal({
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Descripción</label>
-                    {isFeatureEnabled('ENABLE_AI_REFORMULATION') && (
-                      <AiReformulateButton 
-                        onClick={handleTaskReformulate} 
-                        isLoading={isTaskReformulating} 
-                        hasText={!!taskForm.description}
-                      />
-                    )}
+                    <AiReformulateButton
+                      onClick={handleTaskReformulate}
+                      isLoading={isTaskReformulating}
+                      hasText={!!taskForm.description}
+                    />
                   </div>
-                  <textarea 
+                  <textarea
                     value={taskForm.description || ''}
                     onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
                     rows={3}
@@ -522,8 +530,8 @@ export default function CreateItemModal({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={noteForm.title}
                   onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -533,16 +541,13 @@ export default function CreateItemModal({
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Contenido</label>
-                  {isFeatureEnabled('ENABLE_NOTE_AI_REFORMULATION') && (
-                    <AiReformulateButton 
-                      onClick={handleNoteReformulate} 
-                      isLoading={isNoteReformulating} 
-                      hasText={!!noteForm.content}
-                      featureFlag="ENABLE_NOTE_AI_REFORMULATION"
-                    />
-                  )}
+                  <AiReformulateButton
+                    onClick={handleNoteReformulate}
+                    isLoading={isNoteReformulating}
+                    hasText={!!noteForm.content}
+                  />
                 </div>
-                <textarea 
+                <textarea
                   value={noteForm.content}
                   onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
                   rows={8}
@@ -558,15 +563,15 @@ export default function CreateItemModal({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título del evento</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={eventForm.title}
                   onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   placeholder="Ej. Reunión de equipo"
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Inicio</label>
@@ -577,13 +582,13 @@ export default function CreateItemModal({
                   >
                     <Calendar className="w-4 h-4 text-gray-400" />
                     <span className="truncate">
-                      {eventForm.start_time 
-                        ? new Date(eventForm.start_time).toLocaleString() 
+                      {eventForm.start_time
+                        ? new Date(eventForm.start_time).toLocaleString()
                         : 'Seleccionar'}
                     </span>
                   </button>
                   {showEventStartPicker && (
-                    <DateTimePicker 
+                    <DateTimePicker
                       isOpen={true}
                       initialDate={eventForm.start_time}
                       onSave={(dateStr) => {
@@ -603,13 +608,13 @@ export default function CreateItemModal({
                   >
                     <Calendar className="w-4 h-4 text-gray-400" />
                     <span className="truncate">
-                      {eventForm.end_time 
-                        ? new Date(eventForm.end_time).toLocaleString() 
+                      {eventForm.end_time
+                        ? new Date(eventForm.end_time).toLocaleString()
                         : 'Seleccionar'}
                     </span>
                   </button>
                   {showEventEndPicker && (
-                    <DateTimePicker 
+                    <DateTimePicker
                       isOpen={true}
                       initialDate={eventForm.end_time}
                       onSave={(dateStr) => {
@@ -650,7 +655,7 @@ export default function CreateItemModal({
                     <Plus className="w-5 h-5" />
                   </button>
                 </div>
-                
+
                 {/* List of reminders */}
                 {eventForm.reminders && eventForm.reminders.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -658,10 +663,10 @@ export default function CreateItemModal({
                       <span key={idx} className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800">
                         <Bell className="w-3 h-3" />
                         {reminder.value} {
-                          reminder.unit === 'minutes' ? 'min' : 
-                          reminder.unit === 'hours' ? 'hrs' : 'días'
+                          reminder.unit === 'minutes' ? 'min' :
+                            reminder.unit === 'hours' ? 'hrs' : 'días'
                         }
-                        <button 
+                        <button
                           onClick={() => removeReminder('event', idx)}
                           className="ml-1 hover:text-red-500"
                         >
@@ -674,29 +679,26 @@ export default function CreateItemModal({
               </div>
 
               <div>
-                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ubicación</label>
-                 <input 
-                   type="text" 
-                   value={eventForm.location || ''}
-                   onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
-                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                   placeholder="Ej. Sala de conferencias / Zoom"
-                 />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ubicación</label>
+                <input
+                  type="text"
+                  value={eventForm.location || ''}
+                  onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  placeholder="Ej. Sala de conferencias / Zoom"
+                />
               </div>
 
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Descripción</label>
-                  {isFeatureEnabled('ENABLE_EVENT_AI_REFORMULATION') && (
-                    <AiReformulateButton 
-                      onClick={handleEventReformulate} 
-                      isLoading={isEventReformulating} 
-                      hasText={!!eventForm.description}
-                      featureFlag="ENABLE_EVENT_AI_REFORMULATION"
-                    />
-                  )}
+                  <AiReformulateButton
+                    onClick={handleEventReformulate}
+                    isLoading={isEventReformulating}
+                    hasText={!!eventForm.description}
+                  />
                 </div>
-                <textarea 
+                <textarea
                   value={eventForm.description || ''}
                   onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
                   rows={3}
@@ -712,8 +714,8 @@ export default function CreateItemModal({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre de etiqueta</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={tagForm.name}
                   onChange={(e) => setTagForm({ ...tagForm, name: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -728,11 +730,10 @@ export default function CreateItemModal({
                       key={color}
                       type="button"
                       onClick={() => setTagForm({ ...tagForm, color })}
-                      className={`w-8 h-8 rounded-full transition-all flex items-center justify-center ${
-                        tagForm.color === color 
-                          ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-indigo-400 dark:ring-offset-gray-900 scale-110' 
-                          : 'hover:scale-110 hover:shadow-sm'
-                      }`}
+                      className={`w-8 h-8 rounded-full transition-all flex items-center justify-center ${tagForm.color === color
+                        ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-indigo-400 dark:ring-offset-gray-900 scale-110'
+                        : 'hover:scale-110 hover:shadow-sm'
+                        }`}
                       style={{ backgroundColor: color }}
                     >
                       {tagForm.color === color && (
@@ -740,15 +741,14 @@ export default function CreateItemModal({
                       )}
                     </button>
                   ))}
-                  
+
                   {/* Custom Color Button */}
-                  <label className={`w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 cursor-pointer transition-all flex items-center justify-center ${
-                    !COLORS.includes(tagForm.color) 
-                      ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-indigo-400 dark:ring-offset-gray-900 scale-110' 
-                      : 'hover:scale-110 hover:shadow-sm'
-                  }`}>
-                    <input 
-                      type="color" 
+                  <label className={`w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 cursor-pointer transition-all flex items-center justify-center ${!COLORS.includes(tagForm.color)
+                    ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-indigo-400 dark:ring-offset-gray-900 scale-110'
+                    : 'hover:scale-110 hover:shadow-sm'
+                    }`}>
+                    <input
+                      type="color"
                       className="opacity-0 w-0 h-0"
                       value={tagForm.color}
                       onChange={(e) => setTagForm({ ...tagForm, color: e.target.value })}
@@ -760,23 +760,23 @@ export default function CreateItemModal({
                     )}
                   </label>
                 </div>
-                
+
                 {/* Custom Color Preview/Input for visibility */}
                 {!COLORS.includes(tagForm.color) && (
-                   <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                     <div 
-                       className="w-10 h-10 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
-                       style={{ backgroundColor: tagForm.color }}
-                     />
-                     <input 
-                       type="text" 
-                       value={tagForm.color}
-                       onChange={(e) => setTagForm({ ...tagForm, color: e.target.value })}
-                       className="flex-1 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm uppercase"
-                       placeholder="#000000"
-                       maxLength={7}
-                     />
-                   </div>
+                  <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div
+                      className="w-10 h-10 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
+                      style={{ backgroundColor: tagForm.color }}
+                    />
+                    <input
+                      type="text"
+                      value={tagForm.color}
+                      onChange={(e) => setTagForm({ ...tagForm, color: e.target.value })}
+                      className="flex-1 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm uppercase"
+                      placeholder="#000000"
+                      maxLength={7}
+                    />
+                  </div>
                 )}
               </div>
             </div>
@@ -798,11 +798,11 @@ export default function CreateItemModal({
                         onClick={() => toggleTagSelection(tag.id)}
                         className={`
                           px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 border
-                          ${isSelected 
-                            ? 'shadow-sm' 
+                          ${isSelected
+                            ? 'shadow-sm'
                             : 'border-transparent hover:opacity-80'}
                         `}
-                        style={{ 
+                        style={{
                           backgroundColor: tag.color + '15',
                           color: tag.color,
                           borderColor: isSelected ? tag.color : 'transparent'
@@ -813,7 +813,7 @@ export default function CreateItemModal({
                       </button>
                     );
                   })}
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setActiveTab('tag')}
                     className="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center gap-1"
@@ -829,21 +829,21 @@ export default function CreateItemModal({
           {(activeTab === 'task' || activeTab === 'note' || activeTab === 'event') && (
             <div className="relative z-10">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vincular con...</label>
-              
+
               {/* Selected Linked Items */}
               {linkedItems.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-2">
                   {linkedItems.map(item => (
-                    <span 
-                      key={item.id} 
+                    <span
+                      key={item.id}
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800"
                     >
                       {item.type === 'task' && <CheckSquare className="w-3 h-3" />}
                       {item.type === 'note' && <StickyNote className="w-3 h-3" />}
                       {item.type === 'event' && <Calendar className="w-3 h-3" />}
                       {item.title}
-                      <button 
-                        onClick={() => removeLinkedItem(item.id)} 
+                      <button
+                        onClick={() => removeLinkedItem(item.id)}
                         className="ml-1 text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-200"
                       >
                         <X className="w-3 h-3" />
@@ -855,23 +855,23 @@ export default function CreateItemModal({
 
               <div className="relative">
                 <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={
                     activeTab === 'task' ? "Buscar notas o eventos..." :
-                    activeTab === 'note' ? "Buscar tareas o eventos..." :
-                    "Buscar tareas o notas..."
+                      activeTab === 'note' ? "Buscar tareas o eventos..." :
+                        "Buscar tareas o notas..."
                   }
                   className="w-full pl-10 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                 />
                 {isSearching && (
-                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                     <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                   </div>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  </div>
                 )}
-                
+
                 {/* Search Results Dropdown */}
                 {searchResults.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 max-h-60 overflow-y-auto overflow-x-hidden z-20">
@@ -895,7 +895,7 @@ export default function CreateItemModal({
                           <div className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1">{result.title}</div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">{
                             result.type === 'task' ? 'Tarea' :
-                            result.type === 'note' ? 'Nota' : 'Evento'
+                              result.type === 'note' ? 'Nota' : 'Evento'
                           }</div>
                         </div>
                       </button>

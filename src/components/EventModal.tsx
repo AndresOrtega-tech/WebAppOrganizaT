@@ -15,10 +15,10 @@ interface EventModalProps {
 const formatDate = (dateString: string | null) => {
   if (!dateString) return '';
   const date = new Date(dateString);
-  return date.toLocaleDateString('es-MX', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
+  return date.toLocaleDateString('es-MX', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
@@ -28,10 +28,10 @@ const formatDate = (dateString: string | null) => {
 const formatDay = (dateString: string | null) => {
   if (!dateString) return '';
   const date = new Date(dateString);
-  return date.toLocaleDateString('es-MX', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
+  return date.toLocaleDateString('es-MX', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
     day: 'numeric'
   });
 };
@@ -151,13 +151,13 @@ export default function EventModal({ isOpen, onClose, onEventSaved, initialData 
 
       const payload = formData.is_all_day
         ? (() => {
-            const range = normalizeAllDayRange(formData.start_time);
-            return {
-              ...formData,
-              start_time: range.start.toISOString(),
-              end_time: range.end.toISOString()
-            };
-          })()
+          const range = normalizeAllDayRange(formData.start_time);
+          return {
+            ...formData,
+            start_time: range.start.toISOString(),
+            end_time: range.end.toISOString()
+          };
+        })()
         : formData;
       const savedEvent = isEditMode && initialData
         ? await eventsService.updateEvent(initialData.id, payload)
@@ -183,7 +183,7 @@ export default function EventModal({ isOpen, onClose, onEventSaved, initialData 
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div 
+      <div
         className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-transparent dark:border-gray-800 transition-colors max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
@@ -196,7 +196,7 @@ export default function EventModal({ isOpen, onClose, onEventSaved, initialData 
               {isEditMode ? 'Editar Evento' : 'Nuevo Evento'}
             </h2>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all"
           >
@@ -232,7 +232,7 @@ export default function EventModal({ isOpen, onClose, onEventSaved, initialData 
                   onClick={handleReformulate}
                   isLoading={isReformulating}
                   hasText={(formData.description?.length || 0) > 0}
-                  featureFlag="ENABLE_EVENT_AI_REFORMULATION"
+
                 />
               </div>
             </div>
@@ -320,9 +320,9 @@ export default function EventModal({ isOpen, onClose, onEventSaved, initialData 
               onChange={(e) => {
                 const next = e.target.checked;
                 const baseDate = formData.start_time || formData.end_time || '';
-                setFormData({ 
-                  ...formData, 
-                  is_all_day: next, 
+                setFormData({
+                  ...formData,
+                  is_all_day: next,
                   start_time: next ? baseDate : formData.start_time,
                   end_time: next ? baseDate : formData.end_time
                 });
@@ -351,11 +351,10 @@ export default function EventModal({ isOpen, onClose, onEventSaved, initialData 
                     key={`${option.value}-${option.unit}`}
                     type="button"
                     onClick={() => toggleReminder({ value: option.value, unit: option.unit })}
-                    className={`flex items-center justify-between px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
-                      selected
+                    className={`flex items-center justify-between px-4 py-2 rounded-xl text-sm font-medium transition-all border ${selected
                         ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300'
                         : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-                    }`}
+                      }`}
                   >
                     <span>{option.label}</span>
                     {selected && <div className="w-2 h-2 rounded-full bg-purple-500"></div>}

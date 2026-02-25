@@ -10,7 +10,7 @@ import TaskHeader from '@/components/TaskDetail/TaskHeader';
 import TaskInfo from '@/components/TaskDetail/TaskInfo';
 import TaskTagsModal from '@/components/TaskDetail/TaskTagsModal';
 import LinkItemModal from '@/components/LinkItemModal';
-import { isFeatureEnabled } from '@/config/features';
+
 import { Event, eventsService } from '@/services/events.service';
 import { taskService } from '@/services/task.service';
 import HomeSidebar from '@/components/Home/HomeSidebar';
@@ -55,8 +55,8 @@ export default function TaskDetailPage() {
     isCreatingNote
   } = useTaskDetail(id);
 
-  const isLinkingEnabled = isFeatureEnabled('ENABLE_TASK_NOTE_LINKING');
-  const isEventLinkingEnabled = isFeatureEnabled('ENABLE_EVENT_LINKING');
+  const isLinkingEnabled = true;
+  const isEventLinkingEnabled = true;
   const [events, setEvents] = useState<Event[]>([]);
   const [isLinkEventModalOpen, setIsLinkEventModalOpen] = useState(false);
   const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
@@ -156,16 +156,9 @@ export default function TaskDetailPage() {
   };
 
   useEffect(() => {
-    if (!isFeatureEnabled('ENABLE_TASK_DETAIL')) {
-      router.push('/tasks');
-      return;
-    }
-  }, [router]);
-
-  useEffect(() => {
-    if (!task || !isEventLinkingEnabled) return;
+    if (!task) return;
     loadEvents();
-  }, [task, isEventLinkingEnabled]);
+  }, [task]);
 
   const loadEvents = async () => {
     try {

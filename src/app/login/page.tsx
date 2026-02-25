@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { authService } from '@/services/auth.service';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { isFeatureEnabled } from '@/config/features';
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,13 +23,14 @@ export default function LoginPage() {
 
     try {
       const response = await authService.login({ email, password });
-      
+
+      // Guardar token en localStorage
       localStorage.setItem('access_token', response.access_token);
       if (response.refresh_token) {
         localStorage.setItem('refresh_token', response.refresh_token);
       }
       localStorage.setItem('user', JSON.stringify(response.user));
-      
+
       router.push('/home');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
@@ -44,8 +45,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm flex flex-col items-center">
         {/* Back Button */}
         <div className="w-full flex justify-start mb-8">
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="flex items-center text-gray-500 hover:text-indigo-600 transition-colors font-medium"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
@@ -63,7 +64,7 @@ export default function LoginPage() {
             priority
           />
         </div>
-        
+
         {/* Title & Slogan */}
         <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
           Organiza<span className="text-indigo-600">T</span>
@@ -125,8 +126,8 @@ export default function LoginPage() {
 
           {/* Forgot Password Link */}
           <div className="flex justify-end">
-            <Link 
-              href="/forgot-password" 
+            <Link
+              href="/forgot-password"
               className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
             >
               ¿Olvidaste tu contraseña?
@@ -150,16 +151,14 @@ export default function LoginPage() {
           </button>
 
           {/* Register Link */}
-          {isFeatureEnabled('ENABLE_REGISTRATION') && (
-            <div className="text-center mt-8">
-              <p className="text-gray-500 text-sm font-medium">
-                ¿No tienes una cuenta?{' '}
-                <Link href="/register" className="text-indigo-600 font-bold hover:text-indigo-700 transition-colors">
-                  Regístrate
-                </Link>
-              </p>
-            </div>
-          )}
+          <div className="text-center mt-8">
+            <p className="text-gray-500 text-sm font-medium">
+              ¿No tienes una cuenta?{' '}
+              <Link href="/register" className="text-indigo-600 font-bold hover:text-indigo-700 transition-colors">
+                Regístrate
+              </Link>
+            </p>
+          </div>
         </form>
       </div>
     </div>
