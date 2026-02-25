@@ -36,7 +36,6 @@ export default function HomeSidebar({ tags, user, onLogout, isOpen, onClose }: H
       const todayLocal = today.toLocaleDateString('sv');
       const in7 = new Date(today);
       in7.setDate(in7.getDate() + 7);
-      const in7Local = in7.toLocaleDateString('sv');
 
       if (href === '/home') {
         // Warm home tasks using backend view=home rules
@@ -115,8 +114,8 @@ export default function HomeSidebar({ tags, user, onLogout, isOpen, onClose }: H
                 onMouseEnter={() => prefetchRouteAndData(item.href)}
                 onFocus={() => prefetchRouteAndData(item.href)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isActive
-                    ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
               >
                 <item.icon className={`w-5 h-5 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400'}`} />

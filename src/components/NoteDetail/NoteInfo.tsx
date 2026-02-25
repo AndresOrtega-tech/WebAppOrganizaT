@@ -295,7 +295,7 @@ export default function NoteInfo({
             </div>
             {note.summary ? (
               <p className="text-sm text-indigo-800/80 dark:text-indigo-200/80 leading-relaxed italic">
-                "{note.summary}"
+                &quot;{note.summary}&quot;
               </p>
             ) : (
               <p className="text-xs text-gray-500 dark:text-gray-400 italic">

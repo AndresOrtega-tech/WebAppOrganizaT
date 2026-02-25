@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/services/auth.service';
-import { Task, taskService, TaskPriority } from '@/services/task.service';
+import { Task, taskService } from '@/services/task.service';
 import { Note, notesService } from '@/services/notes.service';
 import { Event, eventsService } from '@/services/events.service';
 import { Tag, tagsService } from '@/services/tags.service';
@@ -16,38 +16,6 @@ import TaskList from '@/components/Home/TaskList';
 import RecentNotes from '@/components/Home/RecentNotes';
 import TodayEvents from '@/components/Home/TodayEvents';
 import CreateItemModal from '@/components/CreateItemModal';
-
-const sortDashboardTasks = (tasks: Task[]): Task[] => {
-  const priorityOrder: { [key in TaskPriority]: number } = {
-    alta: 0,
-    media: 1,
-    baja: 2,
-  };
-
-  return [...tasks].sort((a, b) => {
-    // Pending tasks first, then completed
-    if (a.is_completed !== b.is_completed) {
-      return a.is_completed ? 1 : -1;
-    }
-
-    const dateA = a.due_date ? a.due_date.split('T')[0] : '';
-    const dateB = b.due_date ? b.due_date.split('T')[0] : '';
-
-    if (dateA !== dateB) {
-      if (!dateA) return 1;
-      if (!dateB) return -1;
-      return dateA.localeCompare(dateB);
-    }
-
-    const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
-    if (priorityDiff !== 0) return priorityDiff;
-
-    const updatedA = new Date(a.updated_at).getTime();
-    const updatedB = new Date(b.updated_at).getTime();
-    if (updatedA === updatedB) return 0;
-    return updatedB - updatedA;
-  });
-};
 
 export default function HomePage() {
   const router = useRouter();

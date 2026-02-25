@@ -35,6 +35,7 @@ export interface UpdateNoteRequest {
   is_archived?: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mapNoteResponse = (data: any): Note => {
   return {
     ...data,
@@ -84,6 +85,7 @@ export const notesService = {
     const url = `/notes/${queryString ? `?${queryString}` : ''}`;
 
     const data = await tasksApiClient.get(url);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (data as any[]).map(mapNoteResponse);
   },
 
@@ -108,6 +110,7 @@ export const notesService = {
     events: Array<{ id: string; title: string, start_time: string }>;
   }> {
     const data = await tasksApiClient.get(`/notes/${noteId}/related`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return data as any;
   },
 };

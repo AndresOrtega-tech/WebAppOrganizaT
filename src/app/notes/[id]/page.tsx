@@ -63,7 +63,6 @@ export default function NoteDetailPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const [isUnsavedModalOpen, setIsUnsavedModalOpen] = useState(false);
-  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
   const [origin, setOrigin] = useState<{ from: string; fromId?: string | null } | null>(null);
 
   const setSidebarOpen = (open: boolean) => {
@@ -408,7 +407,7 @@ export default function NoteDetailPage() {
           const ok = await handleUpdate();
           if (ok) {
             setIsUnsavedModalOpen(false);
-            const target = pendingRoute || backHref;
+            const target = backHref;
             router.push(target);
           }
         }}

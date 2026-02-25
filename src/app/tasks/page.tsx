@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/services/auth.service';
-import { Task, taskService, TaskFilters as TaskFiltersParams } from '@/services/task.service';
+import { Task, taskService } from '@/services/task.service';
 import { Tag, tagsService } from '@/services/tags.service';
 import { apiClient } from '@/services/api.client';
 
@@ -34,7 +34,6 @@ export default function TasksPage() {
     }
     return window.innerWidth >= 768;
   });
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createModalTab, setCreateModalTab] = useState<'task' | 'note' | 'event' | 'tag'>('task');
 
@@ -178,8 +177,8 @@ export default function TasksPage() {
                   <button
                     onClick={() => setCurrentTab('pending')}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${currentTab === 'pending'
-                        ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                        : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                      : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                   >
                     Pendientes
@@ -187,8 +186,8 @@ export default function TasksPage() {
                   <button
                     onClick={() => setCurrentTab('completed')}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${currentTab === 'completed'
-                        ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
-                        : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                      : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                   >
                     Completadas
