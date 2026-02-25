@@ -1,12 +1,11 @@
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  process.env.BACKEND_URL ||
-  'https://api-organiza-tb.vercel.app/api';
+// Usa el flag del .env o asume productivo falso
+const useDevApi = process.env.NEXT_PUBLIC_USE_DEV_API === 'true';
 
-export const TASKS_API_BASE_URL =
-  process.env.NEXT_PUBLIC_TASKS_API_URL ||
-  process.env.DEV_URL ||
-  API_BASE_URL;
+export const API_BASE_URL = useDevApi
+  ? process.env.NEXT_PUBLIC_DEV_BACKEND_URL || 'https://api-organiza-tb-git-development-andresortegatechs-projects.vercel.app/api'
+  : process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api-organiza-tb.vercel.app/api';
+
+export const TASKS_API_BASE_URL = API_BASE_URL;
 
 export interface LoginRequest {
   email: string;
