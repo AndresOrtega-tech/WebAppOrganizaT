@@ -1,4 +1,4 @@
-import { apiClient } from './api.client';
+import { tasksApiClient } from './api.client';
 import { Tag } from './tags.service';
 import type { Task } from './task.service';
 
@@ -6,13 +6,15 @@ export interface Note {
   id: string;
   title: string;
   content: string;
+  summary: string | null;
   is_archived: boolean;
   user_id: string;
   media_url: string | null;
   created_at: string;
   updated_at: string;
-  tags: Tag[];
-  tasks: Task[];
+  tags?: Tag[];
+  tasks?: Task[];
+  events?: Array<{ id: string; title: string; start_time: string }>;
 }
 
 export interface NoteFilters {
@@ -33,51 +35,35 @@ export interface UpdateNoteRequest {
   is_archived?: boolean;
 }
 
-type NoteApiResponse = Omit<Note, 'tags' | 'tasks'> & {
-  tags?: Tag[];
-  tasks?: Task[];
-  note_tags?: Array<{ tags: Tag }>;
-  task_notes?: Array<{ tasks: Task }>;
-  note_tasks?: Array<{ tasks: Task }>;
-};
-
-const mapNoteResponse = (data: NoteApiResponse): Note => {
+const mapNoteResponse = (data: any): Note => {
   return {
     ...data,
-    tasks: data.tasks || data.task_notes?.map((nt) => nt.tasks) || data.note_tasks?.map((nt) => nt.tasks) || [],
-    tags: data.tags || (data.note_tags?.map((nt) => nt.tags) || []),
+    tags: data.tags || [],
   };
 };
 
 export const notesService = {
-  async updateNote(noteId: string, note: UpdateNoteRequest): Promise<Note> {
-    const data = await apiClient.patch(`/notes/${noteId}`, note);
-    return mapNoteResponse(data as NoteApiResponse);
+  async updateNote(noteId: string, note: Partial<UpdateNoteRequest>): Promise<Note> {
+    const data = await tasksApiClient.patch(`/notes/${noteId}`, note);
+    return mapNoteResponse(data);
   },
 
   async deleteNote(noteId: string): Promise<void> {
-    await apiClient.delete(`/notes/${noteId}`);
+    await tasksApiClient.delete(`/notes/${noteId}`);
   },
 
   async createNote(note: CreateNoteRequest): Promise<Note> {
-    const data = await apiClient.post('/notes/', note);
-    return mapNoteResponse(data as NoteApiResponse);
+    const data = await tasksApiClient.post('/notes/', note);
+    return mapNoteResponse(data);
   },
 
   async getNoteById(noteId: string): Promise<Note> {
-    const params = new URLSearchParams();
-    params.append('select', '*,note_tags(tags(*)),task_notes(tasks(id,title,description))');
-    const queryString = params.toString();
-
-    const data = await apiClient.get(`/notes/${noteId}?${queryString}`);
-    return mapNoteResponse(data as NoteApiResponse);
+    const data = await tasksApiClient.get(`/notes/${noteId}`);
+    return mapNoteResponse(data);
   },
 
   async getNotes(filters?: NoteFilters): Promise<Note[]> {
     const params = new URLSearchParams();
-    
-    // Add select to fetch relations
-    params.append('select', '*,note_tags(tags(*)),task_notes(tasks(id,title,description))');
 
     if (filters) {
       if (filters.is_archived !== undefined) {
@@ -97,15 +83,31 @@ export const notesService = {
     const queryString = params.toString();
     const url = `/notes/${queryString ? `?${queryString}` : ''}`;
 
-    const data = await apiClient.get(url);
-    return (data as NoteApiResponse[]).map(mapNoteResponse);
+    const data = await tasksApiClient.get(url);
+    return (data as any[]).map(mapNoteResponse);
   },
 
   async assignTagsToNote(noteId: string, tagIds: string[]): Promise<void> {
-    await apiClient.post('/notes/tags', { note_id: noteId, tag_ids: tagIds });
+    for (const tagId of tagIds) {
+      await tasksApiClient.post(`/notes/${noteId}/tags`, { tag_id: tagId });
+    }
   },
 
   async removeTagFromNote(noteId: string, tagId: string): Promise<void> {
-    await apiClient.delete(`/notes/${noteId}/tags/${tagId}`);
+    await tasksApiClient.delete(`/notes/${noteId}/tags/${tagId}`);
+  },
+
+  async updateNoteSummary(noteId: string, summary: string | null): Promise<Note> {
+    const data = await tasksApiClient.patch(`/notes/${noteId}/summary`, { summary });
+    return mapNoteResponse(data);
+  },
+
+  async getNoteRelations(noteId: string): Promise<{
+    tags: Tag[];
+    tasks: Task[];
+    events: Array<{ id: string; title: string, start_time: string }>;
+  }> {
+    const data = await tasksApiClient.get(`/notes/${noteId}/related`);
+    return data as any;
   },
 };

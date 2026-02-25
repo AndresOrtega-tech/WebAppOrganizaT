@@ -47,7 +47,7 @@ export default function NoteCard({ note, onArchive, onDelete }: NoteCardProps) {
             strong: ({ node: _node, ...props }) => <strong className="font-bold text-gray-900 dark:text-white" {...props} />, // eslint-disable-line @typescript-eslint/no-unused-vars
           }}
         >
-          {note.content}
+          {note.summary || note.content}
         </ReactMarkdown>
       </div>
 
@@ -78,8 +78,8 @@ export default function NoteCard({ note, onArchive, onDelete }: NoteCardProps) {
                 onArchive(note);
               }}
               className={`p-1.5 rounded-full transition-colors ${note.is_archived
-                  ? 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30'
-                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                ? 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30'
+                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               title={note.is_archived ? "Desarchivar" : "Archivar"}
             >
