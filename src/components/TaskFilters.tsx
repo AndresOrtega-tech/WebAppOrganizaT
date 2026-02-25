@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Tag, tagsService } from '@/services/tags.service';
 import { TaskFilters as FilterParams } from '@/services/task.service';
-import { Filter, X, ChevronDown, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
+import { Filter, X, Calendar as CalendarIcon } from 'lucide-react';
 import DateTimePicker from './DateTimePicker';
 
 interface TaskFiltersProps {
@@ -24,7 +24,6 @@ export default function TaskFilters({
   const [tags, setTags] = useState<Tag[]>([]);
   const [filters, setFilters] = useState<FilterParams>(initialFilters);
   const [internalIsOpen, setInternalIsOpen] = useState(false);
-  const [isSortOpen, setIsSortOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
@@ -62,12 +61,12 @@ export default function TaskFilters({
     onFiltersChange(newFilters);
   };
 
-  const handleStatusChange = (value: string) => {
+  const handleStatusChange = (value: 'pending' | 'completed' | 'all') => {
     const newFilters = { ...filters };
     if (value === 'all') {
-      delete newFilters.is_completed;
+      delete newFilters.tab;
     } else {
-      newFilters.is_completed = value === 'completed';
+      newFilters.tab = value;
     }
     updateFilters(newFilters);
   };
@@ -96,10 +95,10 @@ export default function TaskFilters({
   };
 
   const activeFiltersCount = [
-    filters.is_completed !== undefined,
-    filters.tag_ids && filters.tag_ids.length > 0,
-    filters.sort_by !== undefined,
-    filters.due_date !== undefined
+    (filters.tag_ids && filters.tag_ids.length > 0) || false,
+    filters.priority !== undefined,
+    filters.end_date !== undefined,
+    filters.tab !== undefined,
   ].filter(Boolean).length;
 
   return (
@@ -142,7 +141,7 @@ export default function TaskFilters({
               <button
                 onClick={() => handleStatusChange('all')}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  filters.is_completed === undefined
+                  filters.tab === undefined
                     ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
                     : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
@@ -152,7 +151,7 @@ export default function TaskFilters({
               <button
                 onClick={() => handleStatusChange('pending')}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  filters.is_completed === false
+                  filters.tab === 'pending'
                     ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
                     : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
@@ -162,7 +161,7 @@ export default function TaskFilters({
               <button
                 onClick={() => handleStatusChange('completed')}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  filters.is_completed === true
+                  filters.tab === 'completed'
                     ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
                     : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
@@ -209,25 +208,25 @@ export default function TaskFilters({
           {/* Date Filter */}
           <div>
             <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
-              Fecha de Vencimiento
+              Fecha límite (hasta)
             </label>
             <div className="flex gap-2">
               <button
                 onClick={() => setIsDatePickerOpen(true)}
                 className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium border transition-all flex items-center justify-between ${
-                  filters.due_date
+                  filters.end_date
                     ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300'
                     : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
-                <span>{filters.due_date ? new Date(filters.due_date).toLocaleDateString() : 'Seleccionar fecha'}</span>
+                <span>{filters.end_date ? new Date(filters.end_date).toLocaleDateString() : 'Seleccionar fecha'}</span>
                 <CalendarIcon className="w-4 h-4 opacity-50" />
               </button>
-              {filters.due_date && (
+              {filters.end_date && (
                 <button
                   onClick={() => {
                     const newFilters = { ...filters };
-                    delete newFilters.due_date;
+                    delete newFilters.end_date;
                     setFilters(newFilters);
                   }}
                   className="px-3 py-2 rounded-xl text-sm font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
@@ -237,120 +236,20 @@ export default function TaskFilters({
               )}
             </div>
             
-            <div className="mt-3">
-               <button
-                 onClick={() => setFilters({ ...filters, show_overdue: !filters.show_overdue })}
-                 className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
-                   filters.show_overdue
-                     ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400'
-                     : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
-                 }`}
-               >
-                 <div className="flex items-center gap-2">
-                   <AlertTriangle className={`w-4 h-4 ${filters.show_overdue ? 'fill-amber-500/20' : ''}`} />
-                   <span>Mostrar atrasadas</span>
-                 </div>
-                 <div className={`w-9 h-5 rounded-full transition-colors relative ${filters.show_overdue ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                   <div className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${filters.show_overdue ? 'translate-x-4' : 'translate-x-0'}`} />
-                 </div>
-               </button>
-            </div>
+            {/* Sin toggle de atrasadas: backend define orden/filtro */}
           </div>
 
           <DateTimePicker
             isOpen={isDatePickerOpen}
             onClose={() => setIsDatePickerOpen(false)}
             onSave={(date) => {
-              // Extract just the date part YYYY-MM-DD using local time
               const dateStr = new Date(date).toLocaleDateString('sv');
-              setFilters({ ...filters, due_date: dateStr });
+              setFilters({ ...filters, end_date: dateStr });
               setIsDatePickerOpen(false);
             }}
-            initialDate={filters.due_date}
+            initialDate={filters.end_date}
             includeTime={false}
           />
-
-          {/* Sort Options */}
-          <div>
-            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
-              Ordenar por
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="relative">
-                <button
-                  onClick={() => setIsSortOpen(!isSortOpen)}
-                  className="w-full flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium px-3 py-2 rounded-xl border border-transparent focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
-                >
-                  <span className="truncate">
-                    {filters.sort_by === 'updated_at' ? 'Última actualización' :
-                     filters.sort_by === 'due_date' ? 'Fecha de vencimiento' :
-                     'Por defecto'}
-                  </span>
-                  <ChevronDown className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {isSortOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 py-1 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                    <button
-                      onClick={() => {
-                        const newFilters = { ...filters };
-                        delete newFilters.sort_by;
-                        delete newFilters.order;
-                        setFilters(newFilters);
-                        setIsSortOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${!filters.sort_by ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
-                    >
-                      Por defecto
-                    </button>
-                    <button
-                      onClick={() => {
-                        setFilters({ ...filters, sort_by: 'updated_at', order: filters.order || 'desc' });
-                        setIsSortOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${filters.sort_by === 'updated_at' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
-                    >
-                      Última actualización
-                    </button>
-                    <button
-                      onClick={() => {
-                        setFilters({ ...filters, sort_by: 'due_date', order: filters.order || 'desc' });
-                        setIsSortOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${filters.sort_by === 'due_date' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
-                    >
-                      Fecha de vencimiento
-                    </button>
-                  </div>
-                )}
-              </div>
-              
-              <div className={`flex bg-gray-50 rounded-xl p-1 border border-gray-200 transition-opacity ${!filters.sort_by ? 'opacity-50 pointer-events-none' : ''}`}>
-                <button
-                  onClick={() => setFilters({ ...filters, order: 'asc' })}
-                  className={`flex-1 flex items-center justify-center rounded-lg text-sm font-medium transition-all ${
-                    filters.order === 'asc' 
-                      ? 'bg-white text-indigo-600 shadow-sm' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                  title="Ascendente"
-                >
-                  Asc
-                </button>
-                <button
-                  onClick={() => setFilters({ ...filters, order: 'desc' })}
-                  className={`flex-1 flex items-center justify-center rounded-lg text-sm font-medium transition-all ${
-                    filters.order === 'desc' || (!filters.order && filters.sort_by)
-                      ? 'bg-white text-indigo-600 shadow-sm' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                  title="Descendente"
-                >
-                  Desc
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>

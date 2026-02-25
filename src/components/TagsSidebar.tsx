@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Tag, tagsService } from '@/services/tags.service';
 import { Tag as TagIcon, Loader2, Plus, Pencil } from 'lucide-react';
 import TagModal from './TagModal';
-import { isFeatureEnabled } from '@/config/features';
+
 
 export default function TagsSidebar() {
   const [tags, setTags] = useState<Tag[]>([]);
@@ -54,15 +54,13 @@ export default function TagsSidebar() {
   };
 
   const handleTagClick = (tag: Tag) => {
-    if (isFeatureEnabled('ENABLE_TAG_EDIT')) {
-      setEditingTag(tag);
-      setIsModalOpen(true);
-    }
+    setEditingTag(tag);
+    setIsModalOpen(true);
   };
 
   const handleDeleteTag = async () => {
     if (!editingTag) return;
-    
+
     try {
       await tagsService.deleteTag(editingTag.id);
       setTags((prev) => prev.filter((tag) => tag.id !== editingTag.id));
@@ -99,49 +97,41 @@ export default function TagsSidebar() {
           <TagIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
           <h3 className="font-bold text-gray-900 dark:text-white">Etiquetas</h3>
         </div>
-        {isFeatureEnabled('ENABLE_TAG_CREATION') && (
-          <button
-            onClick={openCreateModal}
-            className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
-            title="Crear etiqueta"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
-        )}
+        <button
+          onClick={openCreateModal}
+          className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+          title="Crear etiqueta"
+        >
+          <Plus className="w-5 h-5" />
+        </button>
       </div>
-      
+
       {tags.length === 0 ? (
         <div className="text-center py-4">
           <p className="text-gray-400 dark:text-gray-500 text-sm mb-2">No hay etiquetas</p>
-          {isFeatureEnabled('ENABLE_TAG_CREATION') && (
-            <button
-              onClick={openCreateModal}
-              className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
-            >
-              Crear una
-            </button>
-          )}
+          <button
+            onClick={openCreateModal}
+            className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
+          >
+            Crear una
+          </button>
         </div>
       ) : (
         <ul className="space-y-3">
           {tags.map((tag) => (
-            <li 
-              key={tag.id} 
+            <li
+              key={tag.id}
               onClick={() => handleTagClick(tag)}
-              className={`flex items-center gap-3 group p-2 rounded-xl transition-colors ${
-                isFeatureEnabled('ENABLE_TAG_EDIT') ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : ''
-              }`}
+              className="flex items-center gap-3 group p-2 rounded-xl transition-colors cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
             >
-              <div 
-                className="w-3 h-3 rounded-full shadow-sm" 
+              <div
+                className="w-3 h-3 rounded-full shadow-sm"
                 style={{ backgroundColor: tag.color || '#808080' }}
               />
               <span className="text-gray-600 dark:text-gray-300 font-medium text-sm group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                 {tag.name}
               </span>
-              {isFeatureEnabled('ENABLE_TAG_EDIT') && (
-                <Pencil className="w-3 h-3 text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 ml-auto" />
-              )}
+              <Pencil className="w-3 h-3 text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 ml-auto" />
             </li>
           ))}
         </ul>
@@ -155,8 +145,8 @@ export default function TagsSidebar() {
         }}
         onSubmit={handleSaveTag}
         onDelete={
-          editingTag && isFeatureEnabled('ENABLE_TAG_DELETION') 
-            ? handleDeleteTag 
+          editingTag
+            ? handleDeleteTag
             : undefined
         }
         initialData={editingTag ? { name: editingTag.name, color: editingTag.color } : undefined}

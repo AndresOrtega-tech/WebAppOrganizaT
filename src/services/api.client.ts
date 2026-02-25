@@ -1,10 +1,15 @@
-import { authService, API_BASE_URL } from './auth.service';
+import { authService, API_BASE_URL, TASKS_API_BASE_URL } from './auth.service';
 
 class ApiClient {
+  private baseUrl: string;
   private isRefreshing = false;
   private failedQueue: Array<{ resolve: (value: unknown) => void; reject: (reason?: unknown) => void }> = [];
   private cache = new Map<string, { expiry: number; data: unknown; inflight?: Promise<unknown> }>();
   private defaultTTL = 15000;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
 
   private processQueue(error: unknown, token: string | null = null) {
     this.failedQueue.forEach(prom => {
@@ -29,7 +34,7 @@ class ApiClient {
   async fetchWithAuth<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
     if (typeof window === 'undefined') {
         // Server-side (if any) or build time
-        const res = await fetch(`${API_BASE_URL}${endpoint}`, options);
+        const res = await fetch(`${this.baseUrl}${endpoint}`, options);
         if (!res.ok) {
             const errorData = await res.json().catch(() => ({}));
             throw new Error(errorData.detail || errorData.message || 'Error en la petición');
@@ -49,7 +54,7 @@ class ApiClient {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
         headers,
       });
@@ -179,6 +184,15 @@ class ApiClient {
     return result;
   }
 
+  async deleteWithBody<T = unknown>(endpoint: string, body: unknown): Promise<T> {
+    const result = await this.fetchWithAuth<T>(endpoint, {
+      method: 'DELETE',
+      body: JSON.stringify(body),
+    });
+    this.cache.clear();
+    return result;
+  }
+
   async delete<T = unknown>(endpoint: string): Promise<T> {
     const result = await this.fetchWithAuth<T>(endpoint, { method: 'DELETE' });
     this.cache.clear();
@@ -200,4 +214,5 @@ class ApiClient {
   }
 }
 
-export const apiClient = new ApiClient();
+export const apiClient = new ApiClient(API_BASE_URL);
+export const tasksApiClient = new ApiClient(TASKS_API_BASE_URL);

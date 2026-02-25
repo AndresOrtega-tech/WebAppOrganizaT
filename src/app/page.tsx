@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, CheckCircle2, StickyNote, Tag, CheckSquare } from 'lucide-react';
-import { isFeatureEnabled } from '@/config/features';
+
 
 export default function LandingPage() {
   return (
@@ -13,20 +13,18 @@ export default function LandingPage() {
           <span className="text-2xl font-bold text-indigo-900 tracking-tight">OrganizaT</span>
         </div>
         <div className="flex gap-4">
-          <Link 
-            href="/login" 
+          <Link
+            href="/login"
             className="px-6 py-2.5 text-indigo-600 font-semibold hover:bg-indigo-50 rounded-full transition-all"
           >
             Iniciar Sesión
           </Link>
-          {isFeatureEnabled('ENABLE_REGISTRATION') && (
-            <Link 
-              href="/register" 
-              className="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 shadow-lg hover:shadow-indigo-200 transition-all"
-            >
-              Registrarse
-            </Link>
-          )}
+          <Link
+            href="/register"
+            className="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 shadow-lg hover:shadow-indigo-200 transition-all"
+          >
+            Registrarse
+          </Link>
         </div>
       </nav>
 
@@ -39,28 +37,26 @@ export default function LandingPage() {
               simplifica tu mente.
             </span>
           </h1>
-          
+
           <p className="text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
-            La plataforma integral para gestionar tus tareas y notas. 
+            La plataforma integral para gestionar tus tareas y notas.
             Captura ideas, organiza prioridades y mantén el control de tu día a día con etiquetas personalizadas.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link 
-              href="/login" 
+            <Link
+              href="/login"
               className="w-full sm:w-auto px-8 py-4 bg-gray-900 text-white font-bold rounded-2xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl hover:-translate-y-1"
             >
               Comenzar Ahora
               <ArrowRight className="w-5 h-5" />
             </Link>
-            {isFeatureEnabled('ENABLE_REGISTRATION') && (
-              <Link 
-                href="/register" 
-                className="w-full sm:w-auto px-8 py-4 bg-white text-gray-900 font-bold rounded-2xl border border-gray-200 hover:border-indigo-200 hover:bg-indigo-50 transition-all shadow-sm hover:shadow-md"
-              >
-                Crear Cuenta Gratis
-              </Link>
-            )}
+            <Link
+              href="/register"
+              className="w-full sm:w-auto px-8 py-4 bg-white text-gray-900 font-bold rounded-2xl border border-gray-200 hover:border-indigo-200 hover:bg-indigo-50 transition-all shadow-sm hover:shadow-md"
+            >
+              Crear Cuenta Gratis
+            </Link>
           </div>
         </div>
 

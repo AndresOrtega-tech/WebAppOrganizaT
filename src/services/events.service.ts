@@ -31,6 +31,12 @@ export interface Event {
   notes?: Note[];
 }
 
+export interface EventRelatedData {
+  tags: Tag[];
+  tasks: Task[];
+  notes: Note[];
+}
+
 export interface CreateEventRequest {
   title: string;
   description?: string | null;
@@ -46,88 +52,75 @@ export interface EventFilters {
   end_date?: string;
 }
 
-interface EventApiResponse extends Omit<Event, 'tasks' | 'notes' | 'tags'> {
-  tasks?: Task[];
-  notes?: Note[];
-  event_tags?: Array<{ tags: Tag }>;
-  [key: string]: unknown;
-}
-
-const mapEventResponse = (data: unknown): Event => {
-  const d = data as EventApiResponse;
-  const rootTags = (d as EventApiResponse & { tags?: Tag[] }).tags;
-  return {
-    ...d,
-    tasks: d.tasks || [],
-    notes: d.notes || [],
-    tags: rootTags || (d.event_tags?.map(et => et.tags) || []),
-    reminders_data: d.reminders_data || [],
-  };
-};
-
 export const eventsService = {
-  async updateEvent(eventId: string, event: Partial<CreateEventRequest>): Promise<Event> {
-    const data = await apiClient.patch(`/events/${eventId}`, event);
-    return mapEventResponse(data);
-  },
-
-  async deleteEvent(eventId: string): Promise<void> {
-    await apiClient.delete(`/events/${eventId}`);
-  },
-
-  async linkTaskToEvent(eventId: string, taskId: string): Promise<void> {
-    await apiClient.post('/events/tasks', { event_id: eventId, task_id: taskId });
-  },
-
-  async unlinkTaskFromEvent(eventId: string, taskId: string): Promise<void> {
-    await apiClient.delete(`/events/${eventId}/tasks/${taskId}`);
-  },
-
-  async linkNoteToEvent(eventId: string, noteId: string): Promise<void> {
-    await apiClient.post('/events/notes', { event_id: eventId, note_id: noteId });
-  },
-
-  async unlinkNoteFromEvent(eventId: string, noteId: string): Promise<void> {
-    await apiClient.delete(`/events/${eventId}/notes/${noteId}`);
-  },
-
-  async getEventById(eventId: string): Promise<Event> {
-    const params = new URLSearchParams();
-    params.append('select', '*,event_tags(tags(*)),event_tasks(tasks(*)),event_notes(notes(*)),reminders_data(*)');
-    const queryString = params.toString();
-
-    const data = await apiClient.get(`/events/${eventId}?${queryString}`);
-    return mapEventResponse(data);
-  },
-
   async getEvents(filters?: EventFilters): Promise<Event[]> {
     const params = new URLSearchParams();
-
-    if (filters?.start_date) {
-      params.append('start_date', filters.start_date);
-    }
-    if (filters?.end_date) {
-      params.append('end_date', filters.end_date);
-    }
-
-    params.append('select', '*,event_tags(tags(*)),reminders_data(*)');
+    if (filters?.start_date) params.append('start_date', filters.start_date);
+    if (filters?.end_date) params.append('end_date', filters.end_date);
 
     const queryString = params.toString();
     const url = `/events/${queryString ? `?${queryString}` : ''}`;
-    const data = await apiClient.get(url);
-    return (data as unknown[]).map(mapEventResponse);
+    return apiClient.get<Event[]>(url);
+  },
+
+  async getEventById(eventId: string): Promise<Event> {
+    return apiClient.get<Event>(`/events/${eventId}`);
+  },
+
+  async getEventRelations(eventId: string): Promise<EventRelatedData> {
+    return apiClient.get<EventRelatedData>(`/events/${eventId}/related`);
   },
 
   async createEvent(event: CreateEventRequest): Promise<Event> {
-    const data = await apiClient.post('/events/', event);
-    return mapEventResponse(data);
+    return apiClient.post<Event>('/events/', event);
+  },
+
+  async updateEvent(eventId: string, event: Partial<CreateEventRequest>): Promise<Event> {
+    return apiClient.patch<Event>(`/events/${eventId}`, event);
+  },
+
+  async deleteEvent(eventId: string): Promise<void> {
+    return apiClient.delete(`/events/${eventId}`);
   },
 
   async assignTagsToEvent(eventId: string, tagIds: string[]): Promise<void> {
-    await apiClient.post('/events/tags', { event_id: eventId, tag_ids: tagIds });
+    // La nueva API acepta body: { tag_id: string } uno a uno.
+    if (tagIds.length === 0) return;
+    await Promise.all(
+      tagIds.map(tagId => apiClient.post(`/events/${eventId}/tags`, { tag_id: tagId }))
+    );
   },
 
   async removeTagFromEvent(eventId: string, tagId: string): Promise<void> {
-    await apiClient.delete(`/events/${eventId}/tags/${tagId}`);
+    return apiClient.delete(`/events/${eventId}/tags/${tagId}`);
+  },
+
+  // Manejo directo con apiClient hacia las nuevas rutas unificadas de relations
+  async linkTaskToEvent(eventId: string, taskId: string): Promise<void> {
+    await apiClient.post('/relations/task-event', {
+      task_id: taskId,
+      event_id: eventId,
+    });
+  },
+
+  async unlinkTaskFromEvent(eventId: string, taskId: string): Promise<void> {
+    await apiClient.deleteWithBody('/relations/task-event', {
+      task_id: taskId,
+      event_id: eventId,
+    });
+  },
+
+  async linkNoteToEvent(eventId: string, noteId: string): Promise<void> {
+    await apiClient.post('/relations/note-event', {
+      note_id: noteId,
+      event_id: eventId,
+    });
+  },
+
+  async unlinkNoteFromEvent(eventId: string, noteId: string): Promise<void> {
+    await apiClient.deleteWithBody('/relations/note-event', {
+      note_id: noteId,
+      event_id: eventId,
+    });
   },
 };

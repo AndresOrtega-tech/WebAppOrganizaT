@@ -2,20 +2,19 @@
 
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/providers/ThemeProvider';
-import { isFeatureEnabled } from '@/config/features';
+
 import { useSyncExternalStore } from 'react';
 
 export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
   const mounted = useSyncExternalStore(
-    () => () => {},
+    () => () => { },
     () => true,
     () => false
   );
 
   if (!mounted) return <div className="w-9 h-9" />;
-  
-  if (!isFeatureEnabled('ENABLE_DARK_MODE')) return null;
+
 
   return (
     <button
