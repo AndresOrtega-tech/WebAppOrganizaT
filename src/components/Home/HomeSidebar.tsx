@@ -156,15 +156,18 @@ export default function HomeSidebar({ tags, user, onLogout, isOpen, onClose }: H
 
           {user && (
             <div className="flex items-center gap-3 px-2">
-              <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                {user.avatar || user.full_name.charAt(0)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.full_name}</p>
-              </div>
+              <Link
+                href="/profile"
+                className="flex items-center gap-3 flex-1 min-w-0 p-1.5 -m-1.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+              >
+                <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm shrink-0">
+                  {user.avatar ? user.avatar.substring(0, 2).toUpperCase() : user.full_name.charAt(0)}
+                </div>
+                <p className="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{user.full_name}</p>
+              </Link>
               <button
                 onClick={onLogout}
-                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors shrink-0"
                 title="Cerrar sesión"
               >
                 <LogOut className="w-4 h-4" />
