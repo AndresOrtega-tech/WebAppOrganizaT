@@ -168,6 +168,13 @@ export default function CreateItemModal({
       }
     };
 
+  // Event validation helpers for UI disabling
+  const eventStartDate = eventForm.start_time ? new Date(eventForm.start_time) : null;
+  const eventEndDate = eventForm.end_time ? new Date(eventForm.end_time) : null;
+  const eventDatesValid = !!eventStartDate && !isNaN(eventStartDate.getTime()) && !!eventEndDate && !isNaN(eventEndDate.getTime());
+  const eventChronoValid = eventDatesValid && eventEndDate! > eventStartDate!;
+  const eventReady = eventDatesValid && eventChronoValid;
+
     const debounce = setTimeout(searchItems, 300);
     return () => clearTimeout(debounce);
   }, [searchQuery, activeTab, linkedItems]);
@@ -255,6 +262,13 @@ export default function CreateItemModal({
     'event'
   );
 
+  // Event validation helpers for UI disabling
+  const eventStartDate = eventForm.start_time ? new Date(eventForm.start_time) : null;
+  const eventEndDate = eventForm.end_time ? new Date(eventForm.end_time) : null;
+  const eventDatesValid = !!eventStartDate && !isNaN(eventStartDate.getTime()) && !!eventEndDate && !isNaN(eventEndDate.getTime());
+  const eventChronoValid = eventDatesValid && eventEndDate! > eventStartDate!;
+  const eventReady = eventDatesValid && eventChronoValid;
+
   const handleCreate = async () => {
     setLoading(true);
     setError(null);
@@ -308,6 +322,17 @@ export default function CreateItemModal({
           }
         }
       } else if (activeTab === 'event') {
+        if (!eventForm.start_time || !eventForm.end_time) {
+          throw new Error('Selecciona inicio y fin del evento');
+        }
+        const start = new Date(eventForm.start_time);
+        const end = new Date(eventForm.end_time);
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+          throw new Error('Las fechas del evento no son válidas');
+        }
+        if (end <= start) {
+          throw new Error('La hora de fin debe ser mayor a la de inicio');
+        }
         const newEvent = await eventsService.createEvent(eventForm);
         if (selectedTagIds.length > 0) {
           await eventsService.assignTagsToEvent(newEvent.id, selectedTagIds);
@@ -627,6 +652,12 @@ export default function CreateItemModal({
                 </div>
               </div>
 
+              {!eventReady && (
+                <p className="text-sm text-red-500 dark:text-red-400">
+                  Selecciona inicio y fin válidos; la hora de fin debe ser mayor que la de inicio.
+                </p>
+              )}
+
               {/* Reminders Section */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Recordatorios</label>
@@ -918,7 +949,7 @@ export default function CreateItemModal({
           </button>
           <button
             onClick={handleCreate}
-            disabled={loading}
+            disabled={loading || (activeTab === 'event' && !eventReady)}
             className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckSquare className="w-5 h-5" />}

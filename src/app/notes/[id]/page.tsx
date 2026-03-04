@@ -17,6 +17,7 @@ import { Tag, tagsService } from '@/services/tags.service';
 import { apiClient } from '@/services/api.client';
 import { taskService, Task } from '@/services/task.service';
 import { Event, eventsService } from '@/services/events.service';
+import { notesService } from '@/services/notes.service';
 
 export default function NoteDetailPage() {
   const router = useRouter();
@@ -51,6 +52,7 @@ export default function NoteDetailPage() {
   const [taskToUnlink, setTaskToUnlink] = useState<string | null>(null);
 
   const [events, setEvents] = useState<Event[]>([]);
+  const [linkedEvents, setLinkedEvents] = useState<Event[]>([]);
   const [isLinkEventModalOpen, setIsLinkEventModalOpen] = useState(false);
   const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
@@ -137,6 +139,7 @@ export default function NoteDetailPage() {
   useEffect(() => {
     if (!note) return;
     loadEvents();
+    loadLinkedEvents();
   }, [note]);
 
   const loadEvents = async () => {
@@ -147,6 +150,17 @@ export default function NoteDetailPage() {
     } catch (err) {
       console.error('Error loading events:', err);
       setEventsError('Error al cargar eventos');
+    }
+  };
+
+  const loadLinkedEvents = async () => {
+    if (!note) return;
+    try {
+      const relations = await notesService.getNoteRelations(note.id);
+      setLinkedEvents((relations.events as Event[]) || []);
+    } catch (err) {
+      console.error('Error loading linked events:', err);
+      setLinkedEvents([]);
     }
   };
 
@@ -196,8 +210,6 @@ export default function NoteDetailPage() {
     }
   };
 
-  const linkedEvents = note ? events.filter(e => (e.notes || []).some(n => n.id === note.id)) : [];
-
   const openLinkEventModal = async () => {
     setIsLinkEventModalOpen(true);
     setIsLoadingEvents(true);
@@ -217,8 +229,9 @@ export default function NoteDetailPage() {
     if (!note) return;
     try {
       await eventsService.linkNoteToEvent(eventId, note.id);
-      const selectedEvent = availableEvents.find(e => e.id === eventId) || events.find(e => e.id === eventId);
-      const eventTasks = selectedEvent?.tasks || [];
+      const relations = await eventsService.getEventRelations(eventId);
+      const selectedEvent = availableEvents.find(e => e.id === eventId) || events.find(e => e.id === eventId) || relations as unknown as Event;
+      const eventTasks = relations.tasks || selectedEvent?.tasks || [];
       const noteTasks = note.tasks || [];
       const eventTaskIds = new Set(eventTasks.map(t => t.id));
 
@@ -235,8 +248,22 @@ export default function NoteDetailPage() {
         }
       }
 
+      if (selectedEvent && !linkedEvents.some(e => e.id === selectedEvent.id)) {
+        setLinkedEvents(prev => [...prev, selectedEvent]);
+      }
+
+      // Refrescar con relaciones actuales de la nota
+      try {
+        const updatedRelations = await notesService.getNoteRelations(note.id);
+        setLinkedEvents((updatedRelations.events as Event[]) || []);
+      } catch (relErr) {
+        console.error('Error reloading note relations:', relErr);
+      }
+
       await loadEvents();
+      await loadLinkedEvents();
       await reloadNote();
+      router.refresh();
       setIsLinkEventModalOpen(false);
     } catch (err) {
       console.error('Error linking event:', err);
@@ -253,8 +280,18 @@ export default function NoteDetailPage() {
     if (!note || !eventToUnlink) return;
     try {
       await eventsService.unlinkNoteFromEvent(eventToUnlink, note.id);
+      setLinkedEvents(prev => prev.filter(e => e.id !== eventToUnlink));
+      try {
+        const updatedRelations = await notesService.getNoteRelations(note.id);
+        setLinkedEvents((updatedRelations.events as Event[]) || []);
+      } catch (relErr) {
+        console.error('Error reloading note relations:', relErr);
+      }
+
       await loadEvents();
+      await loadLinkedEvents();
       await reloadNote();
+      router.refresh();
       setShowUnlinkEventModal(false);
       setEventToUnlink(null);
     } catch (err) {

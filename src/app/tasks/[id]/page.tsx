@@ -58,6 +58,7 @@ export default function TaskDetailPage() {
   const isLinkingEnabled = true;
   const isEventLinkingEnabled = true;
   const [events, setEvents] = useState<Event[]>([]);
+  const [linkedEvents, setLinkedEvents] = useState<Event[]>([]);
   const [isLinkEventModalOpen, setIsLinkEventModalOpen] = useState(false);
   const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
@@ -158,6 +159,7 @@ export default function TaskDetailPage() {
   useEffect(() => {
     if (!task) return;
     loadEvents();
+    loadLinkedEvents();
   }, [task]);
 
   const loadEvents = async () => {
@@ -171,7 +173,17 @@ export default function TaskDetailPage() {
     }
   };
 
-  const linkedEvents = task ? events.filter(e => (e.tasks || []).some(t => t.id === task.id)) : [];
+  const loadLinkedEvents = async () => {
+    if (!task) return;
+    try {
+      const relations = await taskService.getTaskRelations(task.id);
+      // relations.events viene resumido; casteamos para reutilizar el componente de lista
+      setLinkedEvents((relations.events as Event[]) || []);
+    } catch (err) {
+      console.error('Error loading linked events:', err);
+      setLinkedEvents([]);
+    }
+  };
 
   const openLinkEventModal = async () => {
     setIsLinkEventModalOpen(true);
@@ -192,8 +204,10 @@ export default function TaskDetailPage() {
     if (!task) return;
     try {
       await eventsService.linkTaskToEvent(eventId, task.id);
-      const selectedEvent = availableEvents.find(e => e.id === eventId) || events.find(e => e.id === eventId);
-      const eventNotes = selectedEvent?.notes || [];
+
+      // Cargar relaciones actuales del evento para evitar duplicados
+      const relations = await eventsService.getEventRelations(eventId);
+      const eventNotes = relations.notes || [];
       const taskNotes = task.notes || [];
       const eventNoteIds = new Set(eventNotes.map(n => n.id));
 
@@ -210,8 +224,16 @@ export default function TaskDetailPage() {
         }
       }
 
+      // Actualizar UI inmediata
+      const selectedEvent = availableEvents.find(e => e.id === eventId) || events.find(e => e.id === eventId);
+      if (selectedEvent) {
+        setLinkedEvents(prev => prev.some(e => e.id === selectedEvent.id) ? prev : [...prev, selectedEvent]);
+      }
+
       await loadEvents();
+      await loadLinkedEvents();
       await reloadTask();
+      router.refresh();
       setIsLinkEventModalOpen(false);
     } catch (err) {
       console.error('Error linking event:', err);
@@ -228,8 +250,11 @@ export default function TaskDetailPage() {
     if (!eventToUnlink || !task) return;
     try {
       await eventsService.unlinkTaskFromEvent(eventToUnlink, task.id);
+      setLinkedEvents(prev => prev.filter(e => e.id !== eventToUnlink));
       await loadEvents();
+      await loadLinkedEvents();
       await reloadTask();
+      router.refresh();
       setShowUnlinkEventModal(false);
       setEventToUnlink(null);
     } catch (err) {
