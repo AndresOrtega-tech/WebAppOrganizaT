@@ -120,6 +120,8 @@ class ApiClient {
 
   // Helper methods
   async get<T = unknown>(endpoint: string, params?: Record<string, string | boolean | undefined | number>): Promise<T> {
+    // Disable caching for relation requests to guarantee fresh data after link/unlink
+    const shouldCache = !endpoint.includes('/related');
     let url = endpoint;
     if (params) {
         const searchParams = new URLSearchParams();
@@ -135,6 +137,11 @@ class ApiClient {
             url += `?${queryString}`;
         }
     }
+
+    if (!shouldCache) {
+        return this.fetchWithAuth<T>(url, { method: 'GET' });
+    }
+
     const cacheKey = url;
     const now = Date.now();
     const cached = this.cache.get(cacheKey);

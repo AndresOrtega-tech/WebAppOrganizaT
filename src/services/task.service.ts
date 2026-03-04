@@ -40,6 +40,7 @@ export interface Task {
   updated_at: string;
   tags: Tag[];
   notes: Note[];
+  events?: Array<{ id: string; title: string; description?: string | null }>;
 }
 
 export interface CreateTaskDTO {
