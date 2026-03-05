@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Home,
@@ -7,7 +8,8 @@ import {
   CalendarDays,
   Tag as TagIcon,
   LogOut,
-  X
+  X,
+  Trash
 } from 'lucide-react';
 import { Tag } from '@/services/tags.service';
 import { User } from '@/services/auth.service';
@@ -16,6 +18,8 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { taskService } from '@/services/task.service';
 import { notesService } from '@/services/notes.service';
 import { eventsService } from '@/services/events.service';
+import { tagsService } from '@/services/tags.service';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 interface HomeSidebarProps {
   tags: Tag[];
@@ -28,6 +32,15 @@ interface HomeSidebarProps {
 export default function HomeSidebar({ tags, user, onLogout, isOpen, onClose }: HomeSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+
+  const [localTags, setLocalTags] = useState<Tag[]>(tags);
+  const [tagToDelete, setTagToDelete] = useState<Tag | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeletingTag, setIsDeletingTag] = useState(false);
+
+  useEffect(() => {
+    setLocalTags(tags);
+  }, [tags]);
 
   const prefetchRouteAndData = (href: string) => {
     try {
@@ -130,18 +143,29 @@ export default function HomeSidebar({ tags, user, onLogout, isOpen, onClose }: H
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Etiquetas</p>
           </div>
           <div className="space-y-1">
-            {tags.slice(0, 5).map((tag) => (
+            {localTags.slice(0, 5).map((tag) => (
               <div
                 key={tag.id}
-                className="flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-default"
+                className="group relative flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-default"
               >
                 <TagIcon className="w-4 h-4" style={{ color: tag.color }} />
                 <span className="truncate">{tag.name}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTagToDelete(tag);
+                    setIsDeleteModalOpen(true);
+                  }}
+                  className="absolute right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500"
+                  title="Eliminar etiqueta"
+                >
+                  <Trash className="w-4 h-4" />
+                </button>
               </div>
             ))}
-            {tags.length > 5 && (
+            {localTags.length > 5 && (
               <Link href="/tasks" className="block px-4 py-2 text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
-                Ver todas ({tags.length})
+                Ver todas ({localTags.length})
               </Link>
             )}
           </div>
@@ -176,6 +200,34 @@ export default function HomeSidebar({ tags, user, onLogout, isOpen, onClose }: H
           )}
         </div>
       </aside>
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          if (isDeletingTag) return;
+          setIsDeleteModalOpen(false);
+          setTagToDelete(null);
+        }}
+        onConfirm={async () => {
+          if (!tagToDelete) return;
+          setIsDeletingTag(true);
+          try {
+            await tagsService.deleteTag(tagToDelete.id);
+            setLocalTags(prev => prev.filter(t => t.id !== tagToDelete.id));
+            setIsDeleteModalOpen(false);
+            setTagToDelete(null);
+          } catch (err) {
+            console.error('Error deleting tag', err);
+            alert('Error al eliminar la etiqueta');
+          } finally {
+            setIsDeletingTag(false);
+          }
+        }}
+        title="Eliminar etiqueta"
+        message={`¿Seguro que deseas eliminar la etiqueta "${tagToDelete?.name ?? ''}"?`}
+        confirmText={isDeletingTag ? 'Eliminando...' : 'Eliminar'}
+        isLoading={isDeletingTag}
+      />
     </>
   );
 }
