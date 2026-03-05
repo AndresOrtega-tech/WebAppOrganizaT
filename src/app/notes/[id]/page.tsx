@@ -51,6 +51,7 @@ export default function NoteDetailPage() {
   const [taskToUnlink, setTaskToUnlink] = useState<string | null>(null);
 
   const [events, setEvents] = useState<Event[]>([]);
+  const [linkedEvents, setLinkedEvents] = useState<Event[]>([]);
   const [isLinkEventModalOpen, setIsLinkEventModalOpen] = useState(false);
   const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
@@ -70,6 +71,32 @@ export default function NoteDetailPage() {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('sidebar_open', String(open));
     }
+  };
+
+  const loadLinkedEvents = () => {
+    if (!note) return;
+    const relationsEvents = note.events || [];
+    const merged = relationsEvents.map((ev) => {
+      const existing = events.find(e => e.id === ev.id);
+      if (existing) return existing;
+      return {
+        ...ev,
+        description: (ev as Partial<Event>).description ?? null,
+        end_time: (ev as Partial<Event>).end_time ?? '',
+        start_time: (ev as Partial<Event>).start_time ?? '',
+        location: (ev as Partial<Event>).location ?? '',
+        is_all_day: (ev as Partial<Event>).is_all_day ?? false,
+        user_id: (ev as Partial<Event>).user_id ?? '',
+        created_at: (ev as Partial<Event>).created_at ?? '',
+        updated_at: (ev as Partial<Event>).updated_at ?? '',
+        reminders_data: (ev as Partial<Event>).reminders_data ?? [],
+        has_reminder: (ev as Partial<Event>).has_reminder ?? false,
+        tags: (ev as Partial<Event>).tags,
+        tasks: (ev as Partial<Event>).tasks,
+        notes: (ev as Partial<Event>).notes,
+      } as Event;
+    });
+    setLinkedEvents(merged);
   };
 
   useEffect(() => {
@@ -137,6 +164,7 @@ export default function NoteDetailPage() {
   useEffect(() => {
     if (!note) return;
     loadEvents();
+    loadLinkedEvents();
   }, [note]);
 
   const loadEvents = async () => {
@@ -196,8 +224,6 @@ export default function NoteDetailPage() {
     }
   };
 
-  const linkedEvents = note ? events.filter(e => (e.notes || []).some(n => n.id === note.id)) : [];
-
   const openLinkEventModal = async () => {
     setIsLinkEventModalOpen(true);
     setIsLoadingEvents(true);
@@ -237,6 +263,7 @@ export default function NoteDetailPage() {
 
       await loadEvents();
       await reloadNote();
+      loadLinkedEvents();
       setIsLinkEventModalOpen(false);
     } catch (err) {
       console.error('Error linking event:', err);
@@ -255,6 +282,7 @@ export default function NoteDetailPage() {
       await eventsService.unlinkNoteFromEvent(eventToUnlink, note.id);
       await loadEvents();
       await reloadNote();
+      loadLinkedEvents();
       setShowUnlinkEventModal(false);
       setEventToUnlink(null);
     } catch (err) {
