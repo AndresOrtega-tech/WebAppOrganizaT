@@ -4,8 +4,6 @@ class ApiClient {
   private baseUrl: string;
   private isRefreshing = false;
   private failedQueue: Array<{ resolve: (value: unknown) => void; reject: (reason?: unknown) => void }> = [];
-  private cache = new Map<string, { expiry: number; data: unknown; inflight?: Promise<unknown> }>();
-  private defaultTTL = 15000;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -33,14 +31,14 @@ class ApiClient {
 
   async fetchWithAuth<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
     if (typeof window === 'undefined') {
-        // Server-side (if any) or build time
-        const res = await fetch(`${this.baseUrl}${endpoint}`, options);
-        if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            throw new Error(errorData.detail || errorData.message || 'Error en la petición');
-        }
-        const text = await res.text();
-        return (text ? JSON.parse(text) : null) as T;
+      // Server-side (if any) or build time
+      const res = await fetch(`${this.baseUrl}${endpoint}`, options);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || errorData.message || 'Error en la petición');
+      }
+      const text = await res.text();
+      return (text ? JSON.parse(text) : null) as T;
     }
 
     const token = localStorage.getItem('access_token');
@@ -50,7 +48,7 @@ class ApiClient {
     };
 
     if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     try {
@@ -135,26 +133,7 @@ class ApiClient {
             url += `?${queryString}`;
         }
     }
-    const cacheKey = url;
-    const now = Date.now();
-    const cached = this.cache.get(cacheKey);
-    if (cached && cached.expiry > now && cached.data !== undefined) {
-      this.revalidate(cacheKey, url);
-      return Promise.resolve(cached.data as T);
-    }
-    if (cached?.inflight) {
-      return cached.inflight as Promise<T>;
-    }
-    const inflight = this.fetchWithAuth<T>(url, { method: 'GET' }).then((data) => {
-      this.cache.set(cacheKey, { expiry: Date.now() + this.defaultTTL, data });
-      return data;
-    }).finally(() => {
-      const entry = this.cache.get(cacheKey);
-      if (entry) this.cache.set(cacheKey, { expiry: entry.expiry, data: entry.data });
-    });
-    // Store placeholder with no valid expiry so subsequent calls await inflight
-    this.cache.set(cacheKey, { expiry: 0, data: cached?.data, inflight });
-    return inflight;
+    return await this.fetchWithAuth<T>(url, { method: 'GET' });
   }
 
   async post<T = unknown>(endpoint: string, body: unknown): Promise<T> {
@@ -162,7 +141,6 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(body),
     });
-    this.cache.clear();
     return result;
   }
 
@@ -171,7 +149,6 @@ class ApiClient {
       method: 'PUT',
       body: JSON.stringify(body),
     });
-    this.cache.clear();
     return result;
   }
   
@@ -180,7 +157,6 @@ class ApiClient {
       method: 'PATCH',
       body: JSON.stringify(body),
     });
-    this.cache.clear();
     return result;
   }
 
@@ -189,28 +165,12 @@ class ApiClient {
       method: 'DELETE',
       body: JSON.stringify(body),
     });
-    this.cache.clear();
     return result;
   }
 
   async delete<T = unknown>(endpoint: string): Promise<T> {
     const result = await this.fetchWithAuth<T>(endpoint, { method: 'DELETE' });
-    this.cache.clear();
     return result;
-  }
-
-  private async revalidate(cacheKey: string, url: string) {
-    if (this.cache.get(cacheKey)?.inflight) return;
-    const inflight = this.fetchWithAuth(url, { method: 'GET' }).then((data) => {
-      this.cache.set(cacheKey, { expiry: Date.now() + this.defaultTTL, data });
-      return data;
-    }).finally(() => {
-      const entry = this.cache.get(cacheKey);
-      if (entry) this.cache.set(cacheKey, { expiry: entry.expiry, data: entry.data });
-    });
-    const entry = this.cache.get(cacheKey);
-    // Keep expiry 0 when we only have inflight to avoid serving undefined data
-    this.cache.set(cacheKey, { expiry: entry?.data !== undefined ? (entry?.expiry || Date.now() + this.defaultTTL) : 0, data: entry?.data, inflight });
   }
 }
 
