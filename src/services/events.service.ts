@@ -97,10 +97,17 @@ export const eventsService = {
 
   // Manejo directo con apiClient hacia las nuevas rutas unificadas de relations
   async linkTaskToEvent(eventId: string, taskId: string): Promise<void> {
-    await apiClient.post('/relations/task-event', {
-      task_id: taskId,
-      event_id: eventId,
-    });
+    try {
+      await apiClient.post('/relations/task-event', {
+        task_id: taskId,
+        event_id: eventId,
+      });
+    } catch (err) {
+      if (err instanceof Error && err.message?.toLowerCase().includes('vinculación ya existe')) {
+        return; // Silenciamos duplicados
+      }
+      throw err;
+    }
   },
 
   async unlinkTaskFromEvent(eventId: string, taskId: string): Promise<void> {
@@ -111,10 +118,17 @@ export const eventsService = {
   },
 
   async linkNoteToEvent(eventId: string, noteId: string): Promise<void> {
-    await apiClient.post('/relations/note-event', {
-      note_id: noteId,
-      event_id: eventId,
-    });
+    try {
+      await apiClient.post('/relations/note-event', {
+        note_id: noteId,
+        event_id: eventId,
+      });
+    } catch (err) {
+      if (err instanceof Error && err.message?.toLowerCase().includes('vinculación ya existe')) {
+        return; // Silenciamos duplicados
+      }
+      throw err;
+    }
   },
 
   async unlinkNoteFromEvent(eventId: string, noteId: string): Promise<void> {

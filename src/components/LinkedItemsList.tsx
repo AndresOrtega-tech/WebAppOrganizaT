@@ -5,8 +5,15 @@ import { Task } from '@/services/task.service';
 import { Note } from '@/services/notes.service';
 import { Event } from '@/services/events.service';
 
+type LinkedItem = {
+  id: string;
+  title: string;
+  description?: string | null;
+  content?: string;
+};
+
 interface LinkedItemsListProps {
-  items: (Task | Note | Event)[];
+  items: (Task | Note | Event | LinkedItem)[];
   type: 'task' | 'note' | 'event';
   onLinkNew: () => void;
   onUnlink: (id: string) => void;
