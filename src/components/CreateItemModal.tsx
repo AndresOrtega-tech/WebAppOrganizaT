@@ -346,6 +346,10 @@ export default function CreateItemModal({
     );
   };
 
+  const isCreateDisabled =
+    loading ||
+    (activeTab === 'event' && (!eventForm.start_time || !eventForm.end_time));
+
   if (!isOpen) return null;
 
   return (
@@ -918,7 +922,7 @@ export default function CreateItemModal({
           </button>
           <button
             onClick={handleCreate}
-            disabled={loading}
+            disabled={isCreateDisabled}
             className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckSquare className="w-5 h-5" />}
