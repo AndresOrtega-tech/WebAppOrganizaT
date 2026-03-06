@@ -256,6 +256,17 @@ export default function CreateItemModal({
   );
 
   const handleCreate = async () => {
+    const isMissingTitle =
+      (activeTab === 'task' && !taskForm.title.trim()) ||
+      (activeTab === 'note' && !noteForm.title.trim()) ||
+      (activeTab === 'event' && !eventForm.title.trim()) ||
+      (activeTab === 'tag' && !tagForm.name.trim());
+
+    if (isMissingTitle) {
+      setError('El título es requerido.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -308,6 +319,15 @@ export default function CreateItemModal({
           }
         }
       } else if (activeTab === 'event') {
+        if (eventForm.start_time && eventForm.end_time) {
+          const startDate = new Date(eventForm.start_time);
+          const endDate = new Date(eventForm.end_time);
+          if (endDate < startDate) {
+            setError('La fecha de fin no puede ser anterior a la fecha de inicio.');
+            return;
+          }
+        }
+
         const newEvent = await eventsService.createEvent(eventForm);
         if (selectedTagIds.length > 0) {
           await eventsService.assignTagsToEvent(newEvent.id, selectedTagIds);
@@ -346,9 +366,21 @@ export default function CreateItemModal({
     );
   };
 
+  const isEventEndBeforeStart =
+    eventForm.start_time && eventForm.end_time
+      ? new Date(eventForm.end_time) < new Date(eventForm.start_time)
+      : false;
+
+  const isMissingTitle =
+    (activeTab === 'task' && !taskForm.title.trim()) ||
+    (activeTab === 'note' && !noteForm.title.trim()) ||
+    (activeTab === 'event' && !eventForm.title.trim()) ||
+    (activeTab === 'tag' && !tagForm.name.trim());
+
   const isCreateDisabled =
     loading ||
-    (activeTab === 'event' && (!eventForm.start_time || !eventForm.end_time));
+    isMissingTitle ||
+    (activeTab === 'event' && (!eventForm.start_time || !eventForm.end_time || isEventEndBeforeStart));
 
   if (!isOpen) return null;
 
