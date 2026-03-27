@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 export function useAiReformulation(
   text: string,
   onReformulated: (newText: string) => void,
-  type: 'task' | 'note' | 'event' = 'task'
+  type: "task" | "note" | "event" = "task",
 ) {
   const [isReformulating, setIsReformulating] = useState(false);
 
@@ -12,27 +12,39 @@ export function useAiReformulation(
 
     try {
       setIsReformulating(true);
-      const response = await fetch('/api/ai/reformulate', {
-        method: 'POST',
+      const response = await fetch("/api/ai/reformulate", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ text, type }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Reformulate API error:', JSON.stringify(errorData, null, 2));
-        throw new Error(errorData.error || 'Failed to reformulate');
+        throw new Error("Failed to reformulate");
       }
 
-      const data = await response.json();
-      if (data.reformulatedText) {
-        onReformulated(data.reformulatedText);
+      if (!response.body) throw new Error("No response body for stream");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      let fullText = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+
+        if (chunk) {
+          fullText += chunk;
+          onReformulated(fullText);
+        }
       }
     } catch (error) {
-      console.error('Error reformulating text:', error);
-      alert('Error al reformular el texto');
+      console.error("Error reformulating text:", error);
+      alert("Error al reformular el texto");
     } finally {
       setIsReformulating(false);
     }
