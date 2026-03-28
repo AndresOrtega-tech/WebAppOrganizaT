@@ -9,6 +9,28 @@ class ApiClient {
     this.baseUrl = baseUrl;
   }
 
+  private buildRequestUrl(endpoint: string): string {
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+    if (this.baseUrl.startsWith('http://') || this.baseUrl.startsWith('https://')) {
+      return `${this.baseUrl}${normalizedEndpoint}`;
+    }
+
+    if (typeof window === 'undefined') {
+      if (this.baseUrl === '/api/backend') {
+        const backendBase = process.env.BACKEND_API_BASE_URL;
+        if (backendBase) {
+          return `${backendBase.replace(/\/$/, '')}${normalizedEndpoint}`;
+        }
+      }
+
+      const appBase = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      return `${appBase.replace(/\/$/, '')}${this.baseUrl}${normalizedEndpoint}`;
+    }
+
+    return `${this.baseUrl}${normalizedEndpoint}`;
+  }
+
   private processQueue(error: unknown, token: string | null = null) {
     this.failedQueue.forEach(prom => {
       if (error) {
@@ -32,7 +54,7 @@ class ApiClient {
   async fetchWithAuth<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
     if (typeof window === 'undefined') {
       // Server-side (if any) or build time
-      const res = await fetch(`${this.baseUrl}${endpoint}`, options);
+      const res = await fetch(this.buildRequestUrl(endpoint), options);
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.detail || errorData.message || 'Error en la petición');
@@ -52,7 +74,7 @@ class ApiClient {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      const response = await fetch(this.buildRequestUrl(endpoint), {
         ...options,
         headers,
       });

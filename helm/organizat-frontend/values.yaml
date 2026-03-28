@@ -1,0 +1,44 @@
+replicaCount: 1
+
+image:
+  repository: organizat-frontend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+containerPort: 3000
+
+env:
+  BACKEND_API_BASE_URL: "http://organizat-backend.default.svc.cluster.local:8000/api"
+  NEXT_PUBLIC_APP_URL: "http://organizat-frontend.local"
+  NEXT_PUBLIC_USE_DEV_API: "true"
+  NEXT_PUBLIC_DEV_BACKEND_URL: "http://organizat-backend.default.svc.cluster.local:8000/api"
+  NEXT_PUBLIC_BACKEND_URL: "http://organizat-backend.default.svc.cluster.local:8000/api"
+  GEMINI_API_KEY: "AIzaSyBOgja22GKmzeYyNeKfDsL1tBv4PYvnwuw"
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: organizat-frontend.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

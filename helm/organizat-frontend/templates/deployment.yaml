@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "organizat-frontend.fullname" . }}
+  labels:
+    {{- include "organizat-frontend.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "organizat-frontend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "organizat-frontend.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ include "organizat-frontend.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          env:
+            - name: BACKEND_API_BASE_URL
+              value: {{ .Values.env.BACKEND_API_BASE_URL | quote }}
+            - name: NEXT_PUBLIC_APP_URL
+              value: {{ .Values.env.NEXT_PUBLIC_APP_URL | quote }}
+            - name: NEXT_PUBLIC_USE_DEV_API
+              value: {{ .Values.env.NEXT_PUBLIC_USE_DEV_API | quote }}
+            - name: NEXT_PUBLIC_DEV_BACKEND_URL
+              value: {{ .Values.env.NEXT_PUBLIC_DEV_BACKEND_URL | quote }}
+            - name: NEXT_PUBLIC_BACKEND_URL
+              value: {{ .Values.env.NEXT_PUBLIC_BACKEND_URL | quote }}
+            - name: GEMINI_API_KEY
+              value: {{ default "" .Values.env.GEMINI_API_KEY | quote }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

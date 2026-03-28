@@ -1,0 +1,11 @@
+1. Verifica que el addon de ingress este habilitado:
+   minikube addons enable ingress
+
+2. Agrega un host local para probar Ingress:
+   echo "$(minikube ip) organizat-frontend.local" | sudo tee -a /etc/hosts
+
+3. Abre la aplicacion:
+   http://organizat-frontend.local
+
+4. Para revisar recursos desplegados:
+   kubectl get all -l app.kubernetes.io/instance={{ .Release.Name }}

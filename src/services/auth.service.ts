@@ -1,9 +1,5 @@
-// Usa el flag del .env o asume productivo falso
-const useDevApi = process.env.NEXT_PUBLIC_USE_DEV_API === 'true';
-
-export const API_BASE_URL = useDevApi
-  ? process.env.NEXT_PUBLIC_DEV_BACKEND_URL || 'https://api-organiza-tb-git-development-andresortegatechs-projects.vercel.app/api'
-  : process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api-organiza-tb.vercel.app/api';
+// Todas las llamadas del cliente pasan por el proxy interno de Next.
+export const API_BASE_URL = '/api/backend';
 
 export const TASKS_API_BASE_URL = API_BASE_URL;
 
@@ -91,7 +87,7 @@ export const authService = {
   },
 
   async refreshToken(refresh_token: string): Promise<LoginResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    const response = await fetch(`${API_BASE_URL}/auth/auth/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
