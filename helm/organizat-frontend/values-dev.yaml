@@ -9,7 +9,7 @@ env:
   NEXT_PUBLIC_USE_DEV_API: "true"
   NEXT_PUBLIC_DEV_BACKEND_URL: "http://organizat-backend.default.svc.cluster.local:8000/api"
   NEXT_PUBLIC_BACKEND_URL: "http://organizat-backend.default.svc.cluster.local:8000/api"
-  GEMINI_API_KEY: "AIzaSyBOgja22GKmzeYyNeKfDsL1tBv4PYvnwuw"
+  GEMINI_API_KEY: ""
 
 ingress:
   enabled: true
