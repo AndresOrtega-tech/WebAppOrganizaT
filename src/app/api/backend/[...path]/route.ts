@@ -40,7 +40,9 @@ async function proxyToBackend(req: NextRequest, params: { path: string[] }) {
   try {
     const backendBase = resolveBackendBaseUrl().replace(/\/$/, '');
     const path = (params.path || []).join('/');
-    const target = `${backendBase}/${path}${req.nextUrl.search}`;
+    const preserveTrailingSlash = req.nextUrl.pathname.endsWith('/');
+    const normalizedPath = preserveTrailingSlash && path ? `${path}/` : path;
+    const target = `${backendBase}/${normalizedPath}${req.nextUrl.search}`;
 
     const method = req.method.toUpperCase();
     const hasBody = method !== 'GET' && method !== 'HEAD';
