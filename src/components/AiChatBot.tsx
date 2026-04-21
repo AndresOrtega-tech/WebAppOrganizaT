@@ -498,7 +498,9 @@ export default function AiChatBot({
               style={{ scrollbarWidth: "none" }}
             />
             <button
-              onClick={sendMessage}
+              onClick={() => {
+                void sendMessage();
+              }}
               disabled={isResponding || !input.trim()}
               className="p-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0 mb-0.5"
               aria-label="Enviar mensaje"
