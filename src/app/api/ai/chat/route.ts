@@ -82,6 +82,33 @@ interface ExtractedLinkData {
   secondary_name: string | null;
 }
 
+interface TaskListFilters {
+  tab: "pending" | "completed" | null;
+  priority: "baja" | "media" | "alta" | null;
+  tag_names: string[];
+  due_date: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  date_field: "due_date" | "updated_at" | "created_at" | null;
+  sort_by: "updated_at" | "due_date" | "priority" | null;
+  order: "asc" | "desc" | null;
+  show_overdue: boolean | null;
+  limit: number | null;
+}
+
+interface EventListFilters {
+  start_date: string | null;
+  end_date: string | null;
+  tag_names: string[];
+}
+
+interface NoteListFilters {
+  is_archived: boolean | null;
+  tag_names: string[];
+  sort_by: "updated_at" | "created_at" | null;
+  order: "asc" | "desc" | null;
+}
+
 type SupportedEntity = "task" | "event" | "note" | "tag";
 type RelatableEntity = Exclude<SupportedEntity, "tag">;
 type SupportedAction =
@@ -98,6 +125,7 @@ type SupportedAction =
   | "unlink";
 
 const DEFAULT_TAG_COLOR = "#6366F1";
+const APP_TIME_ZONE = "America/Mexico_City";
 const ENTITY_API_PATHS: Record<SupportedEntity, string> = {
   task: "/tasks",
   event: "/events",
@@ -235,6 +263,56 @@ REGLAS:
 - Solo incluye valores distintos de null si el usuario los pidió explícitamente.
 - Responde SOLO con JSON.`;
 
+const TASK_LIST_FILTER_PROMPT = `Eres un extractor de filtros para listar tareas.
+Respondé SOLO con JSON estricto con estos campos:
+
+- "tab": "pending" | "completed" | null
+- "priority": "baja" | "media" | "alta" | null
+- "tag_names": string[]
+- "due_date": string | null
+- "start_date": string | null
+- "end_date": string | null
+- "date_field": "due_date" | "updated_at" | "created_at" | null
+- "sort_by": "updated_at" | "due_date" | "priority" | null
+- "order": "asc" | "desc" | null
+- "show_overdue": boolean | null
+- "limit": number | null
+
+REGLAS:
+- Convertí referencias relativas como "hoy", "mañana", "esta semana" y fechas concretas a formato YYYY-MM-DD.
+- Si el usuario pide "pendientes", usa "tab": "pending". Si pide "completadas", usa "tab": "completed".
+- Si no menciona un campo, dejalo en null o [] según corresponda.
+- "tag_names" debe contener nombres de etiquetas mencionadas, sin inventar.
+- Usá "show_overdue": true solo si el usuario pide incluir vencidas o atrasadas.
+- Respondé SOLO con JSON.`;
+
+const EVENT_LIST_FILTER_PROMPT = `Eres un extractor de filtros para listar eventos.
+Respondé SOLO con JSON estricto con estos campos:
+
+- "start_date": string | null
+- "end_date": string | null
+- "tag_names": string[]
+
+REGLAS:
+- Convertí referencias relativas como "hoy", "mañana", "esta semana" y fechas concretas a formato YYYY-MM-DD.
+- Si no menciona un campo, dejalo en null o [] según corresponda.
+- "tag_names" debe contener nombres de etiquetas mencionadas, sin inventar.
+- Respondé SOLO con JSON.`;
+
+const NOTE_LIST_FILTER_PROMPT = `Eres un extractor de filtros para listar notas.
+Respondé SOLO con JSON estricto con estos campos:
+
+- "is_archived": boolean | null
+- "tag_names": string[]
+- "sort_by": "updated_at" | "created_at" | null
+- "order": "asc" | "desc" | null
+
+REGLAS:
+- Si el usuario pide archivadas, usa true en "is_archived". Si pide activas o no archivadas, usa false.
+- Si no menciona un campo, dejalo en null o [] según corresponda.
+- "tag_names" debe contener nombres de etiquetas mencionadas, sin inventar.
+- Respondé SOLO con JSON.`;
+
 // ─── Intent classification (AI-first) ───────────────────────────────────────
 
 interface IntentResult {
@@ -244,6 +322,8 @@ interface IntentResult {
 }
 
 type ChatToolName =
+  | "get_today"
+  | "list_today_overview"
   | "list_tasks"
   | "get_task"
   | "create_task"
@@ -301,6 +381,7 @@ Respondé SOLO con JSON estricto con estos campos:
 - "secondary_query": string | null
 
 Tools disponibles:
+- get_today, list_today_overview
 - list_tasks, get_task, create_task, complete_task, update_task, delete_task, get_task_related
 - assign_tag_to_task, remove_tag_from_task, link_task_note, unlink_task_note, link_task_event, unlink_task_event
 - list_events, get_event, create_event, update_event, delete_event, get_event_related
@@ -311,6 +392,8 @@ Tools disponibles:
 
 Reglas:
 - Si el usuario no está pidiendo una acción real sobre datos, respondé {"tool":null,"primary_query":null,"secondary_query":null}.
+- Si el usuario pregunta qué día es hoy, la fecha actual o similares, usá "get_today".
+- Si el usuario pregunta qué tiene hoy, si tiene algo pendiente hoy, o pide una agenda/resumen de hoy, usá "list_today_overview".
 - primary_query debe contener el nombre o descripción breve del recurso principal cuando haga falta identificar uno puntual.
 - secondary_query debe contener el nombre o descripción breve del recurso secundario cuando haga falta una segunda entidad, como etiquetas o vínculos.
 - Para create_* podés dejar primary_query y secondary_query en null.
@@ -318,6 +401,8 @@ Reglas:
 - Respondé SOLO con JSON, sin explicación, sin bloques de código.
 
 Ejemplos:
+"qué día es hoy" → {"tool":"get_today","primary_query":null,"secondary_query":null}
+"qué tengo hoy" → {"tool":"list_today_overview","primary_query":null,"secondary_query":null}
 "muéstrame mis tareas" → {"tool":"list_tasks","primary_query":null,"secondary_query":null}
 "crea una tarea para mañana" → {"tool":"create_task","primary_query":null,"secondary_query":null}
 "detalle del evento demo" → {"tool":"get_event","primary_query":"demo","secondary_query":null}
@@ -345,6 +430,9 @@ function extractJsonObject<T>(raw: string): T | null {
 
 function toolSelectionToIntent(selection: ToolSelection): IntentResult {
   switch (selection.tool) {
+    case "get_today":
+    case "list_today_overview":
+      return { entity: null, action: null, secondary_entity: null };
     case "list_tasks":
       return { entity: "task", action: "list", secondary_entity: null };
     case "get_task":
@@ -434,14 +522,51 @@ function toolSelectionToIntent(selection: ToolSelection): IntentResult {
   }
 }
 
+function getTodayContext() {
+  const now = new Date();
+  const isoDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+  const humanDate = new Intl.DateTimeFormat("es-MX", {
+    timeZone: APP_TIME_ZONE,
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(now);
+  const weekday = new Intl.DateTimeFormat("es-MX", {
+    timeZone: APP_TIME_ZONE,
+    weekday: "long",
+  }).format(now);
+
+  return {
+    isoDate,
+    humanDate,
+    weekday,
+    label: `${weekday}, ${humanDate}`,
+  };
+}
+
+function buildConversationContext(messages: ChatMessage[], limit = 6): string {
+  return messages
+    .slice(-limit)
+    .map((message) => `${message.role}: ${message.text}`)
+    .join("\n");
+}
+
 async function selectToolWithAI(
   ai: GoogleGenAI,
+  messages: ChatMessage[],
   userText: string,
 ): Promise<ToolSelection> {
   try {
+    const today = getTodayContext();
+    const conversationContext = buildConversationContext(messages);
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: userText,
+      contents: `Fecha actual: ${today.isoDate} (${today.label})\n\nContexto reciente:\n${conversationContext}\n\nÚltimo mensaje del usuario:\n${userText}`,
       config: { systemInstruction: TOOL_SELECTION_PROMPT },
     });
     const raw = (response.text ?? "").trim();
@@ -560,10 +685,10 @@ async function extractWithAI<T>(
   userText: string,
   systemPrompt: string,
 ): Promise<T | null> {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayContext();
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
-    contents: `Fecha de hoy: ${today}\n\nTexto del usuario:\n${userText}`,
+    contents: `Fecha de hoy: ${today.isoDate} (${today.label})\n\nTexto del usuario:\n${userText}`,
     config: { systemInstruction: systemPrompt },
   });
   return extractJsonObject<T>((response.text ?? "").trim());
@@ -684,6 +809,7 @@ function truncateText(text: string, maxLength = 220): string {
 function formatDate(value: unknown): string {
   if (!value) return "Sin fecha";
   return new Date(String(value)).toLocaleDateString("es-MX", {
+    timeZone: APP_TIME_ZONE,
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -693,6 +819,7 @@ function formatDate(value: unknown): string {
 function formatDateTime(value: unknown): string {
   if (!value) return "Sin fecha";
   return new Date(String(value)).toLocaleDateString("es-MX", {
+    timeZone: APP_TIME_ZONE,
     weekday: "short",
     day: "2-digit",
     month: "short",
@@ -747,6 +874,228 @@ function relationRequest(
   }
 
   return null;
+}
+
+function normalizeText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .trim();
+}
+
+function matchesText(value: string, query: string): boolean {
+  const normalizedValue = normalizeText(value);
+  const normalizedQuery = normalizeText(query);
+  return (
+    normalizedValue === normalizedQuery ||
+    normalizedValue.includes(normalizedQuery) ||
+    normalizedQuery.includes(normalizedValue)
+  );
+}
+
+async function resolveTagIdsByNames(
+  jwt: string | undefined,
+  tagNames: string[],
+): Promise<string[]> {
+  if (tagNames.length === 0) return [];
+
+  const tags = await listEntities("tag", jwt);
+  return tags
+    .filter((tag) =>
+      tagNames.some((name) => matchesText(String(tag.name ?? ""), name)),
+    )
+    .map((tag) => String(tag.id));
+}
+
+function buildQueryString(paramsObject: Record<string, string | string[] | null | undefined>) {
+  const params = new URLSearchParams();
+
+  Object.entries(paramsObject).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === "") return;
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (item) params.append(key, item);
+      });
+      return;
+    }
+    params.append(key, value);
+  });
+
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+async function extractTaskListFilters(
+  ai: GoogleGenAI,
+  userText: string,
+): Promise<TaskListFilters> {
+  return (
+    (await extractWithAI<TaskListFilters>(ai, userText, TASK_LIST_FILTER_PROMPT)) ?? {
+      tab: null,
+      priority: null,
+      tag_names: [],
+      due_date: null,
+      start_date: null,
+      end_date: null,
+      date_field: null,
+      sort_by: null,
+      order: null,
+      show_overdue: null,
+      limit: null,
+    }
+  );
+}
+
+async function extractEventListFilters(
+  ai: GoogleGenAI,
+  userText: string,
+): Promise<EventListFilters> {
+  return (
+    (await extractWithAI<EventListFilters>(ai, userText, EVENT_LIST_FILTER_PROMPT)) ?? {
+      start_date: null,
+      end_date: null,
+      tag_names: [],
+    }
+  );
+}
+
+async function extractNoteListFilters(
+  ai: GoogleGenAI,
+  userText: string,
+): Promise<NoteListFilters> {
+  return (
+    (await extractWithAI<NoteListFilters>(ai, userText, NOTE_LIST_FILTER_PROMPT)) ?? {
+      is_archived: null,
+      tag_names: [],
+      sort_by: null,
+      order: null,
+    }
+  );
+}
+
+async function listTasksWithFilters(
+  ai: GoogleGenAI,
+  userText: string,
+  jwt: string | undefined,
+): Promise<Array<Record<string, unknown>>> {
+  const filters = await extractTaskListFilters(ai, userText);
+  const tagIds = await resolveTagIdsByNames(jwt, filters.tag_names ?? []);
+  const query = buildQueryString({
+    tab: filters.tab ?? "pending",
+    priority: filters.priority,
+    tag_ids: tagIds,
+    due_date: filters.due_date,
+    start_date: filters.start_date,
+    end_date: filters.end_date,
+    date_field: filters.date_field,
+    sort_by: filters.sort_by,
+    order: filters.order,
+    show_overdue:
+      typeof filters.show_overdue === "boolean"
+        ? String(filters.show_overdue)
+        : null,
+    limit:
+      typeof filters.limit === "number" && Number.isFinite(filters.limit)
+        ? String(Math.max(1, Math.min(Math.floor(filters.limit), 50)))
+        : "20",
+  });
+
+  return extractItems(await backendFetch<unknown>(`/tasks/${query}`, jwt));
+}
+
+async function listEventsWithFilters(
+  ai: GoogleGenAI,
+  userText: string,
+  jwt: string | undefined,
+): Promise<Array<Record<string, unknown>>> {
+  const filters = await extractEventListFilters(ai, userText);
+  const query = buildQueryString({
+    start_date: filters.start_date,
+    end_date: filters.end_date,
+  });
+
+  const events = extractItems(await backendFetch<unknown>(`/events/${query}`, jwt));
+  if (!filters.tag_names || filters.tag_names.length === 0) return events;
+
+  return events.filter((event) => {
+    const tags = Array.isArray(event.tags)
+      ? (event.tags as Array<Record<string, unknown>>)
+      : [];
+    return filters.tag_names.some((tagName) =>
+      tags.some((tag) => matchesText(String(tag.name ?? ""), tagName)),
+    );
+  });
+}
+
+async function listNotesWithFilters(
+  ai: GoogleGenAI,
+  userText: string,
+  jwt: string | undefined,
+): Promise<Array<Record<string, unknown>>> {
+  const filters = await extractNoteListFilters(ai, userText);
+  const tagIds = await resolveTagIdsByNames(jwt, filters.tag_names ?? []);
+  const query = buildQueryString({
+    is_archived:
+      typeof filters.is_archived === "boolean"
+        ? String(filters.is_archived)
+        : null,
+    tag_ids: tagIds,
+    sort_by: filters.sort_by,
+    order: filters.order,
+  });
+
+  return extractItems(await backendFetch<unknown>(`/notes/${query}`, jwt));
+}
+
+async function getTodayOverview(
+  jwt: string | undefined,
+): Promise<{ tasks: Array<Record<string, unknown>>; events: Array<Record<string, unknown>> }> {
+  const today = getTodayContext();
+  const [tasks, events] = await Promise.all([
+    extractItems(
+      await backendFetch<unknown>(
+        `/tasks/${buildQueryString({ tab: "pending", due_date: today.isoDate, show_overdue: "false", limit: "20" })}`,
+        jwt,
+      ),
+    ),
+    extractItems(
+      await backendFetch<unknown>(
+        `/events/${buildQueryString({ start_date: today.isoDate, end_date: today.isoDate })}`,
+        jwt,
+      ),
+    ),
+  ]);
+
+  return { tasks, events };
+}
+
+function markdownTodayResponse(): string {
+  const today = getTodayContext();
+  return `## Hoy\n\n- **Fecha:** ${today.label}\n- **ISO:** ${today.isoDate}\n- **Zona horaria:** ${APP_TIME_ZONE}`;
+}
+
+function markdownTodayOverview(
+  tasks: Array<Record<string, unknown>>,
+  events: Array<Record<string, unknown>>,
+): string {
+  const today = getTodayContext();
+  const sections: string[] = [`## Tu agenda de hoy`, "", `- **Fecha:** ${today.label}`, ""];
+
+  if (tasks.length === 0 && events.length === 0) {
+    sections.push("No tenés tareas ni eventos programados para hoy.");
+    return sections.join("\n");
+  }
+
+  if (tasks.length > 0) {
+    sections.push(markdownListFromTasks(tasks), "");
+  }
+
+  if (events.length > 0) {
+    sections.push(markdownListFromEvents(events));
+  }
+
+  return sections.join("\n");
 }
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
@@ -990,7 +1339,8 @@ export async function POST(req: NextRequest) {
     }
 
     const ai = new GoogleGenAI({ apiKey });
-    const activeSystemPrompt = systemPrompt || DEFAULT_SYSTEM_PROMPT;
+    const today = getTodayContext();
+    const activeSystemPrompt = `${systemPrompt || DEFAULT_SYSTEM_PROMPT}\n\nFecha actual: ${today.isoDate} (${today.label})\nZona horaria: ${APP_TIME_ZONE}.`;
     const latestText = extractLatestUserText(messages as ChatMessage[]);
     const userJwt = extractUserJwt(req);
 
@@ -1041,11 +1391,27 @@ export async function POST(req: NextRequest) {
 
     // ── AI-first intent classification ──────────────────────────────────────
     const toolSelection = latestText
-      ? await selectToolWithAI(ai, latestText)
+      ? await selectToolWithAI(ai, messages as ChatMessage[], latestText)
       : { tool: null, primary_query: null, secondary_query: null };
     const intent = toolSelectionToIntent(toolSelection);
     const primaryQuery = toolSelection.primary_query?.trim() || latestText;
     const secondaryQuery = toolSelection.secondary_query?.trim() || latestText;
+
+    if (toolSelection.tool === "get_today") {
+      return plainResponse(markdownTodayResponse());
+    }
+
+    if (toolSelection.tool === "list_today_overview") {
+      try {
+        const { tasks, events } = await getTodayOverview(userJwt);
+        return plainResponse(markdownTodayOverview(tasks, events));
+      } catch (err) {
+        console.error("[chat] list_today_overview failed:", err);
+        return plainResponse(
+          "⚠️ No pude obtener tu agenda de hoy en este momento. Intentá de nuevo.",
+        );
+      }
+    }
 
     const taskIntent = intent.entity === "task" ? intent.action : null;
     const eventIntent = intent.entity === "event" ? intent.action : null;
@@ -1056,11 +1422,11 @@ export async function POST(req: NextRequest) {
 
     if (taskIntent === "list") {
       try {
-        const data = await backendFetch<unknown>(
-          "/tasks/?tab=pending&limit=20",
-          userJwt,
+        return plainResponse(
+          markdownListFromTasks(
+            await listTasksWithFilters(ai, latestText, userJwt),
+          ),
         );
-        return plainResponse(markdownListFromTasks(extractItems(data)));
       } catch (err) {
         console.error("[chat] list_tasks failed:", err);
         return plainResponse(
@@ -1426,7 +1792,9 @@ export async function POST(req: NextRequest) {
     if (eventIntent === "list") {
       try {
         return plainResponse(
-          markdownListFromEvents(await listEntities("event", userJwt)),
+          markdownListFromEvents(
+            await listEventsWithFilters(ai, latestText, userJwt),
+          ),
         );
       } catch (err) {
         console.error("[chat] list_events failed:", err);
@@ -1731,7 +2099,9 @@ export async function POST(req: NextRequest) {
     if (noteIntent === "list") {
       try {
         return plainResponse(
-          markdownListFromNotes(await listEntities("note", userJwt)),
+          markdownListFromNotes(
+            await listNotesWithFilters(ai, latestText, userJwt),
+          ),
         );
       } catch (err) {
         console.error("[chat] list_notes failed:", err);
