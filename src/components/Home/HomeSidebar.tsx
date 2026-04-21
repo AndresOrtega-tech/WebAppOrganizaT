@@ -4,6 +4,7 @@ import {
   Home,
   CheckSquare,
   StickyNote,
+  Calendar,
   CalendarDays,
   Tag as TagIcon,
   LogOut,
@@ -41,8 +42,10 @@ export default function HomeSidebar({
       router.prefetch(href);
       const today = new Date();
       const todayLocal = today.toLocaleDateString("sv");
-      const in7 = new Date(today);
-      in7.setDate(in7.getDate() + 7);
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      const monthStartLocal = monthStart.toLocaleDateString("sv");
+      const monthEndLocal = monthEnd.toLocaleDateString("sv");
 
       if (href === "/home") {
         // Warm home tasks using backend view=home rules
@@ -57,6 +60,12 @@ export default function HomeSidebar({
         });
       } else if (href === "/notes") {
         void notesService.getNotes();
+      } else if (href === "/calendar") {
+        void taskService.getTasks();
+        void eventsService.getEvents({
+          start_date: monthStartLocal,
+          end_date: monthEndLocal,
+        });
       } else if (href === "/events") {
         void eventsService.getEvents({ start_date: todayLocal });
       }
@@ -69,6 +78,7 @@ export default function HomeSidebar({
     { name: "Inicio", href: "/home", icon: Home, enabled: true },
     { name: "Tareas", href: "/tasks", icon: CheckSquare, enabled: true },
     { name: "Notas", href: "/notes", icon: StickyNote, enabled: true },
+    { name: "Calendario", href: "/calendar", icon: Calendar, enabled: true },
     { name: "Eventos", href: "/events", icon: CalendarDays, enabled: true },
     { name: "Asistente IA", href: "/chat", icon: Bot, enabled: true },
   ];
