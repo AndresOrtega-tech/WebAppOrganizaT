@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bot, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import HomeSidebar from "@/components/Home/HomeSidebar";
-import AiChatBot from "@/components/AiChatBot";
 import { User } from "@/services/auth.service";
 import { Tag, tagsService } from "@/services/tags.service";
 import { apiClient } from "@/services/api.client";
@@ -96,7 +95,7 @@ export default function ChatPage() {
                     Asistente IA
                   </h1>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Chat completo con streaming en tiempo real
+                    Proximamente
                   </p>
                 </div>
               </div>
@@ -104,8 +103,15 @@ export default function ChatPage() {
 
             <div className="flex-1 min-h-0 p-4 md:p-8">
               <div className="h-full max-w-5xl mx-auto">
-                <div className="h-full rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-                  <AiChatBot fullPage />
+                <div className="h-full rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden flex items-center justify-center">
+                  <div className="text-center px-6">
+                    <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 dark:text-white">
+                      Proximamente
+                    </h2>
+                    <p className="mt-3 text-sm md:text-base text-gray-600 dark:text-gray-400">
+                      Estamos preparando el asistente de IA para ti.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
