@@ -58,7 +58,6 @@ export default function TaskDetailPage() {
   const isLinkingEnabled = true;
   const isEventLinkingEnabled = true;
   const [events, setEvents] = useState<Event[]>([]);
-  const [linkedEvents, setLinkedEvents] = useState<Event[]>([]);
   const [isLinkEventModalOpen, setIsLinkEventModalOpen] = useState(false);
   const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
@@ -159,7 +158,6 @@ export default function TaskDetailPage() {
   useEffect(() => {
     if (!task) return;
     loadEvents();
-    loadLinkedEvents();
   }, [task]);
 
   const loadEvents = async () => {
@@ -173,31 +171,7 @@ export default function TaskDetailPage() {
     }
   };
 
-  const loadLinkedEvents = async () => {
-    if (!task) return;
-    try {
-      const relations = await taskService.getTaskRelations(task.id);
-      const merged = (relations.events || []).map(ev => {
-        const existing = events.find(e => e.id === ev.id);
-        if (existing) return existing;
-        return {
-          ...ev,
-          start_time: (ev as Partial<Event>).start_time ?? '',
-          end_time: (ev as Partial<Event>).end_time ?? '',
-          location: (ev as Partial<Event>).location ?? '',
-          is_all_day: (ev as Partial<Event>).is_all_day ?? false,
-          user_id: (ev as Partial<Event>).user_id ?? '',
-          created_at: (ev as Partial<Event>).created_at ?? '',
-          updated_at: (ev as Partial<Event>).updated_at ?? '',
-          reminders_data: (ev as Partial<Event>).reminders_data ?? [],
-          has_reminder: (ev as Partial<Event>).has_reminder ?? false,
-        } as Event;
-      });
-      setLinkedEvents(merged);
-    } catch (err) {
-      console.error('Error loading linked events:', err);
-    }
-  };
+  const linkedEvents = task?.events as Event[] || [];
 
   const openLinkEventModal = async () => {
     setIsLinkEventModalOpen(true);
@@ -218,26 +192,6 @@ export default function TaskDetailPage() {
     if (!task) return;
     try {
       await eventsService.linkTaskToEvent(eventId, task.id);
-      const selectedEvent = availableEvents.find(e => e.id === eventId) || events.find(e => e.id === eventId);
-      const eventNotes = selectedEvent?.notes || [];
-      const taskNotes = task.notes || [];
-      const eventNoteIds = new Set(eventNotes.map(n => n.id));
-
-      for (const note of taskNotes) {
-        if (!eventNoteIds.has(note.id)) {
-          await eventsService.linkNoteToEvent(eventId, note.id);
-        }
-      }
-
-      const taskNoteIds = new Set(taskNotes.map(n => n.id));
-      for (const note of eventNotes) {
-        if (!taskNoteIds.has(note.id)) {
-          await taskService.linkNoteToTask(task.id, note.id);
-        }
-      }
-
-      await loadEvents();
-      await loadLinkedEvents();
       await reloadTask();
       setIsLinkEventModalOpen(false);
     } catch (err) {
@@ -255,8 +209,6 @@ export default function TaskDetailPage() {
     if (!eventToUnlink || !task) return;
     try {
       await eventsService.unlinkTaskFromEvent(eventToUnlink, task.id);
-      await loadEvents();
-      await loadLinkedEvents();
       await reloadTask();
       setShowUnlinkEventModal(false);
       setEventToUnlink(null);
@@ -330,7 +282,6 @@ export default function TaskDetailPage() {
               onUnlinkNote={handleUnlinkNote}
               onCreateNote={createNoteForTask}
               isLinkingEnabled={isLinkingEnabled}
-              linkedEvents={linkedEvents}
               onLinkEvent={openLinkEventModal}
               onUnlinkEvent={handleUnlinkEvent}
               isEventLinkingEnabled={isEventLinkingEnabled && !eventsError}

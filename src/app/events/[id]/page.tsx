@@ -77,23 +77,12 @@ export default function EventDetailPage() {
   };
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
     const nextFrom = searchParams.get('from');
     const nextFromId = searchParams.get('fromId');
     if (nextFrom) {
-      const value = { from: nextFrom, fromId: nextFromId || null };
-      setOrigin(value);
-      window.localStorage.setItem('event_detail_origin', JSON.stringify(value));
-      return;
-    }
-    const stored = window.localStorage.getItem('event_detail_origin');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as { from: string; fromId?: string | null };
-        setOrigin(parsed);
-      } catch {
-        setOrigin(null);
-      }
+      setOrigin({ from: nextFrom, fromId: nextFromId || null });
+    } else {
+      setOrigin(null);
     }
   }, [searchParams]);
 

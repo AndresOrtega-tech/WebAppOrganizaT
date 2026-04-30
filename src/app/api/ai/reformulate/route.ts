@@ -1,23 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
+
+export const dynamic = "force-dynamic";
+export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, type = 'task' } = await req.json();
+    const { text, type = "task" } = await req.json();
 
     if (!text) {
-      return NextResponse.json(
-        { error: 'Text is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'Gemini API key not configured' },
-        { status: 500 }
+        { error: "Gemini API key not configured" },
+        { status: 500 },
       );
     }
 
@@ -26,59 +26,56 @@ export async function POST(req: NextRequest) {
     const NOTE_LIMIT = 800;
     const TASK_LIMIT = 500;
     const EVENT_LIMIT = 500;
-    
+
     let limit = TASK_LIMIT;
-    if (type === 'note') limit = NOTE_LIMIT;
-    else if (type === 'event') limit = EVENT_LIMIT;
+    if (type === "note") limit = NOTE_LIMIT;
+    else if (type === "event") limit = EVENT_LIMIT;
 
-    let attempts = 0;
-    const maxAttempts = 3;
-    let reformulatedText = '';
+    let prompt = "";
 
-    while (attempts < maxAttempts) {
-      let prompt = '';
-      const retryInstruction = attempts > 0 ? ` PREVIOUS ATTEMPT WAS TOO LONG. MUST BE UNDER ${limit} CHARACTERS.` : '';
-      
-      if (type === 'note') {
-        prompt = `Reformulate the following note content to be more explanatory and detailed. Expand on key points if necessary to improve clarity. Keep the language in Spanish. Ensure the response is STRICTLY under ${limit} characters.${retryInstruction} Just provide the reformulated text, nothing else:\n\n${text}`;
-      } else if (type === 'event') {
-        prompt = `Reformulate the following event description to be clear, concise, and informative. Keep the language in Spanish. Ensure the response is STRICTLY under ${limit} characters.${retryInstruction} Just provide the reformulated text, nothing else:\n\n${text}`;
-      } else {
-        prompt = `Reformulate the following task description to be more clear, concise, and explanatory. Keep the language in Spanish. Reduce character count if possible while maintaining meaning. Ensure the response is STRICTLY under ${limit} characters.${retryInstruction} Just provide the reformulated text, nothing else:\n\n${text}`;
-      }
-
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-      });
-
-      reformulatedText = response.text || '';
-      
-      if (reformulatedText.length <= limit) {
-        break;
-      }
-      
-      attempts++;
+    if (type === "note") {
+      prompt = `Reformulate the following note content to be more explanatory and detailed. Expand on key points if necessary to improve clarity. Keep the language in Spanish. Ensure the response is STRICTLY under ${limit} characters. Just provide the reformulated text, nothing else:\n\n${text}`;
+    } else if (type === "event") {
+      prompt = `Reformulate the following event description to be clear, concise, and informative. Keep the language in Spanish. Ensure the response is STRICTLY under ${limit} characters. Just provide the reformulated text, nothing else:\n\n${text}`;
+    } else {
+      prompt = `Reformulate the following task description to be more clear, concise, and explanatory. Keep the language in Spanish. Reduce character count if possible while maintaining meaning. Ensure the response is STRICTLY under ${limit} characters. Just provide the reformulated text, nothing else:\n\n${text}`;
     }
 
-    if (!reformulatedText) {
-      return NextResponse.json(
-        { error: 'Invalid response format from Gemini' },
-        { status: 502 }
-      );
-    }
-    
-    // If after max attempts it's still too long, truncate it (fallback)
-    if (reformulatedText.length > limit) {
-      reformulatedText = reformulatedText.substring(0, limit);
-    }
+    const responseStream = await ai.models.generateContentStream({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
 
-    return NextResponse.json({ reformulatedText });
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of responseStream) {
+            if (chunk.text) {
+              controller.enqueue(new TextEncoder().encode(chunk.text));
+            }
+          }
+          controller.close();
+        } catch (e) {
+          controller.error(e);
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        "X-Accel-Buffering": "no",
+      },
+    });
   } catch (error) {
-    console.error('Error in reformulate API:', error);
+    console.error("Error in reformulate API:", error);
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
+      {
+        error: "Internal Server Error",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
     );
   }
 }

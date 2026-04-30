@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Note, notesService } from '@/services/notes.service';
+import { Event } from '@/services/events.service';
 
 export interface NoteEditFormState {
     title: string;
@@ -20,6 +21,12 @@ export const useNoteDetail = (noteId: string) => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
+  const [isLinkEventModalOpen, setIsLinkEventModalOpen] = useState(false);
+  const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const [showUnlinkEventModal, setShowUnlinkEventModal] = useState(false);
+  const [eventToUnlink, setEventToUnlink] = useState<string | null>(null);
+  const [eventsError, setEventsError] = useState<string | null>(null);
 
     const [editForm, setEditForm] = useState<NoteEditFormState>({
         title: '',
@@ -168,9 +175,58 @@ export const useNoteDetail = (noteId: string) => {
         }
     };
 
+    const openLinkEventModal = async () => {
+        setIsLinkEventModalOpen(true);
+        setIsLoadingEvents(true);
+        try {
+            const { eventsService } = await import('@/services/events.service');
+            const data = await eventsService.getEvents();
+            const linkedIds = new Set((note?.events || []).map(e => e.id));
+            setAvailableEvents(data.filter(e => !linkedIds.has(e.id)));
+        } catch (err) {
+            console.error('Error loading events:', err);
+            alert('Error al cargar eventos disponibles');
+        } finally {
+            setIsLoadingEvents(false);
+        }
+    };
+
+    const handleLinkEvent = async (eventId: string) => {
+        if (!note) return;
+        try {
+            const { eventsService } = await import('@/services/events.service');
+            await eventsService.linkNoteToEvent(eventId, note.id);
+            await loadNote(note.id);
+            setIsLinkEventModalOpen(false);
+        } catch (err) {
+            console.error('Error linking event:', err);
+            alert('Error al vincular el evento');
+        }
+    };
+
+    const handleUnlinkEvent = (eventId: string) => {
+        setEventToUnlink(eventId);
+        setShowUnlinkEventModal(true);
+    };
+
+    const confirmUnlinkEvent = async () => {
+        if (!note || !eventToUnlink) return;
+        try {
+            const { eventsService } = await import('@/services/events.service');
+            await eventsService.unlinkNoteFromEvent(eventToUnlink, note.id);
+            await loadNote(note.id);
+            setShowUnlinkEventModal(false);
+            setEventToUnlink(null);
+        } catch (err) {
+            console.error('Error unlinking event:', err);
+            alert('Error al desvincular el evento');
+        }
+    };
+
     const reloadNote = async () => {
         if (!noteId) return;
         await loadNote(noteId);
+        router.refresh();
     };
 
     return {
@@ -193,5 +249,17 @@ export const useNoteDetail = (noteId: string) => {
         handleTagsUpdate,
         handleRemoveTag,
         reloadNote,
+        isLinkEventModalOpen,
+        setIsLinkEventModalOpen,
+        availableEvents,
+        isLoadingEvents,
+        showUnlinkEventModal,
+        setShowUnlinkEventModal,
+        eventToUnlink,
+        eventsError,
+        openLinkEventModal,
+        handleLinkEvent,
+        handleUnlinkEvent,
+        confirmUnlinkEvent,
     };
 };

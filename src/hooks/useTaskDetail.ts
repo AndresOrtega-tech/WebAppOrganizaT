@@ -62,6 +62,7 @@ export const useTaskDetail = (taskId: string) => {
         ...taskData,
         tags: relations.tags,
         notes: relations.notes,
+        events: relations.events || [],
       });
     } catch (err) {
       console.error('Error loading task:', err);
@@ -151,6 +152,7 @@ export const useTaskDetail = (taskId: string) => {
           // Preservar relaciones ya cargadas que el PATCH no devuelve
           tags: prev.tags,
           notes: prev.notes,
+          events: prev.events,
           reminders_data: updatedTask.reminders_data || prev.reminders_data,
         };
       });
@@ -285,6 +287,7 @@ export const useTaskDetail = (taskId: string) => {
   const reloadTask = async () => {
     if (!taskId) return;
     await loadTask(taskId);
+    router.refresh();
   };
 
   const createNoteForTask = async (title: string, content: string) => {

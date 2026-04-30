@@ -322,7 +322,7 @@ export default function NoteInfo({
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 px-4 py-4">
               <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3">Eventos vinculados</h3>
               <LinkedItemsList
-                items={linkedEvents}
+                items={(note.events as Event[]) || []}
                 type="event"
                 onLinkNew={onLinkEvent}
                 onUnlink={onUnlinkEvent}

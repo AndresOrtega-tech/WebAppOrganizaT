@@ -399,7 +399,7 @@ export default function TaskInfo({ task, editForm, setEditForm, onRemoveTag, onM
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-3">Eventos vinculados</h3>
             {isEventLinkingEnabled && onLinkEvent && onUnlinkEvent && (
               <LinkedItemsList 
-                items={linkedEvents} 
+                items={(task.events as Event[]) || []} 
                 type="event" 
                 onLinkNew={onLinkEvent}
                 onUnlink={onUnlinkEvent}

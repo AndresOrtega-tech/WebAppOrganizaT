@@ -17,6 +17,7 @@ import { Tag, tagsService } from '@/services/tags.service';
 import { apiClient } from '@/services/api.client';
 import { taskService, Task } from '@/services/task.service';
 import { Event, eventsService } from '@/services/events.service';
+import { notesService } from '@/services/notes.service';
 
 export default function NoteDetailPage() {
   const router = useRouter();
@@ -28,6 +29,8 @@ export default function NoteDetailPage() {
     note,
     loading,
     error,
+    isEditing,
+    setIsEditing,
     isSaving,
     isDeleting,
     showDeleteModal,
@@ -42,6 +45,18 @@ export default function NoteDetailPage() {
     handleRemoveTag,
     hasUnsavedChanges,
     reloadNote,
+    isLinkEventModalOpen,
+    setIsLinkEventModalOpen,
+    availableEvents,
+    isLoadingEvents,
+    showUnlinkEventModal,
+    setShowUnlinkEventModal,
+    eventToUnlink,
+    eventsError,
+    openLinkEventModal,
+    handleLinkEvent,
+    handleUnlinkEvent,
+    confirmUnlinkEvent,
   } = useNoteDetail(id);
 
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -50,19 +65,9 @@ export default function NoteDetailPage() {
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
   const [taskToUnlink, setTaskToUnlink] = useState<string | null>(null);
 
-  const [events, setEvents] = useState<Event[]>([]);
-  const [linkedEvents, setLinkedEvents] = useState<Event[]>([]);
-  const [isLinkEventModalOpen, setIsLinkEventModalOpen] = useState(false);
-  const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
-  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
-  const [showUnlinkEventModal, setShowUnlinkEventModal] = useState(false);
-  const [eventToUnlink, setEventToUnlink] = useState<string | null>(null);
-  const [eventsError, setEventsError] = useState<string | null>(null);
-
   const [user, setUser] = useState<User | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
   const [isUnsavedModalOpen, setIsUnsavedModalOpen] = useState(false);
   const [origin, setOrigin] = useState<{ from: string; fromId?: string | null } | null>(null);
 
@@ -71,32 +76,6 @@ export default function NoteDetailPage() {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('sidebar_open', String(open));
     }
-  };
-
-  const loadLinkedEvents = () => {
-    if (!note) return;
-    const relationsEvents = note.events || [];
-    const merged = relationsEvents.map((ev) => {
-      const existing = events.find(e => e.id === ev.id);
-      if (existing) return existing;
-      return {
-        ...ev,
-        description: (ev as Partial<Event>).description ?? null,
-        end_time: (ev as Partial<Event>).end_time ?? '',
-        start_time: (ev as Partial<Event>).start_time ?? '',
-        location: (ev as Partial<Event>).location ?? '',
-        is_all_day: (ev as Partial<Event>).is_all_day ?? false,
-        user_id: (ev as Partial<Event>).user_id ?? '',
-        created_at: (ev as Partial<Event>).created_at ?? '',
-        updated_at: (ev as Partial<Event>).updated_at ?? '',
-        reminders_data: (ev as Partial<Event>).reminders_data ?? [],
-        has_reminder: (ev as Partial<Event>).has_reminder ?? false,
-        tags: (ev as Partial<Event>).tags,
-        tasks: (ev as Partial<Event>).tasks,
-        notes: (ev as Partial<Event>).notes,
-      } as Event;
-    });
-    setLinkedEvents(merged);
   };
 
   useEffect(() => {
@@ -161,23 +140,6 @@ export default function NoteDetailPage() {
     router.push('/login');
   };
 
-  useEffect(() => {
-    if (!note) return;
-    loadEvents();
-    loadLinkedEvents();
-  }, [note]);
-
-  const loadEvents = async () => {
-    try {
-      setEventsError(null);
-      const data = await eventsService.getEvents();
-      setEvents(data);
-    } catch (err) {
-      console.error('Error loading events:', err);
-      setEventsError('Error al cargar eventos');
-    }
-  };
-
   const openLinkModal = async () => {
     setIsLinkModalOpen(true);
     setIsLoadingTasks(true);
@@ -221,73 +183,6 @@ export default function NoteDetailPage() {
     } catch (err) {
       console.error('Error unlinking task:', err);
       alert('Error al desvincular la tarea');
-    }
-  };
-
-  const openLinkEventModal = async () => {
-    setIsLinkEventModalOpen(true);
-    setIsLoadingEvents(true);
-    try {
-      const data = await eventsService.getEvents();
-      const linkedIds = new Set(linkedEvents.map(e => e.id));
-      setAvailableEvents(data.filter(e => !linkedIds.has(e.id)));
-    } catch (err) {
-      console.error('Error loading events:', err);
-      alert('Error al cargar eventos disponibles');
-    } finally {
-      setIsLoadingEvents(false);
-    }
-  };
-
-  const handleLinkEvent = async (eventId: string) => {
-    if (!note) return;
-    try {
-      await eventsService.linkNoteToEvent(eventId, note.id);
-      const selectedEvent = availableEvents.find(e => e.id === eventId) || events.find(e => e.id === eventId);
-      const eventTasks = selectedEvent?.tasks || [];
-      const noteTasks = note.tasks || [];
-      const eventTaskIds = new Set(eventTasks.map(t => t.id));
-
-      for (const task of noteTasks) {
-        if (!eventTaskIds.has(task.id)) {
-          await eventsService.linkTaskToEvent(eventId, task.id);
-        }
-      }
-
-      const noteTaskIds = new Set(noteTasks.map(t => t.id));
-      for (const task of eventTasks) {
-        if (!noteTaskIds.has(task.id)) {
-          await taskService.linkNoteToTask(task.id, note.id);
-        }
-      }
-
-      await loadEvents();
-      await reloadNote();
-      loadLinkedEvents();
-      setIsLinkEventModalOpen(false);
-    } catch (err) {
-      console.error('Error linking event:', err);
-      alert('Error al vincular el evento');
-    }
-  };
-
-  const handleUnlinkEvent = (eventId: string) => {
-    setEventToUnlink(eventId);
-    setShowUnlinkEventModal(true);
-  };
-
-  const confirmUnlinkEvent = async () => {
-    if (!note || !eventToUnlink) return;
-    try {
-      await eventsService.unlinkNoteFromEvent(eventToUnlink, note.id);
-      await loadEvents();
-      await reloadNote();
-      loadLinkedEvents();
-      setShowUnlinkEventModal(false);
-      setEventToUnlink(null);
-    } catch (err) {
-      console.error('Error unlinking event:', err);
-      alert('Error al desvincular el evento');
     }
   };
 
@@ -358,7 +253,6 @@ export default function NoteDetailPage() {
               onLinkTask={openLinkModal}
               onUnlinkTask={handleUnlinkTask}
               isLinkingEnabled={isLinkingEnabled}
-              linkedEvents={linkedEvents}
               onLinkEvent={openLinkEventModal}
               onUnlinkEvent={handleUnlinkEvent}
               isEventLinkingEnabled={isEventLinkingEnabled && !eventsError}

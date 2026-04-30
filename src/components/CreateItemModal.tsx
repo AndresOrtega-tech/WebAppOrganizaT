@@ -20,6 +20,7 @@ interface CreateItemModalProps {
   onCreated: () => void;
   initialTab?: TabType;
   disableTabs?: boolean;
+  initialSelectedDate?: string | null;
 }
 
 const COLORS = [
@@ -35,12 +36,48 @@ const COLORS = [
   '#64748B', // slate-500
 ];
 
+const buildIsoFromDateKey = (dateKey: string, hours: number, minutes = 0) => {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(year, month - 1, day, hours, minutes, 0, 0).toISOString();
+};
+
+const buildTaskPresetDate = (dateKey?: string | null) => {
+  if (!dateKey) return null;
+  return buildIsoFromDateKey(dateKey, 9);
+};
+
+const buildEventPresetRange = (dateKey?: string | null) => {
+  if (!dateKey) {
+    return {
+      start_time: '',
+      end_time: '',
+    };
+  }
+
+  return {
+    start_time: buildIsoFromDateKey(dateKey, 9),
+    end_time: buildIsoFromDateKey(dateKey, 10),
+  };
+};
+
+const formatCalendarContext = (dateKey?: string | null) => {
+  if (!dateKey) return null;
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('es-MX', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+};
+
 export default function CreateItemModal({
   isOpen,
   onClose,
   onCreated,
   initialTab = 'task',
-  disableTabs = false
+  disableTabs = false,
+  initialSelectedDate = null,
 }: CreateItemModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [loading, setLoading] = useState(false);
@@ -98,13 +135,35 @@ export default function CreateItemModal({
   // Load tags on open
   useEffect(() => {
     if (isOpen) {
+      const initialEventRange = buildEventPresetRange(initialSelectedDate);
+
       loadTags();
       setActiveTab(initialTab);
-      resetForms();
+      setTaskForm({
+        title: '',
+        description: '',
+        due_date: buildTaskPresetDate(initialSelectedDate),
+        is_completed: false,
+        priority: 'media',
+        reminders: null
+      });
+      setNoteForm({ title: '', content: '' });
+      setEventForm({
+        title: '',
+        description: '',
+        start_time: initialEventRange.start_time,
+        end_time: initialEventRange.end_time,
+        location: '',
+        is_all_day: false,
+        reminders: null
+      });
+      setTagForm({ name: '', color: '#6366f1' });
+      setSelectedTagIds([]);
+      setError(null);
       setLinkedItems([]);
       setSearchQuery('');
     }
-  }, [isOpen, initialTab]);
+  }, [initialSelectedDate, initialTab, isOpen]);
 
   // Search Effect
   useEffect(() => {
@@ -212,30 +271,6 @@ export default function CreateItemModal({
     }
   };
 
-  const resetForms = () => {
-    setTaskForm({
-      title: '',
-      description: '',
-      due_date: null,
-      is_completed: false,
-      priority: 'media',
-      reminders: null
-    });
-    setNoteForm({ title: '', content: '' });
-    setEventForm({
-      title: '',
-      description: '',
-      start_time: '',
-      end_time: '',
-      location: '',
-      is_all_day: false,
-      reminders: null
-    });
-    setTagForm({ name: '', color: '#6366f1' });
-    setSelectedTagIds([]);
-    setError(null);
-  };
-
   // AI Reformulation Hooks
   const { isReformulating: isTaskReformulating, handleReformulate: handleTaskReformulate } = useAiReformulation(
     taskForm.description || '',
@@ -255,18 +290,14 @@ export default function CreateItemModal({
     'event'
   );
 
+  // Event validation helpers for UI disabling
+  const eventStartDate = eventForm.start_time ? new Date(eventForm.start_time) : null;
+  const eventEndDate = eventForm.end_time ? new Date(eventForm.end_time) : null;
+  const eventDatesValid = !!eventStartDate && !isNaN(eventStartDate.getTime()) && !!eventEndDate && !isNaN(eventEndDate.getTime());
+  const eventChronoValid = eventDatesValid && eventEndDate! > eventStartDate!;
+  const eventReady = eventDatesValid && eventChronoValid;
+
   const handleCreate = async () => {
-    const isMissingTitle =
-      (activeTab === 'task' && !taskForm.title.trim()) ||
-      (activeTab === 'note' && !noteForm.title.trim()) ||
-      (activeTab === 'event' && !eventForm.title.trim()) ||
-      (activeTab === 'tag' && !tagForm.name.trim());
-
-    if (isMissingTitle) {
-      setError('El título es requerido.');
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -319,15 +350,17 @@ export default function CreateItemModal({
           }
         }
       } else if (activeTab === 'event') {
-        if (eventForm.start_time && eventForm.end_time) {
-          const startDate = new Date(eventForm.start_time);
-          const endDate = new Date(eventForm.end_time);
-          if (endDate < startDate) {
-            setError('La fecha de fin no puede ser anterior a la fecha de inicio.');
-            return;
-          }
+        if (!eventForm.start_time || !eventForm.end_time) {
+          throw new Error('Selecciona inicio y fin del evento');
         }
-
+        const start = new Date(eventForm.start_time);
+        const end = new Date(eventForm.end_time);
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+          throw new Error('Las fechas del evento no son válidas');
+        }
+        if (end <= start) {
+          throw new Error('La hora de fin debe ser mayor a la de inicio');
+        }
         const newEvent = await eventsService.createEvent(eventForm);
         if (selectedTagIds.length > 0) {
           await eventsService.assignTagsToEvent(newEvent.id, selectedTagIds);
@@ -365,22 +398,6 @@ export default function CreateItemModal({
       prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
     );
   };
-
-  const isEventEndBeforeStart =
-    eventForm.start_time && eventForm.end_time
-      ? new Date(eventForm.end_time) < new Date(eventForm.start_time)
-      : false;
-
-  const isMissingTitle =
-    (activeTab === 'task' && !taskForm.title.trim()) ||
-    (activeTab === 'note' && !noteForm.title.trim()) ||
-    (activeTab === 'event' && !eventForm.title.trim()) ||
-    (activeTab === 'tag' && !tagForm.name.trim());
-
-  const isCreateDisabled =
-    loading ||
-    isMissingTitle ||
-    (activeTab === 'event' && (!eventForm.start_time || !eventForm.end_time || isEventEndBeforeStart));
 
   if (!isOpen) return null;
 
@@ -564,6 +581,16 @@ export default function CreateItemModal({
           {/* NOTE FORM */}
           {activeTab === 'note' && (
             <div className="space-y-4">
+              {initialSelectedDate && (
+                <div className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-900/20 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-700 dark:text-amber-300">
+                    Contexto del calendario
+                  </p>
+                  <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
+                    Estás creando esta nota desde <span className="font-semibold">{formatCalendarContext(initialSelectedDate)}</span>. La fecha se usa solo como referencia visual y no se guarda en la nota.
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título</label>
                 <input
@@ -662,6 +689,12 @@ export default function CreateItemModal({
                   )}
                 </div>
               </div>
+
+              {!eventReady && (
+                <p className="text-sm text-red-500 dark:text-red-400">
+                  Selecciona inicio y fin válidos; la hora de fin debe ser mayor que la de inicio.
+                </p>
+              )}
 
               {/* Reminders Section */}
               <div>
@@ -954,7 +987,7 @@ export default function CreateItemModal({
           </button>
           <button
             onClick={handleCreate}
-            disabled={isCreateDisabled}
+            disabled={loading || (activeTab === 'event' && !eventReady)}
             className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckSquare className="w-5 h-5" />}

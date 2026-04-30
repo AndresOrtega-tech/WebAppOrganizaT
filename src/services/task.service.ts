@@ -40,6 +40,7 @@ export interface Task {
   updated_at: string;
   tags: Tag[];
   notes: Note[];
+  events?: Array<{ id: string; title: string; description?: string | null }>;
 }
 
 export interface CreateTaskDTO {
@@ -74,6 +75,8 @@ export interface PaginatedTasks {
   has_more?: boolean;
 }
 
+export const TASKS_MAX_PAGE_LIMIT = 50;
+
 type TaskApiResponse = Omit<Task, 'tags' | 'notes' | 'reminders_data'> & {
   tags?: Tag[];
   notes?: Note[];
@@ -90,6 +93,14 @@ const mapTaskResponse = (data: TaskApiResponse): Task => {
     tags: data.tags || (data.task_tags?.map((tt) => tt.tags) || []),
     reminders_data: data.reminders_data || data.reminders || [],
   };
+};
+
+const normalizeTaskLimit = (limit: number) => {
+  if (!Number.isFinite(limit)) {
+    return TASKS_MAX_PAGE_LIMIT;
+  }
+
+  return Math.min(Math.max(Math.floor(limit), 1), TASKS_MAX_PAGE_LIMIT);
 };
 
 export const taskService = {
@@ -140,7 +151,7 @@ export const taskService = {
         params.append('tab', filters.tab);
       }
       if (filters.limit !== undefined) {
-        params.append('limit', String(filters.limit));
+        params.append('limit', String(normalizeTaskLimit(filters.limit)));
       }
     }
 

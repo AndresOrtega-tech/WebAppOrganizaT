@@ -19,6 +19,7 @@ import CreateItemModal from '@/components/CreateItemModal';
 
 export default function HomePage() {
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
 
   // State
   const [user, setUser] = useState<User | null>(null);
@@ -41,6 +42,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    setIsClient(true);
     window.localStorage.setItem('sidebar_open', String(isSidebarOpen));
   }, [isSidebarOpen]);
 
@@ -122,7 +124,11 @@ export default function HomePage() {
     setIsCreateModalOpen(true);
   };
 
-
+  if (!isClient) {
+    // Return an empty or minimal skeleton to match server-rendered output
+    // This prevents hydration mismatch errors from mismatched localStorage / DOM states.
+    return <div className="min-h-screen bg-gray-50 dark:bg-black transition-colors" />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black transition-colors">
